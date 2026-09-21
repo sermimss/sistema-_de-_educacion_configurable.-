@@ -1,0 +1,34 @@
+services:
+  base-de-datos:
+    image: postgres:16-alpine
+    container_name: escuela-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: escuela
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-escuela}
+      POSTGRES_DB: escuela
+    volumes:
+      - datos-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U escuela -d escuela"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  sistema:
+    build: .
+    container_name: escuela-app
+    restart: unless-stopped
+    depends_on:
+      base-de-datos:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://escuela:${POSTGRES_PASSWORD:-escuela}@base-de-datos:5432/escuela?schema=public
+      AUTH_SECRET: ${AUTH_SECRET:?define AUTH_SECRET en tu archivo .env}
+      SESSION_HORAS: ${SESSION_HORAS:-12}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    ports:
+      - "3000:3000"
+
+volumes:
+  datos-postgres:

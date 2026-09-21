@@ -1,0 +1,1437 @@
+// =====================================================================
+// Sistema de Gestion Escolar y Financiera - Esquema de datos
+// Disenado para ser 100% configurable por cada institucion.
+// Ningun catalogo, escala, concepto de cobro o periodo esta "quemado"
+// en el codigo: todo se define desde el asistente de instalacion.
+// =====================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================================
+// ENUMERACIONES
+// =====================================================================
+
+enum TipoConfiguracion {
+  TEXTO
+  NUMERO
+  BOOLEANO
+  JSON
+  FECHA
+  COLOR
+  ARCHIVO
+  OPCION
+}
+
+enum TipoPeriodoAcademico {
+  SEMESTRE
+  CUATRIMESTRE
+  TRIMESTRE
+  ANUAL
+  MODULAR
+  PERSONALIZADO
+}
+
+enum EstadoCiclo {
+  PLANEACION
+  ACTIVO
+  CERRADO
+}
+
+enum RolUsuario {
+  ADMIN
+  DOCENTE
+  ALUMNO
+}
+
+enum EstadoAlumno {
+  ACTIVO
+  BAJA_TEMPORAL
+  BAJA_DEFINITIVA
+  EGRESADO
+  SUSPENDIDO
+}
+
+enum EstadoInscripcion {
+  INSCRITO
+  BAJA
+  CONCLUIDO
+}
+
+enum TipoEscala {
+  NUMERICA
+  LETRA
+  CONCEPTUAL
+}
+
+enum ModoRedondeo {
+  NINGUNO
+  MATEMATICO
+  HACIA_ARRIBA
+  HACIA_ABAJO
+}
+
+enum ModoAsistencia {
+  POR_DIA
+  POR_CLASE
+}
+
+enum EstadoAsistencia {
+  PRESENTE
+  AUSENTE
+  RETARDO
+  JUSTIFICADA
+  SALIDA_ANTICIPADA
+}
+
+enum OrigenCalificacion {
+  CALCULADA
+  MANUAL
+  EXTRAORDINARIO
+}
+
+enum EstadoMateriaAlumno {
+  EN_CURSO
+  APROBADA
+  REPROBADA
+  EXENTA
+  RECURSANDO
+  BAJA
+}
+
+enum TipoInscripcionClase {
+  REGULAR
+  OPTATIVA
+  RECURSAMIENTO
+}
+
+enum TipoEvaluacionExtra {
+  EXTRAORDINARIO
+  RECUPERACION
+  TITULO_SUFICIENCIA
+}
+
+enum Periodicidad {
+  UNICO
+  MENSUAL
+  BIMESTRAL
+  POR_PERIODO_ACADEMICO
+  SEMESTRAL
+  ANUAL
+}
+
+enum AmbitoAplicacion {
+  TODOS
+  NIVEL
+  PLAN
+  GRADO
+  GRUPO
+  ALUMNO
+}
+
+enum TipoConceptoCobro {
+  INSCRIPCION
+  REINSCRIPCION
+  COLEGIATURA
+  MATERIAL
+  UNIFORME
+  TRANSPORTE
+  EVENTO
+  EXAMEN
+  TRAMITE
+  OTRO
+}
+
+enum TipoCalculo {
+  FIJO
+  PORCENTAJE
+}
+
+enum FrecuenciaRecargo {
+  UNICA
+  DIARIA
+  SEMANAL
+  MENSUAL
+}
+
+enum EstadoCargo {
+  PENDIENTE
+  PARCIAL
+  PAGADO
+  VENCIDO
+  CANCELADO
+  CONDONADO
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TRANSFERENCIA
+  TARJETA_CREDITO
+  TARJETA_DEBITO
+  CHEQUE
+  DEPOSITO
+  PAGO_EN_LINEA
+  OTRO
+}
+
+enum EstadoPago {
+  REGISTRADO
+  CONFIRMADO
+  CANCELADO
+  REEMBOLSADO
+}
+
+enum EstadoCfdi {
+  NO_APLICA
+  PENDIENTE
+  TIMBRADO
+  CANCELADO
+  ERROR
+}
+
+enum ProveedorPasarela {
+  STRIPE
+  MERCADO_PAGO
+  OPENPAY
+  CONEKTA
+  SPEI_MANUAL
+}
+
+enum ModoPasarela {
+  SANDBOX
+  PRODUCCION
+}
+
+enum EstadoConvenio {
+  VIGENTE
+  CUMPLIDO
+  INCUMPLIDO
+  CANCELADO
+}
+
+enum TipoConceptoNomina {
+  PERCEPCION
+  DEDUCCION
+  OTRO_PAGO
+}
+
+enum EstadoPeriodoNomina {
+  ABIERTO
+  CALCULADO
+  PAGADO
+  CANCELADO
+}
+
+enum EstadoReciboNomina {
+  BORRADOR
+  AUTORIZADO
+  PAGADO
+  CANCELADO
+}
+
+enum TipoContrato {
+  TIEMPO_COMPLETO
+  MEDIO_TIEMPO
+  POR_HORAS
+  HONORARIOS
+  TEMPORAL
+}
+
+enum EstadoEmpleado {
+  ACTIVO
+  LICENCIA
+  SUSPENDIDO
+  BAJA
+}
+
+enum TipoNotificacion {
+  INFORMATIVA
+  ALERTA_ASISTENCIA
+  ADEUDO
+  CALIFICACION
+  SISTEMA
+  AVISO
+}
+
+enum AccionBitacora {
+  CREAR
+  ACTUALIZAR
+  ELIMINAR
+  INICIAR_SESION
+  CERRAR_SESION
+  INTENTO_FALLIDO
+  EXPORTAR
+  IMPORTAR
+  CONFIGURAR
+  CANCELAR
+}
+
+enum TipoEntidadExpediente {
+  ALUMNO
+  EMPLEADO
+}
+
+// =====================================================================
+// 1. INSTITUCION Y CONFIGURACION GLOBAL
+// =====================================================================
+
+/// Registro unico (id = 1) con la identidad de la escuela.
+/// Se llena en el asistente de instalacion.
+model Institucion {
+  id                 Int       @id @default(1)
+  nombre             String
+  nombreCorto        String?
+  lema               String?
+  logoUrl            String?
+  escudoUrl          String?
+  // Identidad visual usada en la interfaz y en los PDF (boletas, recibos)
+  colorPrimario      String    @default("#1d4ed8")
+  colorSecundario    String    @default("#0f172a")
+  // Datos de contacto
+  direccion          String?
+  ciudad             String?
+  estado             String?
+  pais               String    @default("Mexico")
+  codigoPostal       String?
+  telefono           String?
+  email              String?
+  sitioWeb           String?
+  // Datos fiscales (base para CFDI 4.0 cuando se conecte un PAC)
+  razonSocial        String?
+  rfc                String?
+  regimenFiscal      String?
+  claveCentroTrabajo String?
+  // Operacion
+  moneda             String    @default("MXN")
+  simboloMoneda      String    @default("$")
+  zonaHoraria        String    @default("America/Mexico_City")
+  idioma             String    @default("es-MX")
+  // Estado de la instalacion
+  instalado          Boolean   @default(false)
+  fechaInstalacion   DateTime?
+  creadoEn           DateTime  @default(now())
+  actualizadoEn      DateTime  @updatedAt
+}
+
+/// Motor de configuracion llave/valor. Permite que la escuela ajuste
+/// reglas de negocio sin tocar el codigo (umbrales, banderas, textos).
+model Configuracion {
+  id            Int               @id @default(autoincrement())
+  clave         String            @unique
+  valor         String
+  tipo          TipoConfiguracion @default(TEXTO)
+  categoria     String            @default("general")
+  etiqueta      String
+  descripcion   String?
+  opciones      Json?
+  editable      Boolean           @default(true)
+  orden         Int               @default(0)
+  actualizadoEn DateTime          @updatedAt
+
+  @@index([categoria])
+}
+
+model Plantel {
+  id        Int     @id @default(autoincrement())
+  nombre    String
+  clave     String  @unique
+  direccion String?
+  telefono  String?
+  email     String?
+  activo    Boolean @default(true)
+
+  aulas   Aula[]
+  grupos  Grupo[]
+  alumnos Alumno[]
+}
+
+model Turno {
+  id         Int     @id @default(autoincrement())
+  nombre     String  @unique
+  horaInicio String
+  horaFin    String
+  orden      Int     @default(0)
+  activo     Boolean @default(true)
+
+  grupos  Grupo[]
+  alumnos Alumno[]
+}
+
+model Aula {
+  id        Int     @id @default(autoincrement())
+  nombre    String
+  clave     String?
+  plantelId Int?
+  capacidad Int?
+  tipo      String?
+  activa    Boolean @default(true)
+
+  plantel  Plantel?       @relation(fields: [plantelId], references: [id], onDelete: SetNull)
+  grupos   Grupo[]
+  clases   Clase[]
+  horarios HorarioClase[]
+
+  @@unique([plantelId, nombre])
+}
+
+/// Bloques horarios configurables (modulo 1, modulo 2, receso...).
+model ModuloHorario {
+  id         Int     @id @default(autoincrement())
+  nombre     String
+  horaInicio String
+  horaFin    String
+  orden      Int     @default(0)
+  esReceso   Boolean @default(false)
+  turnoId    Int?
+  activo     Boolean @default(true)
+
+  horarios HorarioClase[]
+}
+
+// =====================================================================
+// 2. ESTRUCTURA ACADEMICA
+// =====================================================================
+
+model NivelEducativo {
+  id          Int                  @id @default(autoincrement())
+  nombre      String               @unique
+  clave       String               @unique
+  tipoPeriodo TipoPeriodoAcademico @default(SEMESTRE)
+  orden       Int                  @default(0)
+  activo      Boolean              @default(true)
+
+  planes PlanEstudios[]
+}
+
+model PlanEstudios {
+  id               Int       @id @default(autoincrement())
+  nombre           String
+  clave            String    @unique
+  nivelId          Int
+  /// Cuantos periodos (semestres/cuatrimestres) dura el plan.
+  /// De aqui sale el numero de colegiaturas a generar.
+  duracionPeriodos Int
+  creditosTotales  Int?
+  vigenteDesde     DateTime?
+  vigenteHasta     DateTime?
+  activo           Boolean   @default(true)
+
+  nivel    NivelEducativo @relation(fields: [nivelId], references: [id], onDelete: Restrict)
+  grados   Grado[]
+  materias PlanMateria[]
+  grupos   Grupo[]
+  alumnos  Alumno[]
+}
+
+/// Un "grado" es cada periodo del plan (1er semestre, 2do semestre...).
+model Grado {
+  id     Int    @id @default(autoincrement())
+  planId Int
+  numero Int
+  nombre String
+  orden  Int    @default(0)
+
+  plan          PlanEstudios  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  materias      PlanMateria[]
+  grupos        Grupo[]
+  inscripciones Inscripcion[]
+
+  @@unique([planId, numero])
+}
+
+model Area {
+  id       Int       @id @default(autoincrement())
+  nombre   String    @unique
+  clave    String?
+  activa   Boolean   @default(true)
+  materias Materia[]
+}
+
+model Materia {
+  id          Int     @id @default(autoincrement())
+  clave       String  @unique
+  nombre      String
+  descripcion String?
+  areaId      Int?
+  activa      Boolean @default(true)
+
+  area   Area?         @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  planes PlanMateria[]
+}
+
+/// Materia ubicada dentro de un plan y un grado concretos.
+model PlanMateria {
+  id          Int     @id @default(autoincrement())
+  planId      Int
+  gradoId     Int
+  materiaId   Int
+  obligatoria Boolean @default(true)
+  creditos    Int?
+  horasSemana Int?
+  orden       Int     @default(0)
+
+  plan              PlanEstudios    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  grado             Grado           @relation(fields: [gradoId], references: [id], onDelete: Cascade)
+  materia           Materia         @relation(fields: [materiaId], references: [id], onDelete: Restrict)
+  clases            Clase[]
+  prerrequisitos    Prerrequisito[] @relation("MateriaConPrerrequisitos")
+  esPrerrequisitoDe Prerrequisito[] @relation("MateriaRequerida")
+
+  @@unique([planId, gradoId, materiaId])
+}
+
+/// "Anatomia II requiere Anatomia I aprobada".
+model Prerrequisito {
+  id                    Int     @id @default(autoincrement())
+  planMateriaId         Int
+  requierePlanMateriaId Int
+  obligatorio           Boolean @default(true)
+
+  planMateria PlanMateria @relation("MateriaConPrerrequisitos", fields: [planMateriaId], references: [id], onDelete: Cascade)
+  requiere    PlanMateria @relation("MateriaRequerida", fields: [requierePlanMateriaId], references: [id], onDelete: Cascade)
+
+  @@unique([planMateriaId, requierePlanMateriaId])
+}
+
+// =====================================================================
+// 3. CICLO ESCOLAR Y PERIODOS DE EVALUACION
+// =====================================================================
+
+model CicloEscolar {
+  id          Int         @id @default(autoincrement())
+  nombre      String
+  clave       String      @unique
+  fechaInicio DateTime
+  fechaFin    DateTime
+  estado      EstadoCiclo @default(PLANEACION)
+  /// Varios ciclos pueden estar activos a la vez (regular + verano).
+  activo      Boolean     @default(true)
+  creadoEn    DateTime    @default(now())
+
+  periodos      PeriodoEvaluacion[]
+  grupos        Grupo[]
+  clases        Clase[]
+  inscripciones Inscripcion[]
+  cargos        Cargo[]
+  promedios     PromedioCiclo[]
+  descuentos    DescuentoAlumno[]
+}
+
+model PeriodoEvaluacion {
+  id             Int      @id @default(autoincrement())
+  cicloId        Int
+  numero         Int
+  nombre         String
+  fechaInicio    DateTime
+  fechaFin       DateTime
+  /// Peso del periodo dentro del promedio final del ciclo.
+  peso           Decimal  @default(1) @db.Decimal(6, 3)
+  capturaAbierta Boolean  @default(false)
+
+  ciclo          CicloEscolar          @relation(fields: [cicloId], references: [id], onDelete: Cascade)
+  rubros         RubroEvaluacion[]
+  actividades    Actividad[]
+  calificaciones CalificacionPeriodo[]
+
+  @@unique([cicloId, numero])
+}
+
+model Grupo {
+  id         Int     @id @default(autoincrement())
+  /// El colegio define como se llama (1A, Grupo Azul, LIC-101-M...).
+  nombre     String
+  cicloId    Int
+  planId     Int
+  gradoId    Int
+  plantelId  Int?
+  turnoId    Int?
+  aulaId     Int?
+  cupoMaximo Int?
+  activo     Boolean @default(true)
+
+  ciclo         CicloEscolar       @relation(fields: [cicloId], references: [id], onDelete: Cascade)
+  plan          PlanEstudios       @relation(fields: [planId], references: [id], onDelete: Restrict)
+  grado         Grado              @relation(fields: [gradoId], references: [id], onDelete: Restrict)
+  plantel       Plantel?           @relation(fields: [plantelId], references: [id], onDelete: SetNull)
+  turno         Turno?             @relation(fields: [turnoId], references: [id], onDelete: SetNull)
+  aula          Aula?              @relation(fields: [aulaId], references: [id], onDelete: SetNull)
+  clases        Clase[]
+  inscripciones Inscripcion[]
+  sesiones      SesionAsistencia[]
+
+  @@unique([cicloId, nombre])
+}
+
+// =====================================================================
+// 4. USUARIOS Y PERSONAS
+// Roles minimos: ADMIN, DOCENTE, ALUMNO. Las cuentas son por alumno
+// (el tutor consulta con la cuenta del alumno, no tiene login propio).
+// =====================================================================
+
+model Usuario {
+  id                  Int        @id @default(autoincrement())
+  usuario             String     @unique
+  email               String?    @unique
+  passwordHash        String
+  rol                 RolUsuario
+  activo              Boolean    @default(true)
+  debeCambiarPassword Boolean    @default(false)
+  ultimoAcceso        DateTime?
+  intentosFallidos    Int        @default(0)
+  bloqueadoHasta      DateTime?
+  // Autenticacion opcional con Google Workspace
+  googleId            String?    @unique
+  // Segundo factor opcional (se activa desde configuracion)
+  twoFactorSecret     String?
+  twoFactorActivo     Boolean    @default(false)
+  creadoEn            DateTime   @default(now())
+  actualizadoEn       DateTime   @updatedAt
+
+  alumno         Alumno?
+  empleado       Empleado?
+  sesiones       Sesion[]
+  notificaciones Notificacion[]
+  bitacoras      Bitacora[]
+
+  @@index([rol, activo])
+}
+
+model Sesion {
+  id        Int      @id @default(autoincrement())
+  usuarioId Int
+  token     String   @unique
+  expiraEn  DateTime
+  ip        String?
+  userAgent String?
+  revocada  Boolean  @default(false)
+  creadaEn  DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+}
+
+model Alumno {
+  id                     Int          @id @default(autoincrement())
+  /// Generada con la plantilla configurable, ej. {ANIO}-{CONSECUTIVO}
+  matricula              String       @unique
+  usuarioId              Int?         @unique
+  nombres                String
+  apellidoPaterno        String
+  apellidoMaterno        String?
+  curp                   String?
+  fechaNacimiento        DateTime?
+  sexo                   String?
+  fotoUrl                String?
+  email                  String?
+  telefono               String?
+  direccion              String?
+  ciudad                 String?
+  estadoDireccion        String?
+  codigoPostal           String?
+  // Ubicacion academica
+  planId                 Int
+  plantelId              Int?
+  turnoId                Int?
+  estado                 EstadoAlumno @default(ACTIVO)
+  fechaIngreso           DateTime     @default(now())
+  fechaBaja              DateTime?
+  motivoBaja             String?
+  // Expediente medico (campos opcionales, visibles segun configuracion)
+  tipoSangre             String?
+  alergias               String?
+  padecimientos          String?
+  seguroMedico           String?
+  numeroSeguro           String?
+  // Datos fiscales del responsable de pago (para CFDI futuro)
+  rfcFacturacion         String?
+  razonSocialFacturacion String?
+  usoCfdiPreferido       String?
+  // Indicadores calculados
+  promedioGeneral        Decimal?     @db.Decimal(6, 3)
+  tieneAdeudo            Boolean      @default(false)
+  creadoEn               DateTime     @default(now())
+  actualizadoEn          DateTime     @updatedAt
+
+  usuario                 Usuario?                   @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  plan                    PlanEstudios               @relation(fields: [planId], references: [id], onDelete: Restrict)
+  plantel                 Plantel?                   @relation(fields: [plantelId], references: [id], onDelete: SetNull)
+  turno                   Turno?                     @relation(fields: [turnoId], references: [id], onDelete: SetNull)
+  tutores                 Tutor[]
+  inscripciones           Inscripcion[]
+  clases                  AlumnoClase[]
+  calificacionesActividad CalificacionActividad[]
+  calificacionesPeriodo   CalificacionPeriodo[]
+  extraordinarios         EvaluacionExtraordinaria[]
+  asistencias             RegistroAsistencia[]
+  alertas                 AlertaAsistencia[]
+  promedios               PromedioCiclo[]
+  cargos                  Cargo[]
+  pagos                   Pago[]
+  descuentos              DescuentoAlumno[]
+  convenios               ConvenioPago[]
+  documentos              DocumentoExpediente[]
+
+  @@index([estado, planId])
+  @@index([apellidoPaterno, nombres])
+}
+
+/// Contacto/tutor del alumno. No tiene cuenta de acceso propia.
+model Tutor {
+  id                      Int     @id @default(autoincrement())
+  alumnoId                Int
+  nombre                  String
+  parentesco              String?
+  telefono                String?
+  telefonoAlterno         String?
+  email                   String?
+  ocupacion               String?
+  esResponsableFinanciero Boolean @default(false)
+  esContactoEmergencia    Boolean @default(false)
+
+  alumno Alumno @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+
+  @@index([alumnoId])
+}
+
+/// Personal de la institucion: docentes y administrativos.
+/// Es tambien el sujeto del modulo de nomina.
+model Empleado {
+  id               Int            @id @default(autoincrement())
+  numeroEmpleado   String         @unique
+  usuarioId        Int?           @unique
+  nombres          String
+  apellidoPaterno  String
+  apellidoMaterno  String?
+  esDocente        Boolean        @default(true)
+  puesto           String?
+  gradoAcademico   String?
+  email            String?
+  telefono         String?
+  fotoUrl          String?
+  // Datos para nomina
+  rfc              String?
+  curp             String?
+  nss              String?
+  tipoContrato     TipoContrato?
+  salarioBase      Decimal?       @db.Decimal(12, 2)
+  pagoPorHora      Decimal?       @db.Decimal(12, 2)
+  periodicidadPago Periodicidad?  @default(MENSUAL)
+  banco            String?
+  cuentaBancaria   String?
+  clabe            String?
+  fechaIngreso     DateTime       @default(now())
+  fechaBaja        DateTime?
+  estado           EstadoEmpleado @default(ACTIVO)
+  creadoEn         DateTime       @default(now())
+  actualizadoEn    DateTime       @updatedAt
+
+  usuario       Usuario?              @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  clases        Clase[]
+  sesiones      SesionAsistencia[]
+  recibosNomina ReciboNomina[]
+  documentos    DocumentoExpediente[]
+
+  @@index([esDocente, estado])
+}
+
+/// Catalogo configurable de documentos del expediente.
+/// Si la escuela no quiere expedientes, simplemente no da de alta tipos.
+model TipoDocumento {
+  id          Int                   @id @default(autoincrement())
+  nombre      String
+  aplicaA     TipoEntidadExpediente
+  obligatorio Boolean               @default(false)
+  activo      Boolean               @default(true)
+  orden       Int                   @default(0)
+
+  documentos DocumentoExpediente[]
+
+  @@unique([nombre, aplicaA])
+}
+
+model DocumentoExpediente {
+  id              Int                   @id @default(autoincrement())
+  tipoEntidad     TipoEntidadExpediente
+  alumnoId        Int?
+  empleadoId      Int?
+  tipoDocumentoId Int?
+  nombre          String
+  archivoUrl      String?
+  entregado       Boolean               @default(false)
+  fechaEntrega    DateTime?
+  observaciones   String?
+  creadoEn        DateTime              @default(now())
+
+  alumno        Alumno?        @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  empleado      Empleado?      @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+  tipoDocumento TipoDocumento? @relation(fields: [tipoDocumentoId], references: [id], onDelete: SetNull)
+}
+
+model Inscripcion {
+  id            Int               @id @default(autoincrement())
+  alumnoId      Int
+  cicloId       Int
+  grupoId       Int
+  gradoId       Int
+  fecha         DateTime          @default(now())
+  estado        EstadoInscripcion @default(INSCRITO)
+  observaciones String?
+
+  alumno Alumno       @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  ciclo  CicloEscolar @relation(fields: [cicloId], references: [id], onDelete: Cascade)
+  grupo  Grupo        @relation(fields: [grupoId], references: [id], onDelete: Restrict)
+  grado  Grado        @relation(fields: [gradoId], references: [id], onDelete: Restrict)
+
+  @@unique([alumnoId, cicloId])
+  @@index([grupoId])
+}
+
+// =====================================================================
+// 5. CLASES, HORARIOS Y ASIGNACION DOCENTE
+// =====================================================================
+
+/// Una materia de un plan, impartida a un grupo en un ciclo, por un docente.
+model Clase {
+  id                           Int            @id @default(autoincrement())
+  cicloId                      Int
+  grupoId                      Int
+  planMateriaId                Int
+  docenteId                    Int
+  aulaId                       Int?
+  escalaId                     Int?
+  /// Cada docente decide si pasa lista por dia o por clase (bloque C/E).
+  modoAsistencia               ModoAsistencia @default(POR_CLASE)
+  /// Cada docente decide si la asistencia afecta la calificacion.
+  asistenciaAfectaCalificacion Boolean        @default(false)
+  porcentajeAsistencia         Decimal?       @db.Decimal(5, 2)
+  cerrada                      Boolean        @default(false)
+  creadaEn                     DateTime       @default(now())
+
+  ciclo           CicloEscolar               @relation(fields: [cicloId], references: [id], onDelete: Cascade)
+  grupo           Grupo                      @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  planMateria     PlanMateria                @relation(fields: [planMateriaId], references: [id], onDelete: Restrict)
+  docente         Empleado                   @relation(fields: [docenteId], references: [id], onDelete: Restrict)
+  aula            Aula?                      @relation(fields: [aulaId], references: [id], onDelete: SetNull)
+  escala          EscalaCalificacion?        @relation(fields: [escalaId], references: [id], onDelete: SetNull)
+  horarios        HorarioClase[]
+  alumnos         AlumnoClase[]
+  rubros          RubroEvaluacion[]
+  actividades     Actividad[]
+  calificaciones  CalificacionPeriodo[]
+  extraordinarios EvaluacionExtraordinaria[]
+  sesiones        SesionAsistencia[]
+  alertas         AlertaAsistencia[]
+
+  @@unique([cicloId, grupoId, planMateriaId])
+  @@index([docenteId])
+}
+
+model HorarioClase {
+  id         Int    @id @default(autoincrement())
+  claseId    Int
+  /// 1 = lunes ... 7 = domingo
+  diaSemana  Int
+  moduloId   Int?
+  horaInicio String
+  horaFin    String
+  aulaId     Int?
+
+  clase  Clase          @relation(fields: [claseId], references: [id], onDelete: Cascade)
+  modulo ModuloHorario? @relation(fields: [moduloId], references: [id], onDelete: SetNull)
+  aula   Aula?          @relation(fields: [aulaId], references: [id], onDelete: SetNull)
+
+  @@index([diaSemana])
+}
+
+/// Inscripcion del alumno a una clase (soporta optativas y recursamiento).
+model AlumnoClase {
+  id                Int                  @id @default(autoincrement())
+  claseId           Int
+  alumnoId          Int
+  tipo              TipoInscripcionClase @default(REGULAR)
+  estado            EstadoMateriaAlumno  @default(EN_CURSO)
+  calificacionFinal Decimal?             @db.Decimal(6, 3)
+  fechaInscripcion  DateTime             @default(now())
+
+  clase  Clase  @relation(fields: [claseId], references: [id], onDelete: Cascade)
+  alumno Alumno @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+
+  @@unique([claseId, alumnoId])
+  @@index([alumnoId])
+}
+
+// =====================================================================
+// 6. EVALUACION Y CALIFICACIONES
+// Escala configurable (default 0-100), sin redondeo, minima aprobatoria
+// definida por la institucion. Los rubros y sus pesos los define el
+// docente; el sistema exige la calificacion final en el formato oficial.
+// =====================================================================
+
+model EscalaCalificacion {
+  id                Int          @id @default(autoincrement())
+  nombre            String       @unique
+  tipo              TipoEscala   @default(NUMERICA)
+  valorMinimo       Decimal      @default(0) @db.Decimal(6, 3)
+  valorMaximo       Decimal      @default(100) @db.Decimal(6, 3)
+  decimales         Int          @default(2)
+  redondeo          ModoRedondeo @default(NINGUNO)
+  minimaAprobatoria Decimal      @default(70) @db.Decimal(6, 3)
+  predeterminada    Boolean      @default(false)
+  activa            Boolean      @default(true)
+
+  rangos RangoEscala[]
+  clases Clase[]
+}
+
+/// Equivalencias para escalas de letra o conceptuales.
+model RangoEscala {
+  id          Int     @id @default(autoincrement())
+  escalaId    Int
+  etiqueta    String
+  valorMin    Decimal @db.Decimal(6, 3)
+  valorMax    Decimal @db.Decimal(6, 3)
+  aprueba     Boolean @default(true)
+  descripcion String?
+
+  escala EscalaCalificacion @relation(fields: [escalaId], references: [id], onDelete: Cascade)
+}
+
+/// Rubro ponderado definido libremente por el docente de la clase.
+model RubroEvaluacion {
+  id        Int     @id @default(autoincrement())
+  claseId   Int
+  periodoId Int?
+  nombre    String
+  peso      Decimal @db.Decimal(6, 3)
+  orden     Int     @default(0)
+
+  clase       Clase              @relation(fields: [claseId], references: [id], onDelete: Cascade)
+  periodo     PeriodoEvaluacion? @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  actividades Actividad[]
+
+  @@index([claseId])
+}
+
+model Actividad {
+  id              Int       @id @default(autoincrement())
+  claseId         Int
+  rubroId         Int?
+  periodoId       Int
+  nombre          String
+  descripcion     String?
+  puntosMaximos   Decimal   @default(100) @db.Decimal(6, 3)
+  fechaAsignacion DateTime  @default(now())
+  fechaEntrega    DateTime?
+  publicada       Boolean   @default(true)
+
+  clase          Clase                   @relation(fields: [claseId], references: [id], onDelete: Cascade)
+  rubro          RubroEvaluacion?        @relation(fields: [rubroId], references: [id], onDelete: SetNull)
+  periodo        PeriodoEvaluacion       @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  calificaciones CalificacionActividad[]
+
+  @@index([claseId, periodoId])
+}
+
+model CalificacionActividad {
+  id           Int      @id @default(autoincrement())
+  actividadId  Int
+  alumnoId     Int
+  puntos       Decimal? @db.Decimal(6, 3)
+  entregada    Boolean  @default(true)
+  comentario   String?
+  capturadoPor Int?
+  fechaCaptura DateTime @default(now())
+
+  actividad Actividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+  alumno    Alumno    @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+
+  @@unique([actividadId, alumnoId])
+}
+
+/// Calificacion oficial del periodo: es el formato que el docente
+/// esta obligado a entregar, sin importar como la haya calculado.
+model CalificacionPeriodo {
+  id            Int                @id @default(autoincrement())
+  claseId       Int
+  alumnoId      Int
+  periodoId     Int
+  calificacion  Decimal?           @db.Decimal(6, 3)
+  origen        OrigenCalificacion @default(MANUAL)
+  observaciones String?
+  faltas        Int                @default(0)
+  cerrada       Boolean            @default(false)
+  capturadoPor  Int?
+  fechaCaptura  DateTime           @default(now())
+  actualizadoEn DateTime           @updatedAt
+
+  clase   Clase             @relation(fields: [claseId], references: [id], onDelete: Cascade)
+  alumno  Alumno            @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  periodo PeriodoEvaluacion @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+
+  @@unique([claseId, alumnoId, periodoId])
+  @@index([alumnoId])
+}
+
+model EvaluacionExtraordinaria {
+  id            Int                 @id @default(autoincrement())
+  alumnoId      Int
+  claseId       Int
+  tipo          TipoEvaluacionExtra @default(EXTRAORDINARIO)
+  calificacion  Decimal             @db.Decimal(6, 3)
+  fecha         DateTime            @default(now())
+  aplicadoPor   Int?
+  observaciones String?
+
+  alumno Alumno @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  clase  Clase  @relation(fields: [claseId], references: [id], onDelete: Cascade)
+
+  @@index([alumnoId])
+}
+
+/// Promedio del ciclo, ranking y cuadro de honor (recalculable).
+model PromedioCiclo {
+  id                 Int      @id @default(autoincrement())
+  alumnoId           Int
+  cicloId            Int
+  promedio           Decimal  @db.Decimal(6, 3)
+  materiasAprobadas  Int      @default(0)
+  materiasReprobadas Int      @default(0)
+  creditosAprobados  Int      @default(0)
+  posicionRanking    Int?
+  cuadroHonor        Boolean  @default(false)
+  calculadoEn        DateTime @default(now())
+
+  alumno Alumno       @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  ciclo  CicloEscolar @relation(fields: [cicloId], references: [id], onDelete: Cascade)
+
+  @@unique([alumnoId, cicloId])
+}
+
+// =====================================================================
+// 7. ASISTENCIA
+// =====================================================================
+
+model SesionAsistencia {
+  id        Int            @id @default(autoincrement())
+  claseId   Int?
+  grupoId   Int?
+  docenteId Int?
+  fecha     DateTime       @db.Date
+  modo      ModoAsistencia @default(POR_CLASE)
+  cerrada   Boolean        @default(false)
+  creadaEn  DateTime       @default(now())
+
+  clase     Clase?               @relation(fields: [claseId], references: [id], onDelete: Cascade)
+  grupo     Grupo?               @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  docente   Empleado?            @relation(fields: [docenteId], references: [id], onDelete: SetNull)
+  registros RegistroAsistencia[]
+
+  @@unique([claseId, fecha])
+  @@index([fecha])
+}
+
+model RegistroAsistencia {
+  id           Int              @id @default(autoincrement())
+  sesionId     Int
+  alumnoId     Int
+  estado       EstadoAsistencia @default(PRESENTE)
+  observacion  String?
+  registradoEn DateTime         @default(now())
+
+  sesion SesionAsistencia @relation(fields: [sesionId], references: [id], onDelete: Cascade)
+  alumno Alumno           @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+
+  @@unique([sesionId, alumnoId])
+  @@index([alumnoId, estado])
+}
+
+/// Se dispara cuando un alumno acumula N faltas consecutivas
+/// (N configurable, valor inicial 3) y notifica a los administrativos.
+model AlertaAsistencia {
+  id                 Int      @id @default(autoincrement())
+  alumnoId           Int
+  claseId            Int?
+  faltasConsecutivas Int
+  fechaDeteccion     DateTime @default(now())
+  atendida           Boolean  @default(false)
+  atendidaPor        Int?
+  notas              String?
+
+  alumno Alumno @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  clase  Clase? @relation(fields: [claseId], references: [id], onDelete: Cascade)
+
+  @@index([atendida])
+}
+
+// =====================================================================
+// 8. FINANZAS
+// Catalogo de conceptos, recargos, becas, cargos, pagos parciales,
+// convenios, recibo interno con estructura lista para CFDI 4.0.
+// =====================================================================
+
+model ConceptoCobro {
+  id               Int               @id @default(autoincrement())
+  clave            String            @unique
+  nombre           String
+  descripcion      String?
+  tipo             TipoConceptoCobro @default(OTRO)
+  montoBase        Decimal           @db.Decimal(12, 2)
+  periodicidad     Periodicidad      @default(UNICO)
+  ambito           AmbitoAplicacion  @default(TODOS)
+  /// Id del nivel/plan/grado/grupo/alumno al que aplica, segun el ambito.
+  referenciaId     Int?
+  /// Dia del mes en que vence (configurable por la escuela).
+  diaVencimiento   Int?
+  /// Cuantas veces se genera; si es null se usa la duracion del plan.
+  numeroCargos     Int?
+  obligatorio      Boolean           @default(true)
+  generaRecargo    Boolean           @default(true)
+  aplicaDescuentos Boolean           @default(true)
+  activo           Boolean           @default(true)
+  orden            Int               @default(0)
+  // Campos SAT para el futuro timbrado CFDI
+  claveProdServSat String?
+  claveUnidadSat   String?
+  tasaIva          Decimal?          @db.Decimal(5, 4)
+
+  cargos     Cargo[]
+  recargos   ReglaRecargo[] @relation("ConceptosConRecargo")
+  descuentos Descuento[]    @relation("ConceptosConDescuento")
+}
+
+model ReglaRecargo {
+  id           Int               @id @default(autoincrement())
+  nombre       String
+  tipoCalculo  TipoCalculo       @default(PORCENTAJE)
+  valor        Decimal           @db.Decimal(12, 4)
+  /// Dias de tolerancia despues del vencimiento antes de cobrar.
+  diasGracia   Int               @default(0)
+  frecuencia   FrecuenciaRecargo @default(UNICA)
+  topeMaximo   Decimal?          @db.Decimal(12, 2)
+  aplicaATodos Boolean           @default(true)
+  activa       Boolean           @default(true)
+
+  conceptos ConceptoCobro[] @relation("ConceptosConRecargo")
+}
+
+/// Becas y descuentos: porcentaje o monto, acumulables o no.
+model Descuento {
+  id                   Int         @id @default(autoincrement())
+  nombre               String
+  descripcion          String?
+  tipoCalculo          TipoCalculo @default(PORCENTAJE)
+  valor                Decimal     @db.Decimal(12, 4)
+  acumulable           Boolean     @default(false)
+  requiereAutorizacion Boolean     @default(true)
+  aplicaATodos         Boolean     @default(false)
+  vigenciaInicio       DateTime?
+  vigenciaFin          DateTime?
+  activo               Boolean     @default(true)
+
+  conceptos ConceptoCobro[]   @relation("ConceptosConDescuento")
+  alumnos   DescuentoAlumno[]
+}
+
+model DescuentoAlumno {
+  id                Int       @id @default(autoincrement())
+  alumnoId          Int
+  descuentoId       Int
+  cicloId           Int?
+  autorizadoPor     Int?
+  fechaAutorizacion DateTime  @default(now())
+  vigenciaInicio    DateTime?
+  vigenciaFin       DateTime?
+  observaciones     String?
+  activo            Boolean   @default(true)
+
+  alumno    Alumno        @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  descuento Descuento     @relation(fields: [descuentoId], references: [id], onDelete: Cascade)
+  ciclo     CicloEscolar? @relation(fields: [cicloId], references: [id], onDelete: SetNull)
+
+  @@unique([alumnoId, descuentoId, cicloId])
+}
+
+/// Adeudo concreto de un alumno.
+model Cargo {
+  id                 Int         @id @default(autoincrement())
+  folio              String      @unique
+  alumnoId           Int
+  conceptoId         Int?
+  cicloId            Int?
+  convenioId         Int?
+  descripcion        String
+  montoOriginal      Decimal     @db.Decimal(12, 2)
+  montoDescuento     Decimal     @default(0) @db.Decimal(12, 2)
+  montoRecargo       Decimal     @default(0) @db.Decimal(12, 2)
+  montoTotal         Decimal     @db.Decimal(12, 2)
+  saldo              Decimal     @db.Decimal(12, 2)
+  fechaEmision       DateTime    @default(now())
+  fechaVencimiento   DateTime
+  estado             EstadoCargo @default(PENDIENTE)
+  generadoAutomatico Boolean     @default(false)
+  notas              String?
+  creadoPor          Int?
+  actualizadoEn      DateTime    @updatedAt
+
+  alumno       Alumno               @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  concepto     ConceptoCobro?       @relation(fields: [conceptoId], references: [id], onDelete: SetNull)
+  ciclo        CicloEscolar?        @relation(fields: [cicloId], references: [id], onDelete: SetNull)
+  convenio     ConvenioPago?        @relation(fields: [convenioId], references: [id], onDelete: SetNull)
+  aplicaciones AplicacionPago[]
+  parcialidad  ParcialidadConvenio?
+
+  @@index([alumnoId, estado])
+  @@index([fechaVencimiento, estado])
+}
+
+model Pago {
+  id                   Int                @id @default(autoincrement())
+  folio                String             @unique
+  alumnoId             Int
+  fecha                DateTime           @default(now())
+  montoTotal           Decimal            @db.Decimal(12, 2)
+  metodoPago           MetodoPago         @default(EFECTIVO)
+  referencia           String?
+  banco                String?
+  estado               EstadoPago         @default(REGISTRADO)
+  registradoPor        Int?
+  // Pago en linea
+  pasarela             ProveedorPasarela?
+  idTransaccionExterna String?
+  notas                String?
+  canceladoEn          DateTime?
+  canceladoPor         Int?
+  motivoCancelacion    String?
+
+  alumno       Alumno           @relation(fields: [alumnoId], references: [id], onDelete: Restrict)
+  aplicaciones AplicacionPago[]
+  recibo       Recibo?
+
+  @@index([alumnoId, fecha])
+}
+
+/// Permite pagos parciales y pagos que cubren varios cargos.
+model AplicacionPago {
+  id      Int     @id @default(autoincrement())
+  pagoId  Int
+  cargoId Int
+  monto   Decimal @db.Decimal(12, 2)
+
+  pago  Pago  @relation(fields: [pagoId], references: [id], onDelete: Cascade)
+  cargo Cargo @relation(fields: [cargoId], references: [id], onDelete: Restrict)
+
+  @@unique([pagoId, cargoId])
+}
+
+/// Recibo interno en PDF. Los campos CFDI quedan listos para cuando
+/// se conecte un PAC; por ahora estadoCfdi = NO_APLICA.
+model Recibo {
+  id                      Int        @id @default(autoincrement())
+  pagoId                  Int        @unique
+  serie                   String     @default("A")
+  folio                   String
+  fechaEmision            DateTime   @default(now())
+  subtotal                Decimal    @db.Decimal(12, 2)
+  impuestos               Decimal    @default(0) @db.Decimal(12, 2)
+  total                   Decimal    @db.Decimal(12, 2)
+  archivoPdf              String?
+  // Estructura CFDI 4.0
+  estadoCfdi              EstadoCfdi @default(NO_APLICA)
+  uuidCfdi                String?
+  rfcEmisor               String?
+  rfcReceptor             String?
+  razonSocialReceptor     String?
+  regimenFiscalReceptor   String?
+  domicilioFiscalReceptor String?
+  usoCfdi                 String?
+  formaPagoSat            String?
+  metodoPagoSat           String?
+  xmlUrl                  String?
+  errorTimbrado           String?
+
+  pago Pago @relation(fields: [pagoId], references: [id], onDelete: Cascade)
+
+  @@unique([serie, folio])
+}
+
+model ConvenioPago {
+  id                  Int            @id @default(autoincrement())
+  folio               String         @unique
+  alumnoId            Int
+  fechaInicio         DateTime       @default(now())
+  numeroParcialidades Int
+  montoTotal          Decimal        @db.Decimal(12, 2)
+  estado              EstadoConvenio @default(VIGENTE)
+  autorizadoPor       Int?
+  notas               String?
+
+  alumno        Alumno                @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  parcialidades ParcialidadConvenio[]
+  cargos        Cargo[]
+}
+
+model ParcialidadConvenio {
+  id               Int      @id @default(autoincrement())
+  convenioId       Int
+  numero           Int
+  monto            Decimal  @db.Decimal(12, 2)
+  fechaVencimiento DateTime
+  pagada           Boolean  @default(false)
+  cargoId          Int?     @unique
+
+  convenio ConvenioPago @relation(fields: [convenioId], references: [id], onDelete: Cascade)
+  cargo    Cargo?       @relation(fields: [cargoId], references: [id], onDelete: SetNull)
+
+  @@unique([convenioId, numero])
+}
+
+/// Credenciales de la pasarela de pago en linea, capturadas por la escuela.
+model ConfiguracionPasarela {
+  id                 Int               @id @default(autoincrement())
+  proveedor          ProveedorPasarela @unique
+  activo             Boolean           @default(false)
+  modo               ModoPasarela      @default(SANDBOX)
+  credenciales       Json?
+  comisionPorcentaje Decimal?          @db.Decimal(5, 2)
+  notas              String?
+  actualizadoEn      DateTime          @updatedAt
+}
+
+// =====================================================================
+// 9. NOMINA (Fase 5)
+// =====================================================================
+
+model ConceptoNomina {
+  id          Int                @id @default(autoincrement())
+  clave       String             @unique
+  nombre      String
+  tipo        TipoConceptoNomina
+  tipoCalculo TipoCalculo        @default(FIJO)
+  valor       Decimal?           @db.Decimal(12, 4)
+  gravable    Boolean            @default(true)
+  claveSat    String?
+  activo      Boolean            @default(true)
+  orden       Int                @default(0)
+
+  detalles DetalleReciboNomina[]
+}
+
+model PeriodoNomina {
+  id          Int                 @id @default(autoincrement())
+  nombre      String
+  fechaInicio DateTime
+  fechaFin    DateTime
+  fechaPago   DateTime
+  estado      EstadoPeriodoNomina @default(ABIERTO)
+  cerradoPor  Int?
+  creadoEn    DateTime            @default(now())
+
+  recibos ReciboNomina[]
+
+  @@unique([fechaInicio, fechaFin])
+}
+
+model ReciboNomina {
+  id                Int                @id @default(autoincrement())
+  folio             String             @unique
+  periodoId         Int
+  empleadoId        Int
+  totalPercepciones Decimal            @default(0) @db.Decimal(12, 2)
+  totalDeducciones  Decimal            @default(0) @db.Decimal(12, 2)
+  neto              Decimal            @default(0) @db.Decimal(12, 2)
+  estado            EstadoReciboNomina @default(BORRADOR)
+  metodoPago        MetodoPago?
+  fechaPago         DateTime?
+  observaciones     String?
+
+  periodo  PeriodoNomina         @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  empleado Empleado              @relation(fields: [empleadoId], references: [id], onDelete: Restrict)
+  detalles DetalleReciboNomina[]
+
+  @@unique([periodoId, empleadoId])
+}
+
+model DetalleReciboNomina {
+  id         Int      @id @default(autoincrement())
+  reciboId   Int
+  conceptoId Int
+  cantidad   Decimal? @db.Decimal(12, 4)
+  importe    Decimal  @db.Decimal(12, 2)
+
+  recibo   ReciboNomina   @relation(fields: [reciboId], references: [id], onDelete: Cascade)
+  concepto ConceptoNomina @relation(fields: [conceptoId], references: [id], onDelete: Restrict)
+}
+
+// =====================================================================
+// 10. SISTEMA: notificaciones internas, avisos, auditoria, importaciones
+// =====================================================================
+
+model Notificacion {
+  id        Int              @id @default(autoincrement())
+  usuarioId Int
+  tipo      TipoNotificacion @default(INFORMATIVA)
+  titulo    String
+  mensaje   String
+  url       String?
+  datos     Json?
+  leida     Boolean          @default(false)
+  creadaEn  DateTime         @default(now())
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, leida])
+}
+
+/// Tablero interno de avisos (sin envio de correo).
+model Aviso {
+  id               Int              @id @default(autoincrement())
+  titulo           String
+  contenido        String
+  ambito           AmbitoAplicacion @default(TODOS)
+  referenciaId     Int?
+  /// Roles destinatarios: ADMIN, DOCENTE, ALUMNO
+  dirigidoA        String[]
+  publicadoPor     Int?
+  fechaPublicacion DateTime         @default(now())
+  vigenciaHasta    DateTime?
+  activo           Boolean          @default(true)
+}
+
+/// Bitacora de auditoria. Obligatoria en calificaciones, finanzas y nomina.
+model Bitacora {
+  id           Int            @id @default(autoincrement())
+  usuarioId    Int?
+  accion       AccionBitacora
+  entidad      String
+  entidadId    String?
+  descripcion  String?
+  datosAntes   Json?
+  datosDespues Json?
+  ip           String?
+  userAgent    String?
+  fecha        DateTime       @default(now())
+
+  usuario Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([entidad, entidadId])
+  @@index([fecha])
+}
+
+model ImportacionCsv {
+  id             Int      @id @default(autoincrement())
+  tipo           String
+  nombreArchivo  String
+  totalRegistros Int      @default(0)
+  exitosos       Int      @default(0)
+  fallidos       Int      @default(0)
+  errores        Json?
+  usuarioId      Int?
+  fecha          DateTime @default(now())
+}
