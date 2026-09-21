@@ -14,7 +14,7 @@ Entrega por fases. **La Fase 1 esta completa y probada.**
 | Fase | Contenido | Estado |
 |------|-----------|--------|
 | 1 | Nucleo configurable: asistente de instalacion, motor de configuracion (59 parametros), autenticacion, roles, auditoria, estructura academica | Completa |
-| 2 | Control escolar: alumnos, personal, materias, grupos, clases, inscripciones, importador CSV | Pendiente |
+| 2 | Control escolar: alumnos, personal, materias y mapa curricular, grupos, clases, inscripciones, importador CSV | Completa |
 | 3 | Academico: horarios con deteccion de choques, asistencia, captura de calificaciones, boletas | Pendiente |
 | 4 | Finanzas: generacion de cargos, pagos parciales, recargos, becas, convenios, recibos y portales de alumno | Pendiente |
 | 5 | Nomina del personal | Pendiente |
@@ -93,7 +93,8 @@ servidor corriendo en `http://localhost:3000`.
 
 ```bash
 npm run build && npm start        # en otra terminal
-npm run prueba:humo               # 27 comprobaciones sobre la base con demo
+npm run prueba:humo               # 27 comprobaciones del nucleo (base con demo)
+npm run prueba:control            # 28 comprobaciones de control escolar
 npm run prueba:asistente          # 30 comprobaciones del asistente (base vacia)
 ```
 
@@ -109,7 +110,9 @@ src/lib/auth.ts           Sesiones, bloqueo por intentos fallidos, RBAC
 src/lib/bitacora.ts       Auditoria
 src/app/instalacion/      Asistente de instalacion en 10 pasos
 src/app/acceso/           Acceso al sistema
-src/app/panel/            Panel, configuracion, estructura academica, bitacora
+src/app/panel/            Panel, alumnos, personal, materias, grupos, importador,
+                          configuracion, estructura academica, bitacora
+scripts/nueva-escuela.sh  Aprovisiona la base y el entorno de un colegio nuevo
 pruebas/                  Suites de extremo a extremo
 docs/                     Documentacion tecnica y plan de fases
 ```
@@ -122,3 +125,19 @@ docs/                     Documentacion tecnica y plan de fases
 - Bloqueo temporal tras 5 intentos fallidos.
 - Bitacora de auditoria obligatoria en configuracion, calificaciones, finanzas
   y nomina: quien, que, cuando, valor anterior y valor nuevo.
+- Las cuentas creadas por el sistema nacen con contrasena temporal (la
+  matricula o el numero de empleado) y el cambio es obligatorio en el primer
+  acceso: hasta que se cambie, el usuario no puede navegar a ninguna otra
+  pantalla.
+
+## Dar de alta un colegio nuevo
+
+Cada institucion tiene su propia base de datos. El script la prepara completa:
+
+```bash
+./scripts/nueva-escuela.sh colegio-vanguardia
+```
+
+Crea la base, aplica las migraciones y genera `.env.colegio-vanguardia` con una
+clave de sesion propia. Despues se levanta la aplicacion con ese entorno y se
+completa el asistente de instalacion.

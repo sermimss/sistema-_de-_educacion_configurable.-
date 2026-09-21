@@ -12,14 +12,29 @@
 - Consulta de la estructura academica creada.
 - Empaquetado con Docker y suites de prueba de extremo a extremo.
 
-## Fase 2 — Control escolar
+## Fase 2 — Control escolar (completa)
 
-- Alta, edicion y expediente de alumnos, con generacion de matricula segun la
-  plantilla configurada y tutores.
-- Alta de personal y docentes.
-- Catalogo de materias, asignacion al plan y grado, prerrequisitos.
-- Grupos, inscripcion de alumnos y asignacion de docentes a clases.
-- Importador CSV con plantillas para alumnos, docentes y materias.
+- Alta, edicion, busqueda y expediente de alumnos, con matricula generada
+  segun la plantilla configurada, tutores y datos medicos opcionales.
+- Alta de personal y docentes, con los datos de nomina que usara la Fase 5.
+- Catalogo de materias y areas; mapa curricular por plan y grado con creditos,
+  horas y prerrequisitos encadenados.
+- Grupos con cupo, apertura de clases (materia + docente) e inscripcion de
+  alumnos, que valida plan, cupo y prerrequisitos aprobados.
+- Importador CSV de alumnos, personal y materias, con plantilla descargable e
+  informe de errores por fila.
+- Cuentas de acceso con contrasena temporal y cambio obligatorio en el primer
+  ingreso.
+
+Reglas de integridad que quedaron cubiertas:
+
+- No se puede retirar una materia del plan si tiene clases abiertas o es
+  prerrequisito de otra.
+- No se puede eliminar una clase que ya tiene calificaciones, actividades o
+  asistencia.
+- No se puede quitar el perfil docente a quien tiene clases asignadas.
+- No se puede bajar el cupo de un grupo por debajo de los alumnos inscritos.
+- Un alumno no puede estar inscrito en dos grupos del mismo ciclo.
 
 ## Fase 3 — Academico
 

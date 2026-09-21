@@ -68,3 +68,27 @@ la operacion principal.
   configurable y no un efecto del tipo de dato.
 - **El tutor no tiene cuenta.** Se modela como contacto del alumno
   (`Tutor`), con bandera de responsable financiero.
+
+## Por que una base por colegio y no multi-tenant
+
+Se evaluo usar una sola instalacion con `escuelaId` en cada tabla. Se decidio
+mantener **una base de datos por colegio** por tres razones:
+
+1. **Aislamiento.** Aqui viven expedientes de menores y datos financieros. Una
+   base por escuela hace imposible por construccion que una consulta mal escrita
+   muestre datos de otra institucion; con multi-tenant ese riesgo vive en cada
+   `findMany` que alguien escriba de aqui en adelante.
+2. **Costo por consulta.** Multi-tenant obliga a filtrar por escuela en todas
+   las consultas y a volver compuestos todos los indices unicos (matricula,
+   claves de plan, folios). Es un impuesto permanente sobre el desarrollo.
+3. **El objetivo ya esta cubierto.** "Que cualquier escuela lo use" lo resuelve
+   el asistente de instalacion, no el multi-tenant.
+
+El costo de esta decision es operativo: cada colegio nuevo necesita su base y
+su despliegue. Se mitiga con `scripts/nueva-escuela.sh`, que crea base,
+migraciones y archivo de entorno en un comando.
+
+**Cuando convendria cambiar:** si el sistema se vende como servicio con alta
+automatica a decenas de escuelas, el costo de infraestructura y operacion de un
+despliegue por cliente supera al del filtrado por escuela. Ese cambio es mas
+barato cuanto antes se haga.

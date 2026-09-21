@@ -1,3 +1,6 @@
+"use client";
+
+import { useId } from "react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
 
 type VarianteBoton = "primario" | "secundario" | "peligro" | "fantasma";
@@ -33,20 +36,19 @@ export function Campo({
   className = "",
   ...props
 }: InputHTMLAttributes<HTMLInputElement> & { etiqueta?: string; ayuda?: string; error?: string }) {
-  // El control va dentro del <label> para que la etiqueta quede asociada
-  // aunque el campo no tenga id ni name (lectores de pantalla y clic en
-  // la etiqueta funcionan igual).
+  // Cada campo recibe un id unico generado, para que la etiqueta quede
+  // asociada sin chocar con otro formulario de la misma pantalla.
+  const idGenerado = useId();
+  const id = props.id ?? idGenerado;
   return (
     <div className={className}>
-      <label className="block">
-        {etiqueta && (
-          <span className="etiqueta-campo">
-            {etiqueta}
-            {props.required && <span className="ml-0.5 text-red-500">*</span>}
-          </span>
-        )}
-        <input id={props.id ?? props.name} className="campo" {...props} />
-      </label>
+      {etiqueta && (
+        <label className="etiqueta-campo" htmlFor={id}>
+          {etiqueta}
+          {props.required && <span className="ml-0.5 text-red-500">*</span>}
+        </label>
+      )}
+      <input id={id} className="campo" {...props} />
       {ayuda && !error && <p className="mt-1 text-xs text-slate-500">{ayuda}</p>}
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
@@ -60,14 +62,19 @@ export function Selector({
   className = "",
   ...props
 }: SelectHTMLAttributes<HTMLSelectElement> & { etiqueta?: string; ayuda?: string }) {
+  const idGenerado = useId();
+  const id = props.id ?? idGenerado;
   return (
     <div className={className}>
-      <label className="block">
-        {etiqueta && <span className="etiqueta-campo">{etiqueta}</span>}
-        <select id={props.id ?? props.name} className="campo" {...props}>
-          {children}
-        </select>
-      </label>
+      {etiqueta && (
+        <label className="etiqueta-campo" htmlFor={id}>
+          {etiqueta}
+          {props.required && <span className="ml-0.5 text-red-500">*</span>}
+        </label>
+      )}
+      <select id={id} className="campo" {...props}>
+        {children}
+      </select>
       {ayuda && <p className="mt-1 text-xs text-slate-500">{ayuda}</p>}
     </div>
   );

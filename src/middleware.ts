@@ -19,7 +19,11 @@ export async function middleware(peticion: NextRequest) {
     return NextResponse.redirect(destino);
   }
 
-  return NextResponse.next();
+  // Las layouts no conocen la ruta actual; se la pasamos por cabecera para
+  // poder forzar el cambio de contrasena sin caer en un bucle de redirecciones.
+  const cabeceras = new Headers(peticion.headers);
+  cabeceras.set("x-ruta-actual", pathname);
+  return NextResponse.next({ request: { headers: cabeceras } });
 }
 
 export const config = {

@@ -25,6 +25,19 @@ npm run build && npm start
 npm run prueba:humo
 ```
 
+## control-escolar.mjs
+
+28 comprobaciones de la Fase 2 sobre una base **ya instalada**. Crea materias,
+las coloca en el mapa curricular, valida el orden de los prerrequisitos, da de
+alta personal y alumnos, arma un grupo con clase y docente, inscribe alumnos
+hasta topar el cupo, importa un CSV con una fila invalida a proposito y recorre
+el cambio obligatorio de contrasena. Es repetible: cada corrida usa un sufijo
+distinto para las claves.
+
+```bash
+npm run prueba:control
+```
+
 ## asistente.mjs
 
 30 comprobaciones del asistente de instalacion. Requiere una base **migrada

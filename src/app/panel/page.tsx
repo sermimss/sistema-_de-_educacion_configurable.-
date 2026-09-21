@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { obtenerInstitucion } from "@/lib/institucion";
 import { configNumero, configTexto } from "@/lib/configuracion";
 import { formatearFecha } from "@/lib/formato";
-import { navegacionPara } from "@/lib/navegacion";
+import { estaDisponible, navegacionPara } from "@/lib/navegacion";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +39,7 @@ export default async function PaginaPanel() {
   const faltasAlerta = await configNumero("asistencia.faltas_consecutivas_alerta", 3);
   const diaVencimiento = await configNumero("finanzas.dia_vencimiento_default", 10);
   const modoAsistencia = await configTexto("asistencia.modo_predeterminado", "POR_CLASE");
-  const pendientes = navegacionPara(sesion.rol).filter((i) => i.fase > 1);
+  const pendientes = navegacionPara(sesion.rol).filter((item) => !estaDisponible(item));
 
   return (
     <div className="space-y-6">
@@ -141,8 +141,8 @@ export default async function PaginaPanel() {
 
       {sesion.rol === "DOCENTE" && (
         <Alerta tipo="info">
-          Tu portal de docente (pase de lista, captura de calificaciones y tus grupos) se habilita
-          en la Fase 3.
+          Tu portal de docente (pase de lista y captura de calificaciones) se habilita en la Fase 3.
+          Mientras tanto ya puedes consultar los grupos en los que te asignaron clases.
         </Alerta>
       )}
 
