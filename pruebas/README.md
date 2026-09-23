@@ -38,6 +38,27 @@ distinto para las claves.
 npm run prueba:control
 ```
 
+## academico.mjs
+
+40 comprobaciones de la Fase 3. Requiere una base **recien sembrada con los
+datos de demostracion**, porque cuenta rubros, pesos y periodos desde cero.
+
+```bash
+createdb escuela_fase3
+DATABASE_URL="postgresql://.../escuela_fase3" npx prisma migrate deploy
+DATABASE_URL="postgresql://.../escuela_fase3" SEED_DEMO=1 npm run db:seed
+DATABASE_URL="postgresql://.../escuela_fase3" npm start
+npm run prueba:academico
+```
+
+Cubre el cuadro de horarios y sus tres tipos de choque, el portal del docente,
+el pase de lista hasta disparar la alerta por faltas consecutivas y su
+seguimiento por direccion, los rubros con el tope de 100%, la captura de
+actividades, la calificacion sugerida y la oficial, el cierre y reapertura de
+periodo, el recalculo de promedios y el contenido de la boleta. Tambien
+comprueba que el servidor rechaza un puntaje fuera de rango aunque se burle la
+validacion del navegador, y que un docente no abre clases ajenas.
+
 ## asistente.mjs
 
 30 comprobaciones del asistente de instalacion. Requiere una base **migrada

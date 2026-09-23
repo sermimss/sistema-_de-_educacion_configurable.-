@@ -4,7 +4,7 @@ export type ItemNavegacion = {
   etiqueta: string;
   ruta: string;
   roles: RolUsuario[];
-  /// Fase del plan de entrega en la que se habilita. 1 y 2 ya estan disponibles.
+  /// Fase del plan de entrega en la que se habilita. 1, 2 y 3 ya estan disponibles.
   fase: 1 | 2 | 3 | 4 | 5;
   grupo: "general" | "control" | "academico" | "finanzas" | "sistema";
 };
@@ -22,6 +22,7 @@ export const NAVEGACION: ItemNavegacion[] = [
   { etiqueta: "Asistencia", ruta: "/panel/asistencia", roles: ["ADMIN", "DOCENTE"], fase: 3, grupo: "academico" },
   { etiqueta: "Calificaciones", ruta: "/panel/calificaciones", roles: ["ADMIN", "DOCENTE"], fase: 3, grupo: "academico" },
   { etiqueta: "Mis clases", ruta: "/panel/mis-clases", roles: ["DOCENTE"], fase: 3, grupo: "academico" },
+  { etiqueta: "Boletas y promedios", ruta: "/panel/boletas", roles: ["ADMIN"], fase: 3, grupo: "academico" },
 
   { etiqueta: "Finanzas", ruta: "/panel/finanzas", roles: ["ADMIN"], fase: 4, grupo: "finanzas" },
   { etiqueta: "Mis calificaciones", ruta: "/panel/mis-calificaciones", roles: ["ALUMNO"], fase: 4, grupo: "academico" },
@@ -36,7 +37,7 @@ export const NAVEGACION: ItemNavegacion[] = [
 ];
 
 /// Fases ya construidas: sus pantallas son navegables.
-export const FASES_DISPONIBLES = [1, 2];
+export const FASES_DISPONIBLES = [1, 2, 3];
 
 export function estaDisponible(item: ItemNavegacion): boolean {
   return FASES_DISPONIBLES.includes(item.fase);

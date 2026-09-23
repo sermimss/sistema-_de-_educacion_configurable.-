@@ -15,7 +15,7 @@ Entrega por fases. **La Fase 1 esta completa y probada.**
 |------|-----------|--------|
 | 1 | Nucleo configurable: asistente de instalacion, motor de configuracion (59 parametros), autenticacion, roles, auditoria, estructura academica | Completa |
 | 2 | Control escolar: alumnos, personal, materias y mapa curricular, grupos, clases, inscripciones, importador CSV | Completa |
-| 3 | Academico: horarios con deteccion de choques, asistencia, captura de calificaciones, boletas | Pendiente |
+| 3 | Academico: horarios con deteccion de choques, asistencia, calificaciones, boletas, promedios y ranking | Completa |
 | 4 | Finanzas: generacion de cargos, pagos parciales, recargos, becas, convenios, recibos y portales de alumno | Pendiente |
 | 5 | Nomina del personal | Pendiente |
 
@@ -34,7 +34,15 @@ fondo.
 - **Evaluacion:** escala configurable (0 a 100 por omision), sin redondeo,
   calificacion minima aprobatoria definida por la institucion. Cada docente
   arma sus rubros y ponderaciones, pero entrega la calificacion final en el
-  formato que pide la escuela.
+  formato que pide la escuela: el sistema calcula una sugerida y el docente la
+  confirma o la cambia.
+
+## Boletas
+
+La boleta se genera como una hoja lista para imprimir, con el logo, los datos y
+los colores que el colegio capturo. Desde el navegador se manda a la impresora
+o se guarda como PDF. No requiere ninguna dependencia extra ni un servicio de
+terceros.
 - **Asistencia:** cada docente elige si pasa lista por dia o por clase, y si
   afecta o no la calificacion. El sistema avisa a los administrativos cuando un
   alumno acumula N faltas consecutivas (3 por omision, configurable).
@@ -95,6 +103,7 @@ servidor corriendo en `http://localhost:3000`.
 npm run build && npm start        # en otra terminal
 npm run prueba:humo               # 27 comprobaciones del nucleo (base con demo)
 npm run prueba:control            # 28 comprobaciones de control escolar
+npm run prueba:academico          # 40 comprobaciones del modulo academico (base recien sembrada)
 npm run prueba:asistente          # 30 comprobaciones del asistente (base vacia)
 ```
 
@@ -111,6 +120,7 @@ src/lib/bitacora.ts       Auditoria
 src/app/instalacion/      Asistente de instalacion en 10 pasos
 src/app/acceso/           Acceso al sistema
 src/app/panel/            Panel, alumnos, personal, materias, grupos, importador,
+                          horarios, asistencia, calificaciones, boletas,
                           configuracion, estructura academica, bitacora
 scripts/nueva-escuela.sh  Aprovisiona la base y el entorno de un colegio nuevo
 pruebas/                  Suites de extremo a extremo

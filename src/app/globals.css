@@ -29,3 +29,24 @@ body {
     @apply rounded-xl border border-slate-200 bg-white shadow-sm;
   }
 }
+
+/* La boleta se entrega como PDF imprimiendo desde el navegador: se ocultan
+   menus y botones, y se ajustan margenes y colores para papel. */
+@media print {
+  .no-imprimir {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+  .hoja-impresion {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  @page {
+    margin: 14mm;
+  }
+}

@@ -36,15 +36,47 @@ Reglas de integridad que quedaron cubiertas:
 - No se puede bajar el cupo de un grupo por debajo de los alumnos inscritos.
 - Un alumno no puede estar inscrito en dos grupos del mismo ciclo.
 
-## Fase 3 — Academico
+## Fase 3 — Academico (completa)
 
-- Constructor de horarios con deteccion de choques de docente, aula y grupo.
-- Pase de lista por dia o por clase, a eleccion del docente, con la alerta de
-  faltas consecutivas hacia los administrativos.
-- Rubros de evaluacion por clase, captura de actividades y calificaciones.
-- Cierre de periodo, calificacion final, extraordinarios.
-- Boleta en PDF con el logo y los datos de la institucion.
-- Promedios, ranking y cuadro de honor.
+- Cuadro de horarios por grupo, con bloques tomados de los modulos que el
+  colegio definio o con horas capturadas a mano. Al guardar se revisa que el
+  docente, el aula y el grupo no queden en dos lugares a la vez, y que el dia
+  sea habil; cada validacion se puede apagar desde Configuracion.
+- Portal del docente: sus clases del ciclo, su horario y las preferencias de
+  cada clase.
+- Pase de lista por clase o por dia completo, a eleccion de cada docente, con
+  cinco estados (presente, ausente, retardo, justificada, salida anticipada) y
+  nota por alumno. Al alcanzarse el numero de faltas consecutivas configurado
+  se levanta una alerta y se notifica a los administrativos dentro del sistema.
+- Bandeja de alertas de inasistencia para direccion, con seguimiento.
+- Rubros de evaluacion por clase y periodo, definidos por el docente, con
+  validacion de que los pesos no pasen de 100%.
+- Actividades con puntos maximos y captura por alumno.
+- Calificacion sugerida a partir de los rubros capturados, que el docente copia
+  o ignora: la oficial siempre la confirma el.
+- Cierre de periodo por clase (exige tener todas las calificaciones), reapertura
+  por direccion, y apertura o cierre de la captura de cada periodo para todo el
+  colegio.
+- Extraordinarios, recuperaciones y titulo de suficiencia, con el tope de
+  calificacion que la escuela configuro.
+- Recalculo de promedios: calificacion final por materia respetando el peso de
+  cada periodo, promedio del ciclo, materias aprobadas y reprobadas, creditos,
+  posicion en el ranking y cuadro de honor.
+- Boleta lista para imprimir o guardar como PDF desde el navegador, con el
+  logo, los datos y los colores del colegio, las calificaciones por periodo, la
+  final, el promedio, el lugar en el ranking y el resumen de asistencia.
+
+Reglas de integridad que quedaron cubiertas:
+
+- Un bloque de horario no se guarda si choca con otro del mismo docente, aula o
+  grupo, ni en un dia que no sea habil.
+- No se captura en un periodo cuya captura esta cerrada.
+- No se cierra un periodo al que le faltan calificaciones.
+- Una calificacion cerrada no se edita; solo direccion puede reabrirla.
+- Los puntos de una actividad no pueden pasar de su maximo, y la calificacion
+  del periodo no puede salirse de la escala: se valida en el servidor, no solo
+  en el navegador.
+- Un docente solo entra a sus propias clases.
 
 ## Fase 4 — Finanzas y portales
 

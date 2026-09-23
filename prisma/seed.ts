@@ -282,6 +282,13 @@ async function sembrarDemostracion() {
     await db.inscripcion.create({
       data: { alumnoId: alumno.id, cicloId: ciclo.id, grupoId: grupo.id, gradoId: grados[0].id },
     });
+    // Inscribir al grupo no basta: el alumno tambien entra a cada clase abierta,
+    // que es donde viven calificaciones y asistencia.
+    const clasesDelGrupo = await db.clase.findMany({ where: { grupoId: grupo.id } });
+    await db.alumnoClase.createMany({
+      data: clasesDelGrupo.map((clase) => ({ claseId: clase.id, alumnoId: alumno.id })),
+      skipDuplicates: true,
+    });
   }
 
   console.log("Demostracion lista.");

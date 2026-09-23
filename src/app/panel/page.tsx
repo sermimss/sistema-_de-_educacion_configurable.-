@@ -140,10 +140,24 @@ export default async function PaginaPanel() {
       )}
 
       {sesion.rol === "DOCENTE" && (
-        <Alerta tipo="info">
-          Tu portal de docente (pase de lista y captura de calificaciones) se habilita en la Fase 3.
-          Mientras tanto ya puedes consultar los grupos en los que te asignaron clases.
-        </Alerta>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Link href="/panel/mis-clases" className="tarjeta px-5 py-4 hover:border-marca-600">
+            <p className="text-sm font-semibold text-slate-900">Mis clases</p>
+            <p className="mt-1 text-sm text-slate-600">
+              Tus grupos, horario y como pasas lista en cada clase.
+            </p>
+          </Link>
+          <Link href="/panel/asistencia" className="tarjeta px-5 py-4 hover:border-marca-600">
+            <p className="text-sm font-semibold text-slate-900">Pasar lista</p>
+            <p className="mt-1 text-sm text-slate-600">Registro del dia y alertas por inasistencia.</p>
+          </Link>
+          <Link href="/panel/calificaciones" className="tarjeta px-5 py-4 hover:border-marca-600">
+            <p className="text-sm font-semibold text-slate-900">Calificaciones</p>
+            <p className="mt-1 text-sm text-slate-600">
+              Rubros, actividades y la calificacion oficial del periodo.
+            </p>
+          </Link>
+        </div>
       )}
 
       {sesion.rol === "ALUMNO" && (
