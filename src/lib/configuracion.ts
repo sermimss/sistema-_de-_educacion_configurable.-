@@ -88,6 +88,9 @@ export const CATALOGO_CONFIGURACION: DefinicionConfig[] = [
   { clave: "nomina.activa", valor: "true", tipo: "BOOLEANO", categoria: "nomina", etiqueta: "Modulo de nomina activo", orden: 1 },
   { clave: "nomina.periodicidad_default", valor: "MENSUAL", tipo: "OPCION", categoria: "nomina", etiqueta: "Periodicidad de pago predeterminada", opciones: ["MENSUAL", "BIMESTRAL", "SEMESTRAL", "ANUAL"], orden: 2 },
   { clave: "nomina.plantilla_folio_recibo", valor: "N-{ANIO}-{CONSECUTIVO:5}", tipo: "TEXTO", categoria: "nomina", etiqueta: "Plantilla de folio del recibo de nomina", orden: 3 },
+  { clave: "nomina.dias_base_mes", valor: "30", tipo: "NUMERO", categoria: "nomina", etiqueta: "Dias base del mes", descripcion: "Se usa para sacar el sueldo diario: salario mensual entre estos dias.", orden: 4 },
+  { clave: "nomina.prorratea_por_dias", valor: "true", tipo: "BOOLEANO", categoria: "nomina", etiqueta: "Prorratear el sueldo por dias del periodo", descripcion: "Apagado, cada periodo paga el salario base completo.", orden: 5 },
+  { clave: "nomina.leyenda_recibo", valor: "Comprobante interno de pago. No sustituye al CFDI de nomina.", tipo: "TEXTO", categoria: "nomina", etiqueta: "Leyenda al pie del recibo de nomina", orden: 6 },
 
   // ---------------- Seguridad ----------------
   { clave: "seguridad.longitud_minima_password", valor: "8", tipo: "NUMERO", categoria: "seguridad", etiqueta: "Longitud minima de contrasena", orden: 1 },

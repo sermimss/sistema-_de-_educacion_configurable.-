@@ -155,6 +155,17 @@ async function sembrarDemostracion() {
     },
   });
 
+  // Conceptos de nomina de ejemplo. Los porcentajes son inventados a
+  // proposito: cada colegio captura los suyos, el sistema no calcula tablas
+  // oficiales de ISR ni de seguridad social.
+  await db.conceptoNomina.createMany({
+    data: [
+      { clave: "BONO-PUNT", nombre: "Bono de puntualidad", tipo: "PERCEPCION", tipoCalculo: "FIJO", valor: 500, gravable: true, orden: 0 },
+      { clave: "RET-SUELDO", nombre: "Retencion sobre sueldo", tipo: "DEDUCCION", tipoCalculo: "PORCENTAJE", valor: 10, gravable: false, orden: 1 },
+      { clave: "FONDO-AHO", nombre: "Fondo de ahorro", tipo: "DEDUCCION", tipoCalculo: "FIJO", valor: 200, gravable: false, orden: 2 },
+    ],
+  });
+
   const hash = await bcrypt.hash("Demo1234", 12);
 
   const usuarioAdmin = await db.usuario.create({

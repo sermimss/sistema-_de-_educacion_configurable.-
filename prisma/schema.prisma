@@ -1370,6 +1370,10 @@ model DetalleReciboNomina {
   conceptoId Int
   cantidad   Decimal? @db.Decimal(12, 4)
   importe    Decimal  @db.Decimal(12, 2)
+  /// Capturada a mano para este recibo (bono, prestamo, horas extra). Al
+  /// recalcular el periodo se conserva, a diferencia de las que salen del
+  /// catalogo de conceptos.
+  manual     Boolean  @default(false)
 
   recibo   ReciboNomina   @relation(fields: [reciboId], references: [id], onDelete: Cascade)
   concepto ConceptoNomina @relation(fields: [conceptoId], references: [id], onDelete: Restrict)

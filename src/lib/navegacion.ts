@@ -4,8 +4,8 @@ export type ItemNavegacion = {
   etiqueta: string;
   ruta: string;
   roles: RolUsuario[];
-  /// Fase del plan de entrega en la que se habilita. De la 1 a la 4 ya estan
-  /// disponibles; la 5 (nomina) sigue pendiente.
+  /// Fase del plan de entrega en la que se habilita. Las cinco fases estan
+  /// disponibles.
   fase: 1 | 2 | 3 | 4 | 5;
   grupo: "general" | "control" | "academico" | "finanzas" | "sistema";
 };
@@ -38,7 +38,7 @@ export const NAVEGACION: ItemNavegacion[] = [
 ];
 
 /// Fases ya construidas: sus pantallas son navegables.
-export const FASES_DISPONIBLES = [1, 2, 3, 4];
+export const FASES_DISPONIBLES = [1, 2, 3, 4, 5];
 
 export function estaDisponible(item: ItemNavegacion): boolean {
   return FASES_DISPONIBLES.includes(item.fase);

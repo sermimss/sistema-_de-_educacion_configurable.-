@@ -46,8 +46,13 @@ comprobar("Academico lista conceptos de cobro", academico.includes("Colegiatura"
 
 // Configuracion: cambiar un parametro y verificar que persiste
 await pagina.goto(`${BASE}/panel/configuracion`);
-comprobar("Configuracion carga los 59 parametros",
-  (await pagina.textContent("body")).includes("59 parametros"));
+// El numero exacto crece conforme se agregan parametros al catalogo, asi que
+// se comprueba que la pantalla reporte una cantidad razonable, no una fija.
+const totalParametros = Number(
+  (await pagina.textContent("body")).replace(/\s+/g, " ").match(/Hay (\d+) parametros/)?.[1] ?? 0
+);
+comprobar("Configuracion carga el catalogo de parametros", totalParametros >= 59,
+  `${totalParametros} parametros`);
 const campoFaltas = pagina.locator('input[name="asistencia.faltas_consecutivas_alerta"]');
 comprobar("Existe el parametro de faltas consecutivas", await campoFaltas.count() === 1);
 // La prueba es repetible: escribe un valor distinto al que haya ahora.

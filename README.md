@@ -9,7 +9,7 @@ pantalla de Configuracion.
 
 ## Estado del proyecto
 
-Entrega por fases. **La Fase 1 esta completa y probada.**
+Entrega por fases. **Las cinco fases estan completas y probadas.**
 
 | Fase | Contenido | Estado |
 |------|-----------|--------|
@@ -17,7 +17,7 @@ Entrega por fases. **La Fase 1 esta completa y probada.**
 | 2 | Control escolar: alumnos, personal, materias y mapa curricular, grupos, clases, inscripciones, importador CSV | Completa |
 | 3 | Academico: horarios con deteccion de choques, asistencia, calificaciones, boletas, promedios y ranking | Completa |
 | 4 | Finanzas: cobros configurables, generacion de cargos, becas, recargos, pagos parciales, convenios, recibos y portales del alumno | Completa |
-| 5 | Nomina del personal | Pendiente |
+| 5 | Nomina del personal: conceptos, periodos, calculo, autorizacion, pago y recibo | Completa |
 
 El modelo de datos de **las cinco fases ya esta creado** (`prisma/schema.prisma`),
 de modo que las fases siguientes agregan pantallas y reglas, no migraciones de
@@ -60,6 +60,20 @@ libres, sin pasar por el catalogo.
 
 La generacion de cargos es idempotente: correrla dos veces no duplica nada,
 porque omite los cargos que ya existen para ese alumno, concepto y fecha.
+
+## Nomina
+
+El colegio define sus propias percepciones y deducciones, cada una con monto
+fijo o porcentaje del sueldo del periodo. El sueldo se prorratea dividiendo el
+salario mensual entre los dias base que configure la escuela y multiplicando
+por los dias que cubre el periodo; el prorrateo se puede apagar.
+
+Cada recibo admite ajustes capturados a mano (bonos, prestamos, horas extra)
+que sobreviven a un recalculo, porque quedan marcados como manuales.
+
+**El sistema no calcula las tablas oficiales de ISR ni de seguridad social.**
+Cada escuela captura sus propios porcentajes o montos. Para emitir el CFDI de
+nomina hace falta conectar un PAC, que es trabajo aparte.
 
 ## Boletas
 
@@ -129,6 +143,8 @@ npm run prueba:humo               # 27 comprobaciones del nucleo (base con demo)
 npm run prueba:control            # 28 comprobaciones de control escolar
 npm run prueba:academico          # 40 comprobaciones del modulo academico (base recien sembrada)
 npm run prueba:finanzas           # 40 comprobaciones de finanzas (base recien sembrada)
+npm run prueba:integridad         # 27 comprobaciones de finanzas contra la base de datos
+npm run prueba:nomina             # 42 comprobaciones de nomina (base recien sembrada)
 npm run prueba:asistente          # 30 comprobaciones del asistente (base vacia)
 ```
 
@@ -146,7 +162,7 @@ src/app/instalacion/      Asistente de instalacion en 10 pasos
 src/app/acceso/           Acceso al sistema
 src/app/panel/            Panel, alumnos, personal, materias, grupos, importador,
                           horarios, asistencia, calificaciones, boletas,
-                          finanzas, portales del alumno,
+                          finanzas, nomina, portales del alumno,
                           configuracion, estructura academica, bitacora
 scripts/nueva-escuela.sh  Aprovisiona la base y el entorno de un colegio nuevo
 pruebas/                  Suites de extremo a extremo

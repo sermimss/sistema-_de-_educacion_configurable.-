@@ -81,6 +81,40 @@ en parcialidades, el recalculo de recargos (que tampoco duplica), las cuatro
 pantallas del portal del alumno y el bloqueo por adeudo encendiendolo y
 apagandolo desde Configuracion.
 
+## integridad-finanzas.mjs
+
+27 comprobaciones que revisan **lo que queda guardado en la base de datos**,
+no lo que muestra la pantalla. Verifica que desactivar conceptos persiste, que
+un pago parcial y el pago del resto dejan los cargos en saldo cero y estado
+PAGADO con lo aplicado cuadrando al centavo, y que cancelar un pago restaura
+los saldos exactos, los estados previos y la bandera de adeudo. Requiere base
+recien sembrada.
+
+```bash
+npm run prueba:integridad
+```
+
+## nomina.mjs
+
+42 comprobaciones de la Fase 5 sobre una base **recien sembrada**. Mezcla
+comprobaciones de pantalla y de base de datos.
+
+```bash
+createdb escuela_fase5
+DATABASE_URL="postgresql://.../escuela_fase5" npx prisma migrate deploy
+DATABASE_URL="postgresql://.../escuela_fase5" SEED_DEMO=1 npm run db:seed
+DATABASE_URL="postgresql://.../escuela_fase5" npm start
+npm run prueba:nomina
+```
+
+Cubre el catalogo de conceptos y sus validaciones, la creacion de periodos con
+rechazo de fechas invertidas y de traslapes, el calculo con la aritmetica
+exacta del recibo (sueldo prorrateado, percepciones, deducciones y neto),
+que recalcular no duplique ni toque lo autorizado, los ajustes manuales y su
+supervivencia al recalculo, la autorizacion, el pago del periodo, la
+cancelacion de un recibo con motivo, la bitacora, los permisos y el apagado
+del modulo completo desde Configuracion.
+
 ## asistente.mjs
 
 30 comprobaciones del asistente de instalacion. Requiere una base **migrada

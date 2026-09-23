@@ -125,8 +125,39 @@ Pendiente de esta fase:
 - **Timbrado CFDI.** El recibo guarda todos los campos que pide el CFDI 4.0,
   pero conectar un PAC es trabajo aparte.
 
-## Fase 5 — Nomina
+## Fase 5 — Nomina (completa)
 
-- Conceptos de percepcion y deduccion configurables.
-- Periodos de nomina, calculo, autorizacion y pago.
-- Recibo de nomina por empleado e historial.
+- Catalogo de conceptos de nomina definido por el colegio: percepciones,
+  deducciones y otros pagos, con monto fijo o porcentaje del sueldo del
+  periodo, bandera de gravable y clave SAT opcional.
+- Periodos de nomina con sus fechas y su fecha de pago, validando que no se
+  encimen entre si.
+- Calculo del periodo para todo el personal activo. El sueldo sale del salario
+  base prorrateado por los dias del periodo (el prorrateo se apaga desde
+  Configuracion). Recalcular no duplica recibos, respeta los ya autorizados o
+  pagados y conserva los ajustes capturados a mano.
+- Ajustes por recibo (bonos, prestamos, horas extra) marcados como manuales,
+  de modo que un recalculo no los borra aunque usen un concepto que ya aplica
+  automaticamente.
+- Autorizacion masiva de los recibos en borrador y pago del periodo con su
+  metodo y fecha.
+- Recibo de nomina listo para imprimir o guardar como PDF, con los datos del
+  colegio y del empleado, percepciones, deducciones y neto.
+- Cancelacion de recibos con motivo, registrada en la bitacora.
+- Todo el modulo se puede apagar desde Configuracion.
+
+Reglas de integridad que quedaron cubiertas:
+
+- Un concepto que ya aparece en recibos no se borra, solo se desactiva.
+- No se autoriza un periodo con recibos en neto cero o negativo.
+- No se paga un periodo con recibos todavia en borrador.
+- Un recibo autorizado o pagado no se modifica ni se recalcula.
+- Un periodo pagado ya no ofrece recalcularse.
+
+Pendiente declarado:
+
+- **Tablas fiscales.** El sistema no calcula el ISR ni las cuotas de seguridad
+  social: cada colegio captura sus propios porcentajes o montos. Inventar esas
+  tablas seria peor que no tenerlas.
+- **CFDI de nomina.** El recibo es un comprobante interno; el timbrado requiere
+  conectar un PAC.
