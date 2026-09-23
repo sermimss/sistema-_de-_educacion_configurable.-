@@ -2,8 +2,11 @@ node_modules/
 .next/
 out/
 build/
+# Los archivos de entorno llevan la clave de sesion y la contrasena de la base,
+# incluidos los .env.<colegio> que genera scripts/nueva-escuela.sh
 .env
-.env*.local
+.env.*
+!.env.example
 *.log
 .DS_Store
 next-env.d.ts

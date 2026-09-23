@@ -92,7 +92,19 @@ terceros.
 
 ## Puesta en marcha
 
-### Con Docker (recomendado)
+### En Render
+
+El repositorio trae `render.yaml`. En Render: **New > Blueprint**, conecta el
+repositorio y confirma. Render crea el servicio y su base de datos, genera la
+clave de sesion, aplica las migraciones y levanta el sistema; solo queda abrir
+la URL y completar el asistente de instalacion.
+
+El blueprint sale con el plan gratuito para que puedas probarlo. **Antes de
+cargar datos reales hay que subirlo a un plan de paga**: el servicio gratuito
+se duerme y la base de datos gratuita caduca. Los detalles estan en
+[docs/despliegue.md](docs/despliegue.md).
+
+### Con Docker
 
 ```bash
 cp .env.example .env
@@ -166,7 +178,8 @@ src/app/panel/            Panel, alumnos, personal, materias, grupos, importador
                           configuracion, estructura academica, bitacora
 scripts/nueva-escuela.sh  Aprovisiona la base y el entorno de un colegio nuevo
 pruebas/                  Suites de extremo a extremo
-docs/                     Documentacion tecnica y plan de fases
+docs/                     Documentacion tecnica, plan de fases y despliegue
+render.yaml               Blueprint de Render para el primer colegio
 ```
 
 ## Seguridad

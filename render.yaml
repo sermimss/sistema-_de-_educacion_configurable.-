@@ -1,0 +1,49 @@
+# Blueprint de Render para UN colegio.
+#
+# La arquitectura del sistema es una instalacion por colegio, asi que este
+# archivo despliega una escuela: un servicio web y su propia base de datos.
+# Para el segundo colegio se genera otro blueprint con nombres distintos:
+#
+#   ./scripts/nueva-escuela.sh --render colegio-vanguardia
+#
+# Los comandos de build y arranque de aqui abajo estan verificados: compilan,
+# copian los estaticos junto al servidor standalone, aplican las migraciones y
+# levantan el servidor.
+
+services:
+  - type: web
+    name: sistema-escolar
+    runtime: node
+    # Oregon es la region de Render mas cercana a Mexico.
+    region: oregon
+    # OJO: el plan gratuito duerme el servicio tras unos minutos sin uso y la
+    # base de datos gratuita caduca. Antes de cargar datos reales de un colegio
+    # hay que subir ambos a un plan de paga.
+    plan: free
+    branch: main
+    buildCommand: >-
+      npm ci &&
+      npm run build &&
+      cp -r public .next/standalone/ &&
+      cp -r .next/static .next/standalone/.next/
+    startCommand: npx prisma migrate deploy && node .next/standalone/server.js
+    healthCheckPath: /api/salud
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: escuela-db
+          property: connectionString
+      # Render genera la clave de sesion y no la ve nadie mas.
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: SESSION_HORAS
+        value: "12"
+      - key: NODE_ENV
+        value: production
+
+databases:
+  - name: escuela-db
+    region: oregon
+    plan: free
+    databaseName: escuela
+    user: escuela
