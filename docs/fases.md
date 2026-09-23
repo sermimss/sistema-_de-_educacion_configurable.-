@@ -161,3 +161,69 @@ Pendiente declarado:
   tablas seria peor que no tenerlas.
 - **CFDI de nomina.** El recibo es un comprobante interno; el timbrado requiere
   conectar un PAC.
+
+---
+
+# Entrega adicional: paquete instalable (sin internet)
+
+El sistema nacio como servicio web, pero un colegio puede preferir no depender
+de internet. Se agrego una segunda forma de entrega, **con el mismo codigo**:
+el sistema se instala en una computadora del colegio y las demas entran por la
+red interna.
+
+Lo que se construyo:
+
+- `scripts/empaquetar.sh` arma un paquete autocontenido (servidor compilado,
+  dependencias, migraciones y la herramienta que las aplica). La instalacion no
+  descarga nada.
+- `scripts/instalar-linux.sh` crea la base, genera las claves de esa
+  instalacion, y deja el sistema como servicio de systemd.
+- `scripts/instalar-windows.ps1` hace lo equivalente con una tarea programada.
+- `scripts/cierre-dependencias.mjs` calcula que dependencias necesita la
+  herramienta de migraciones, en lugar de elegirlas a mano.
+- `docs/instalacion-local.md` es la guia para el colegio.
+
+Fallas encontradas al probar el paquete de verdad, y corregidas:
+
+1. **Migraciones imposibles en el colegio.** Las dependencias de Prisma se
+   habian elegido a mano y faltaban indirectas; el paquete arrancaba pero no
+   podia crear las tablas. Ahora el arbol se calcula.
+2. **Sistema invisible para el resto del colegio.** El arranque tomaba la
+   direccion de escucha de `HOSTNAME`, que el sistema operativo ya trae puesto
+   con el nombre de la maquina; el servidor solo respondia en la propia
+   computadora. Ahora escucha en toda la red.
+3. **Claves del desarrollo repartidas a cada colegio.** Next copia el `.env`
+   del desarrollo dentro de la compilacion, y ese archivo viajaba en el
+   paquete. Ahora se borra al empaquetar y el empaquetado se aborta si
+   reaparece.
+4. **Instalacion nueva tratada como actualizacion.** El instalador miraba si
+   existia el archivo de configuracion *despues* de copiar, asi que un archivo
+   que viniera en el paquete pasaba por configuracion previa y no se generaban
+   claves nuevas. Ahora se decide antes de copiar.
+5. **Windows: archivo de configuracion ilegible.** Se escribia en UTF8, que en
+   Windows PowerShell antepone una marca invisible; el arranque leeria mal la
+   primera linea y el sistema quedaria sin base de datos. Ahora se escribe en
+   ASCII.
+
+Verificado en este entorno:
+
+- Paquete extraido fuera del proyecto, sin npm y sin acceso al `node_modules`
+  del codigo: aplica las 60 tablas sobre una base vacia y levanta.
+- Responde en `localhost` y en la direccion de red de la maquina.
+- Las 29 pruebas del asistente de instalacion pasan contra el sistema
+  empaquetado y contra el ya instalado.
+- Reinstalar encima conserva los datos del colegio y la clave de sesiones, y
+  no reaplica migraciones.
+- El archivo de claves queda en 600 y con dueño del usuario del servicio.
+- La unidad de systemd generada pasa `systemd-analyze verify`.
+
+Pendiente declarado:
+
+- **El instalador de Windows no pudo probarse.** Este entorno no tiene
+  PowerShell. Se reviso a mano contra las mismas fallas encontradas en Linux y
+  se corrigieron las equivalentes, pero antes de usarlo en un colegio debe
+  correrse en un equipo Windows de prueba.
+- **systemd no corre como init en este entorno**, asi que el registro del
+  servicio no pudo ejecutarse aqui. Se verifico que la unidad generada es
+  valida y que el sistema instalado funciona corriendo como el usuario del
+  servicio, que es lo que systemd haria.

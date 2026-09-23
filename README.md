@@ -104,6 +104,44 @@ cargar datos reales hay que subirlo a un plan de paga**: el servicio gratuito
 se duerme y la base de datos gratuita caduca. Los detalles estan en
 [docs/despliegue.md](docs/despliegue.md).
 
+### Instalado en una computadora del colegio (sin internet)
+
+El sistema tambien se entrega como paquete instalable, para colegios que
+prefieren no depender de internet. Se instala en una computadora del colegio y
+las demas entran desde su navegador por la red interna.
+
+```bash
+./scripts/empaquetar.sh     # arma dist/sistema-escolar-<version>-<sistema>.tar.gz
+```
+
+El paquete es autocontenido: lleva el servidor compilado, sus dependencias, las
+migraciones y la herramienta que las aplica. En la computadora del colegio:
+
+```bash
+tar -xzf sistema-escolar-0.1.0-linux.tar.gz
+cd sistema-escolar
+sudo ./instalar-linux.sh            # Linux
+```
+
+```powershell
+.\instalar-windows.ps1              # Windows, en PowerShell como administrador
+```
+
+El instalador crea la base de datos, genera las claves de la instalacion, deja
+el sistema arrancando solo al prender la computadora e imprime la direccion
+para el resto del colegio. Al reinstalar encima conserva los datos y la
+configuracion, y solo aplica las migraciones que falten.
+
+Requisitos previos en esa computadora: Node.js 22 o mayor y PostgreSQL 14 o
+mayor. Paso a paso, respaldos y solucion de problemas en
+[`docs/instalacion-local.md`](docs/instalacion-local.md).
+
+> El paquete se arma en el mismo sistema operativo donde se va a instalar: el
+> motor de base de datos de Prisma es distinto en Windows y en Linux.
+>
+> El instalador de Linux esta probado de punta a punta. El de Windows no pudo
+> probarse en un Windows real; conviene correrlo primero en un equipo de prueba.
+
 ### Con Docker
 
 ```bash
