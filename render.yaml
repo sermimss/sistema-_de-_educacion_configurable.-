@@ -27,7 +27,7 @@ services:
       npm run build &&
       cp -r public .next/standalone/ &&
       cp -r .next/static .next/standalone/.next/
-    startCommand: npx prisma migrate deploy && node .next/standalone/server.js
+    startCommand: ./scripts/arrancar.sh
     healthCheckPath: /api/salud
     envVars:
       - key: DATABASE_URL

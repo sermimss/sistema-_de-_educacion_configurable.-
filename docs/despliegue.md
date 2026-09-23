@@ -40,6 +40,27 @@ reaparecen al tocar la configuracion:
   devDependencies, y ahi viven las herramientas de compilacion. El blueprint
   no la fija a proposito.
 
+### Si responde 502
+
+Un 502 significa que el servicio desplego pero el proceso no esta contestando.
+La causa mas comun en el primer despliegue es que las migraciones fallen porque
+la base todavia se esta creando: si el arranque fuera
+`prisma migrate deploy && node server.js`, un fallo ahi deja el servicio sin
+proceso y el resultado es un 502 permanente.
+
+Por eso el arranque pasa por `scripts/arrancar.sh`, que reintenta las
+migraciones un par de veces y levanta el servidor de todos modos. Con eso el
+sistema responde y `/api/salud` dice que pasa:
+
+- `"baseDeDatos":"ok"` — todo bien.
+- `"baseDeDatos":"sin-conexion"` — la base no es alcanzable. Revisa que
+  `DATABASE_URL` apunte a la base del blueprint y que esta ya exista.
+- `"baseDeDatos":"lenta"` — contesta, pero tarda mas de dos segundos.
+
+Si aun asi da 502, mira los registros del servicio: si el proceso murio, el
+motivo esta ahi. En el plan gratuito tambien hay 502 pasajeros mientras el
+servicio despierta tras dormirse por inactividad.
+
 ### Que revisar despues del primer despliegue
 
 - `https://<tu-servicio>.onrender.com/api/salud` debe responder
