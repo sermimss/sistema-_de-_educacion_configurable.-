@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "Sistema de gestion escolar y financiera 100% configurable",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",

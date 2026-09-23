@@ -20,7 +20,8 @@ services:
     # base de datos gratuita caduca. Antes de cargar datos reales de un colegio
     # hay que subir ambos a un plan de paga.
     plan: free
-    branch: main
+    # La rama donde vive el codigo. Cambiala cuando lo integres a main.
+    branch: claude/beautiful-mccarthy-hdfaaa
     buildCommand: >-
       npm ci &&
       npm run build &&
@@ -38,8 +39,16 @@ services:
         generateValue: true
       - key: SESSION_HORAS
         value: "12"
-      - key: NODE_ENV
-        value: production
+      # No se fija NODE_ENV=production: npm omitiria las devDependencies y el
+      # build necesita prisma, tailwindcss, postcss, autoprefixer y typescript,
+      # que viven ahi. El servidor standalone ya se compila en modo produccion.
+      #
+      # Playwright solo se usa en las pruebas; sin esta bandera intentaria
+      # descargar navegadores durante el build.
+      - key: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
+        value: "1"
+      - key: NODE_VERSION
+        value: "22"
 
 databases:
   - name: escuela-db
