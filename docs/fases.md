@@ -78,19 +78,52 @@ Reglas de integridad que quedaron cubiertas:
   en el navegador.
 - Un docente solo entra a sus propias clases.
 
-## Fase 4 — Finanzas y portales
+## Fase 4 — Finanzas y portales (completa)
 
-- Generacion automatica de cargos a partir de los conceptos, el plan de
-  estudios y el dia de vencimiento configurados.
-- Aplicacion de becas y descuentos, acumulables o no segun la configuracion.
-- Recargos por mora con periodo de gracia.
-- Caja: pagos totales y parciales, un pago que cubre varios cargos.
-- Convenios de pago en parcialidades.
-- Recibo interno en PDF, con la estructura CFDI 4.0 lista para timbrar.
-- Pasarela de pago en linea configurable por la escuela.
-- Estado de cuenta y bandera de adeudo, con bloqueo opcional de servicios.
-- Portal del alumno: calificaciones, asistencia, horario, estado de cuenta.
-- Portal del docente: sus grupos, captura de asistencia y calificaciones.
+- Catalogo de conceptos de cobro donde el colegio define el motivo, el monto,
+  la periodicidad, la fecha del primer cargo, el dia de vencimiento, cuantos
+  cargos se generan y a quien aplican (todos, un nivel, un plan, un grado, un
+  grupo o un alumno).
+- Generacion de cargos con vista previa antes de confirmar. Es idempotente: no
+  duplica los cargos que ya existen.
+- Cargos sueltos con motivo, monto y fecha libres, fuera del catalogo.
+- Becas y descuentos por porcentaje o monto fijo, ligados a conceptos concretos
+  o a todos, con vigencia y asignacion por alumno. Se acumulan o no segun la
+  configuracion del colegio.
+- Reglas de recargo por pago tardio: porcentaje o monto fijo, dias de gracia,
+  frecuencia (una vez, diaria, semanal o mensual) y tope maximo. El recalculo
+  parte de cero, asi que correrlo dos veces no cobra dos veces.
+- Caja: pagos totales y parciales, reparto manual entre cargos o automatico del
+  mas viejo al mas nuevo, con los metodos de pago del catalogo.
+- Cancelacion de pagos con motivo, que restaura los saldos.
+- Convenios de pago en parcialidades, con su calendario.
+- Recibo listo para imprimir o guardar como PDF, con los datos del colegio y la
+  estructura CFDI 4.0 guardada para el timbrado futuro.
+- Bandera de adeudo y bloqueo configurable de servicios (boleta, reinscripcion,
+  portal o constancias) a partir de los dias de atraso que fije el colegio.
+- Portal del alumno: calificaciones, asistencia, horario y estado de cuenta con
+  sus recibos, cada seccion activable desde Configuracion.
+
+Reglas de integridad que quedaron cubiertas:
+
+- Un concepto con cargos generados no se borra, solo se desactiva.
+- Un cargo con pagos aplicados no se cancela ni se condona sin cancelar antes
+  el pago.
+- El reparto de un pago no puede exceder el monto recibido ni el saldo de cada
+  cargo.
+- Si el colegio no permite pagos parciales, el pago tiene que cubrir el saldo
+  completo del cargo.
+- Los saldos, estados y la bandera de adeudo se recalculan tras cada pago,
+  cancelacion o recargo.
+
+Pendiente de esta fase:
+
+- **Pago en linea.** La configuracion de la pasarela existe en el modelo de
+  datos, pero la integracion con el proveedor (Stripe, Mercado Pago, OpenPay o
+  Conekta) no esta hecha: requiere credenciales reales y una cuenta activa para
+  probarse de punta a punta.
+- **Timbrado CFDI.** El recibo guarda todos los campos que pide el CFDI 4.0,
+  pero conectar un PAC es trabajo aparte.
 
 ## Fase 5 — Nomina
 

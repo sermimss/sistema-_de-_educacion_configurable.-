@@ -1089,8 +1089,14 @@ model ConceptoCobro {
   referenciaId     Int?
   /// Dia del mes en que vence (configurable por la escuela).
   diaVencimiento   Int?
+  /// Fecha del primer cargo. Si es null se toma el inicio del ciclo escolar.
+  /// Con esto la escuela controla el "cuando" de cada concepto, no solo el dia.
+  fechaPrimerCargo DateTime?
   /// Cuantas veces se genera; si es null se usa la duracion del plan.
   numeroCargos     Int?
+  /// Motivo tal como debe aparecer en el estado de cuenta y en el recibo.
+  /// Si se deja vacio se usa el nombre del concepto.
+  leyenda          String?
   obligatorio      Boolean           @default(true)
   generaRecargo    Boolean           @default(true)
   aplicaDescuentos Boolean           @default(true)

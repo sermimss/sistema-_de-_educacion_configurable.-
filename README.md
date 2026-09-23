@@ -16,7 +16,7 @@ Entrega por fases. **La Fase 1 esta completa y probada.**
 | 1 | Nucleo configurable: asistente de instalacion, motor de configuracion (59 parametros), autenticacion, roles, auditoria, estructura academica | Completa |
 | 2 | Control escolar: alumnos, personal, materias y mapa curricular, grupos, clases, inscripciones, importador CSV | Completa |
 | 3 | Academico: horarios con deteccion de choques, asistencia, calificaciones, boletas, promedios y ranking | Completa |
-| 4 | Finanzas: generacion de cargos, pagos parciales, recargos, becas, convenios, recibos y portales de alumno | Pendiente |
+| 4 | Finanzas: cobros configurables, generacion de cargos, becas, recargos, pagos parciales, convenios, recibos y portales del alumno | Completa |
 | 5 | Nomina del personal | Pendiente |
 
 El modelo de datos de **las cinco fases ya esta creado** (`prisma/schema.prisma`),
@@ -29,6 +29,9 @@ fondo.
 - **Despliegue:** una instalacion por colegio (base de datos propia por escuela).
 - **Pais:** Mexico. Los recibos nacen como comprobante interno con la estructura
   CFDI 4.0 ya modelada, listos para timbrar cuando se conecte un PAC.
+- **Pago en linea:** el modelo de datos guarda la configuracion de la pasarela,
+  pero la integracion con el proveedor todavia no esta hecha. Hoy el cobro se
+  registra en caja (efectivo, transferencia, tarjeta, deposito o cheque).
 - **Niveles:** de preparatoria en adelante (bachillerato, licenciatura, posgrado,
   cursos), multiplantel y multiturno.
 - **Evaluacion:** escala configurable (0 a 100 por omision), sin redondeo,
@@ -36,6 +39,27 @@ fondo.
   arma sus rubros y ponderaciones, pero entrega la calificacion final en el
   formato que pide la escuela: el sistema calcula una sugerida y el docente la
   confirma o la cambia.
+
+## Cobros configurables
+
+Ningun cobro esta escrito en el codigo. Para cada concepto el colegio define:
+
+- **El motivo**: nombre, leyenda que aparece en el estado de cuenta y el recibo,
+  y descripcion interna.
+- **El monto**, con su IVA y sus claves del SAT si las necesita.
+- **El tiempo**: periodicidad (una vez, mensual, bimestral, por periodo
+  academico, semestral o anual), fecha del primer cargo, dia de vencimiento y
+  cuantos cargos se generan.
+- **A quien se le cobra**: todos, un nivel, un plan, un grado, un grupo o un
+  alumno en particular.
+- **Las reglas**: si es obligatorio, si genera recargo al vencerse y si acepta
+  becas.
+
+Ademas se pueden crear cargos sueltos a un alumno con motivo, monto y fecha
+libres, sin pasar por el catalogo.
+
+La generacion de cargos es idempotente: correrla dos veces no duplica nada,
+porque omite los cargos que ya existen para ese alumno, concepto y fecha.
 
 ## Boletas
 
@@ -104,6 +128,7 @@ npm run build && npm start        # en otra terminal
 npm run prueba:humo               # 27 comprobaciones del nucleo (base con demo)
 npm run prueba:control            # 28 comprobaciones de control escolar
 npm run prueba:academico          # 40 comprobaciones del modulo academico (base recien sembrada)
+npm run prueba:finanzas           # 40 comprobaciones de finanzas (base recien sembrada)
 npm run prueba:asistente          # 30 comprobaciones del asistente (base vacia)
 ```
 
@@ -121,6 +146,7 @@ src/app/instalacion/      Asistente de instalacion en 10 pasos
 src/app/acceso/           Acceso al sistema
 src/app/panel/            Panel, alumnos, personal, materias, grupos, importador,
                           horarios, asistencia, calificaciones, boletas,
+                          finanzas, portales del alumno,
                           configuracion, estructura academica, bitacora
 scripts/nueva-escuela.sh  Aprovisiona la base y el entorno de un colegio nuevo
 pruebas/                  Suites de extremo a extremo

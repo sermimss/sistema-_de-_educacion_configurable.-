@@ -59,6 +59,28 @@ periodo, el recalculo de promedios y el contenido de la boleta. Tambien
 comprueba que el servidor rechaza un puntaje fuera de rango aunque se burle la
 validacion del navegador, y que un docente no abre clases ajenas.
 
+## finanzas.mjs
+
+40 comprobaciones de la Fase 4. Requiere una base **recien sembrada con los
+datos de demostracion**.
+
+```bash
+createdb escuela_fase4
+DATABASE_URL="postgresql://.../escuela_fase4" npx prisma migrate deploy
+DATABASE_URL="postgresql://.../escuela_fase4" SEED_DEMO=1 npm run db:seed
+DATABASE_URL="postgresql://.../escuela_fase4" npm start
+npm run prueba:finanzas
+```
+
+Cubre el alta de conceptos con motivo, monto y tiempo propios y sus
+validaciones, las reglas de recargo, las becas y su asignacion, la vista previa
+y la generacion de cargos (comprobando que correrla dos veces no duplica), el
+estado de cuenta, un pago parcial y el pago del resto, el recibo, la
+cancelacion de un pago con restauracion de saldos, un cargo manual, un convenio
+en parcialidades, el recalculo de recargos (que tampoco duplica), las cuatro
+pantallas del portal del alumno y el bloqueo por adeudo encendiendolo y
+apagandolo desde Configuracion.
+
 ## asistente.mjs
 
 30 comprobaciones del asistente de instalacion. Requiere una base **migrada

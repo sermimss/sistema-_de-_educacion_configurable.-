@@ -19,7 +19,8 @@
     "prueba:humo": "node pruebas/humo.mjs",
     "prueba:asistente": "node pruebas/asistente.mjs",
     "prueba:control": "node pruebas/control-escolar.mjs",
-    "prueba:academico": "node pruebas/academico.mjs"
+    "prueba:academico": "node pruebas/academico.mjs",
+    "prueba:finanzas": "node pruebas/finanzas.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",

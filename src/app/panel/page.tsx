@@ -161,10 +161,19 @@ export default async function PaginaPanel() {
       )}
 
       {sesion.rol === "ALUMNO" && (
-        <Alerta tipo="info">
-          Tu portal (calificaciones, asistencia, horario y estado de cuenta) se habilita en la
-          Fase 4.
-        </Alerta>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[
+            ["/panel/mis-calificaciones", "Mis calificaciones", "Tus notas por periodo y tu promedio."],
+            ["/panel/mi-asistencia", "Mi asistencia", "Faltas, retardos y tu porcentaje."],
+            ["/panel/mi-horario", "Mi horario", "Tus clases de la semana."],
+            ["/panel/estado-de-cuenta", "Estado de cuenta", "Cargos, saldo y recibos de pago."],
+          ].map(([ruta, titulo, descripcion]) => (
+            <Link key={ruta} href={ruta} className="tarjeta px-5 py-4 hover:border-marca-600">
+              <p className="text-sm font-semibold text-slate-900">{titulo}</p>
+              <p className="mt-1 text-sm text-slate-600">{descripcion}</p>
+            </Link>
+          ))}
+        </div>
       )}
 
       {pendientes.length > 0 && (
