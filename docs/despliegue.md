@@ -12,7 +12,9 @@ su base de datos. Render lo lee y crea todo solo.
 ### Pasos
 
 1. En Render: **New > Blueprint**.
-2. Conecta el repositorio y elige la rama.
+2. Conecta el repositorio y elige la rama. El blueprint trae fijada la rama
+   donde vive el codigo (`branch:` en `render.yaml`); si integras a `main`,
+   actualiza ese valor o Render no encontrara la rama.
 3. Render detecta `render.yaml` y muestra lo que va a crear: el servicio web
    `sistema-escolar` y la base `escuela-db`. Confirma.
 4. Espera el primer despliegue. Render instala, compila, aplica las
@@ -23,6 +25,20 @@ su base de datos. Render lo lee y crea todo solo.
 
 No hay que capturar `AUTH_SECRET` a mano: Render la genera y nadie mas la ve.
 `DATABASE_URL` se conecta sola a la base del blueprint.
+
+### Si el despliegue falla
+
+Los tres tropiezos mas comunes, ya resueltos en este repositorio, por si
+reaparecen al tocar la configuracion:
+
+- **La rama no existe.** `render.yaml` declara una rama concreta; tiene que
+  existir en el repositorio.
+- **`npm ci` aborta.** Pasa cuando `package.json` y `package-lock.json` no
+  coinciden. Se arregla corriendo `npm install` y subiendo el lock.
+- **El build no encuentra `next`, `prisma` o `tailwindcss`.** Pasa si se fija
+  `NODE_ENV=production` como variable del servicio: npm omite las
+  devDependencies, y ahi viven las herramientas de compilacion. El blueprint
+  no la fija a proposito.
 
 ### Que revisar despues del primer despliegue
 

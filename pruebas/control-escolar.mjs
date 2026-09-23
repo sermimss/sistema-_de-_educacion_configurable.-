@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 
-const BASE = "http://localhost:3000";
+const BASE = process.env.BASE_PRUEBAS ?? "http://localhost:3000";
 const fallos = [];
 const sello = Date.now().toString().slice(-6);
 

@@ -8,7 +8,7 @@
 import { chromium } from "playwright";
 import { PrismaClient } from "@prisma/client";
 
-const BASE = "http://localhost:3000";
+const BASE = process.env.BASE_PRUEBAS ?? "http://localhost:3000";
 const db = new PrismaClient();
 const fallos = [];
 

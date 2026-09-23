@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 
-const BASE = "http://localhost:3000";
+const BASE = process.env.BASE_PRUEBAS ?? "http://localhost:3000";
 const fallos = [];
 function comprobar(nombre, ok, detalle = "") {
   console.log(`${ok ? "OK  " : "FALLA"} ${nombre}${detalle ? " :: " + detalle : ""}`);
