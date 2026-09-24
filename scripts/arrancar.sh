@@ -34,5 +34,12 @@ if [[ "$aplicadas" != "1" ]]; then
   echo "[arranque] registros para ver si la base es alcanzable."
 fi
 
-echo "[arranque] levantando el servidor en el puerto ${PORT:-3000}"
+# El servidor de Next escucha en la direccion que traiga HOSTNAME, y el
+# hospedaje ya trae esa variable puesta con el nombre del contenedor
+# (srv-...-hibernate-...). Atado a ese nombre, el enrutador del proveedor tarda
+# minutos en encontrar el puerto, o no lo encuentra y devuelve 502 con el
+# proceso vivo y listo. Se fija en todas las interfaces.
+export HOSTNAME="${ESCUCHAR_EN:-0.0.0.0}"
+
+echo "[arranque] levantando el servidor en ${HOSTNAME}:${PORT:-3000}"
 exec node .next/standalone/server.js
