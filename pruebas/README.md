@@ -132,3 +132,27 @@ aprobatoria 6, plan de 9 cuatrimestres, alerta a las 4 faltas, vencimiento el
 dia 5, recargo del 12%) son exactamente los que el sistema usa despues.
 Para volver a correrla hay que recrear la base, ya que el asistente solo puede
 ejecutarse una vez.
+
+## red-local.mjs
+
+22 comprobaciones de la red local del colegio. Necesita **dos instalaciones
+corriendo** con la misma clave de red, una con la base activa y otra sumada a
+ella.
+
+```bash
+A_PRUEBAS=http://localhost:3401 \
+B_PRUEBAS=http://localhost:3402 \
+CLAVE_RED='la-clave-del-colegio' \
+npm run prueba:red
+```
+
+Comprueba que las dos copias de las primitivas de firma (la del sistema en
+TypeScript y la del descubridor en mjs) producen la misma firma; que los
+papeles quedaron bien repartidos; que las dos computadoras alcanzan la base y
+ven el mismo colegio; y, lo que de verdad importa, que **un concepto de cobro
+dado de alta en una aparece en la otra**.
+
+Del lado de la seguridad verifica que con la clave del colegio se obtienen las
+credenciales de la base, que sin ella se rechaza con 403 sin filtrar nada, que
+una peticion grabada y repetida se rechaza, que una vencida se rechaza, y que
+una computadora que no tiene la base activa no reparte credenciales.

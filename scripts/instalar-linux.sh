@@ -58,6 +58,15 @@ else
   echo "    base '$BASE' ya existia; se conservan sus datos"
 fi
 
+echo "==> Abriendo la base a la red local del colegio"
+# Para que las demas computadoras del colegio puedan trabajar contra esta base.
+# Se abre solo a la red local; el detalle esta en abrir-base-a-la-red.sh.
+if [[ -x "$paquete/abrir-base-a-la-red.sh" ]]; then
+  "$paquete/abrir-base-a-la-red.sh" "$BASE" escuela || true
+else
+  echo "    AVISO: falta abrir-base-a-la-red.sh; queda solo para uso local."
+fi
+
 echo "==> Copiando archivos a $DESTINO"
 id -u "$USUARIO" >/dev/null 2>&1 || useradd --system --home "$DESTINO" --shell /usr/sbin/nologin "$USUARIO"
 
@@ -86,14 +95,25 @@ if [[ "$actualizacion" == "1" ]]; then
   echo "    se conservo la configuracion existente"
 else
   secreto="$(head -c 48 /dev/urandom | base64 | tr -d '\n')"
+  # Identificador de esta computadora dentro de la red del colegio.
+  sitio="$(head -c 8 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+  # Clave compartida del colegio. La primera computadora la genera; en las
+  # demas se pasa con CLAVE_RED=... para que se reconozcan entre si.
+  clave_red="${CLAVE_RED:-$(head -c 24 /dev/urandom | base64 | tr -d '/+=\n' | head -c 24)}"
   cat > "$DESTINO/entorno" <<ENTORNO
 DATABASE_URL=postgresql://escuela:$clave_bd@localhost:5432/$BASE?schema=public
 AUTH_SECRET=$secreto
 PORT=$PUERTO
 SESSION_HORAS=12
+SITIO_ID=$sitio
+CLAVE_RED=$clave_red
 ENTORNO
   echo "    archivo de configuracion creado"
 fi
+
+# Se lee del archivo para poder mostrarla al final, tanto en una instalacion
+# nueva como en una actualizacion.
+clave_red_actual="$(grep -E '^CLAVE_RED=' "$DESTINO/entorno" | cut -d= -f2- || true)"
 chmod 600 "$DESTINO/entorno"
 chown -R "$USUARIO":"$USUARIO" "$DESTINO"
 
@@ -150,7 +170,31 @@ if [[ -n "${ip_local:-}" ]]; then
   echo " Desde el resto del colegio:    http://$ip_local:$PUERTO"
 fi
 echo
-echo " Abre esa direccion y completa el asistente de instalacion."
+papel="$(curl -fsS -m 5 "http://localhost:$PUERTO/api/red/estado" 2>/dev/null || true)"
+if [[ "$papel" == *'"manda":false'* ]]; then
+  echo " Esta computadora se SUMO a otra instalacion del colegio que ya tenia"
+  echo " los datos. Ambas muestran la misma informacion; su base local quedo"
+  echo " en reposo. No hay que correr el asistente otra vez."
+else
+  echo " Esta computadora tiene la base activa del colegio."
+  echo " Abre esa direccion y completa el asistente de instalacion."
+fi
+echo
+echo " ---- Para instalar en otra computadora del colegio ----"
+echo
+echo " Clave de red del colegio:"
+echo
+echo "     ${clave_red_actual:-(no configurada)}"
+echo
+echo " Corre el instalador en la otra computadora pasandole esa clave:"
+echo
+echo "     sudo CLAVE_RED='${clave_red_actual:-...}' ./instalar-linux.sh"
+echo
+echo " Con la misma clave se reconocen entre si y se comportan como un solo"
+echo " sistema: la que arranque primero guarda los datos y las demas trabajan"
+echo " contra ella. Sin la clave, cada una quedaria como un colegio aparte."
+echo " Guarda esa clave; es lo que impide que un aparato ajeno a la red se"
+echo " haga pasar por el sistema del colegio."
 echo
 echo " Para ver como va:     systemctl status sistema-escolar"
 echo " Para ver el registro: journalctl -u sistema-escolar -f"

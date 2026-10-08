@@ -136,6 +136,31 @@ Requisitos previos en esa computadora: Node.js 22 o mayor y PostgreSQL 14 o
 mayor. Paso a paso, respaldos y solucion de problemas en
 [`docs/instalacion-local.md`](docs/instalacion-local.md).
 
+#### Varias computadoras, una sola informacion
+
+Cada instalacion trae su propia base y puede trabajar sola. Si varias comparten
+la **clave de red del colegio**, se reconocen entre si y se comportan como un
+solo sistema: la primera que arranque guarda los datos y las demas trabajan
+contra ella.
+
+```bash
+sudo ./instalar-linux.sh                              # primera: imprime la clave
+sudo CLAVE_RED='<la que imprimio>' ./instalar-linux.sh  # las demas
+```
+
+No hay que designar un servidor ni configurar nada mas: el papel se decide en
+cada arranque. `GET /api/red/estado` dice cual computadora tiene los datos.
+
+Solo una base queda activa a proposito. Si cada computadora escribiera en la
+suya, dos cajas cobrando a la vez repetirian folios de recibo y el mismo alumno
+tendria dos saldos distintos. La contraparte: si la computadora con los datos
+se apaga, las demas no abren el sistema, en lugar de abrir una copia paralela
+que nadie podria reconciliar despues.
+
+Los anuncios en la red van firmados con esa clave, para que un aparato ajeno
+conectado al WiFi del colegio no pueda hacerse pasar por el sistema ni obtener
+las credenciales de la base.
+
 > El paquete se arma en el mismo sistema operativo donde se va a instalar: el
 > motor de base de datos de Prisma es distinto en Windows y en Linux.
 >

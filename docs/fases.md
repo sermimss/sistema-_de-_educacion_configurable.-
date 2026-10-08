@@ -227,3 +227,117 @@ Pendiente declarado:
   servicio no pudo ejecutarse aqui. Se verifico que la unidad generada es
   valida y que el sistema instalado funciona corriendo como el usuario del
   servicio, que es lo que systemd haria.
+
+---
+
+# Entrega adicional: varias computadoras como un solo sistema
+
+El paquete instalable dejaba una dependencia incomoda: si la computadora que
+guarda los datos se apaga, nadie entra. La peticion fue que **cada computadora
+funcione con su propia base, pero que las de una misma red se comporten como
+una sola**.
+
+## La decision y por que
+
+Lo que las palabras piden al pie de la letra es que varias bases escriban a la
+vez y se pongan de acuerdo. Para este sistema eso no es aceptable: dos cajas
+cobrando al mismo tiempo generarian **el mismo folio de recibo dos veces** y el
+mismo alumno tendria **dos saldos distintos** segun donde se consultara. En
+control escolar seria molesto; en finanzas y en facturacion es inadmisible.
+
+Asi que se implemento lo que si es correcto y cumple la intencion:
+
+- Cada instalacion trae su propia base y **puede trabajar sola**.
+- En una misma red, **solo una base queda activa**; las demas computadoras
+  sirven el sistema contra esa.
+- **Cualquiera puede ser la que manda.** No hay que designar un servidor: el
+  papel se decide en cada arranque.
+
+La contraparte se declara en lugar de esconderse: si la computadora con los
+datos se apaga, las demas **no abren el sistema**. Es preferible a abrir una
+copia paralela que despues nadie podria reconciliar.
+
+## Como se reconocen
+
+Por una **clave de red del colegio** que se define una vez. Al arrancar, cada
+computadora pregunta por la red local (difusion UDP, puerto 47808) si alguien
+ya tiene los datos abiertos. Quien contesta firma su anuncio con esa clave.
+
+Sin firma, cualquier aparato conectado al WiFi podria decir "yo tengo la base
+del colegio" y quedarse con las contrasenas o mandar a todos a un sistema
+falso. El sondeo tambien va firmado, para que una instalacion no revele su
+puerto ni su version a quien no comparte la clave.
+
+Las credenciales de la base se piden por HTTP a quien manda, firmadas, con
+marca de tiempo y numero de un solo uso. La direccion no viaja en la respuesta:
+la pone quien pregunta, usando la direccion por la que alcanzo al vecino, para
+no tener que adivinar cual de las tarjetas de red es la del colegio.
+
+En Linux el instalador abre PostgreSQL **solo** a la red local, solo para el
+usuario del sistema y solo para esa base. En Windows ese paso es manual y esta
+documentado.
+
+## Piezas
+
+- `src/lib/red.ts` y `scripts/protocolo-red.mjs`: las primitivas de firma. Son
+  dos copias porque el descubridor corre como proceso aparte y no puede
+  importar TypeScript; `pruebas/red-local.mjs` comprueba que firman igual.
+- `scripts/red-escolar.mjs`: busca vecinos y se anuncia.
+- `scripts/elegir-papel.mjs`: decide el papel en cada arranque.
+- `scripts/abrir-base-a-la-red.sh`: abre PostgreSQL a la red local, acotado.
+- `src/app/api/red/credenciales`: entrega los datos de conexion, firmado.
+- `src/app/api/red/estado`: dice que papel tiene cada computadora.
+
+## Fallas encontradas al probarlo, y corregidas
+
+1. **Si el vecino no contestaba, se partian los datos en dos.** La primera
+   version tomaba la base local cuando no lograba hablar con quien manda —
+   exactamente el escenario que se queria evitar. Ahora no abre.
+2. **Cada computadora anunciaba el puerto equivocado.** El anunciador leia
+   `PUERTO` y el resto del sistema usa `PORT`, asi que anunciaba el 3000 y las
+   demas no podian sumarse a ella. Se detecto porque la segunda computadora
+   nunca lograba conectarse.
+3. **`listen_addresses` no toma efecto al recargar PostgreSQL.** Hace falta
+   reiniciarlo. Peor: la decision de reiniciar se tomaba mirando el archivo de
+   configuracion, asi que una segunda corrida veia el archivo correcto y no
+   reiniciaba nunca. Ahora se mira el valor que el motor tiene cargado y se
+   comprueba al final que de verdad acepta conexiones de la red.
+4. **El script moria si faltaba `ip`.** Hay instalaciones minimas de Linux sin
+   iproute2; en lugar de avisar, abortaba la instalacion. Ahora recurre a
+   `hostname` y, si tampoco, avisa y deja el sistema en modo local.
+5. **"fetch failed" como unico diagnostico.** No dice nada a quien tenga que
+   arreglar la red. Ahora se registra la causa y el puerto.
+
+## Verificado en este entorno
+
+- Dos instalaciones, cada una con su base vacia, en la misma red:
+  - la primera migra sus 60 tablas y queda al mando;
+  - la segunda la encuentra, pide credenciales, **no migra**, y queda sumada;
+  - las dos muestran el mismo colegio, y un concepto de cobro dado de alta en
+    la segunda **aparece en la primera**;
+  - la base local de la segunda sigue con **0 tablas**: quedo en reposo;
+  - `pg_stat_activity` confirma la conexion entrante por la red.
+- Una tercera instalacion **sin clave de red** se comporta como antes: trabaja
+  sola y no se anuncia.
+- Un sondeo con otra clave no recibe respuesta; una peticion de credenciales
+  sin la clave recibe 403 sin filtrar nada; una repetida, 409; una vencida,
+  400; y una computadora que no manda no reparte credenciales.
+- PostgreSQL abierto a la red acepta `escuela_a` desde la red local y **rechaza**
+  `escuela_b` y el usuario `postgres`.
+- Las suites anteriores siguen pasando, cada una en las condiciones que pide su
+  documentacion: humo 26, control-escolar 28, academico 40, finanzas 40,
+  nomina 41, integridad-finanzas 27, asistente 29. Mas red-local 22.
+
+## Pendiente declarado
+
+- **El arranque de Windows no pudo probarse.** Este entorno no tiene
+  PowerShell. La eleccion de papel se escribio en el `arrancar.cmd` siguiendo
+  la misma logica que en Linux, y el paso de abrir PostgreSQL quedo documentado
+  como manual, pero nada de eso se ejecuto en un Windows real.
+- **La eleccion no es un protocolo de consenso.** Cada computadora espera un
+  lapso propio antes de declararse al mando y vuelve a mirar la red, asi que la
+  ventana en que dos podrian creerse al mando es de fracciones de segundo, pero
+  no es cero. Para una red de colegio alcanza; se declara en la guia.
+- **Sin relevo automatico.** Si la computadora con los datos se apaga, otra no
+  toma su lugar: tendria la base vacia. Un relevo de verdad necesita
+  replicacion, que es el trabajo que sigue si el colegio lo necesita.

@@ -25,7 +25,8 @@
     "prueba:academico": "node pruebas/academico.mjs",
     "prueba:finanzas": "node pruebas/finanzas.mjs",
     "prueba:nomina": "node pruebas/nomina.mjs",
-    "prueba:integridad": "node pruebas/integridad-finanzas.mjs"
+    "prueba:integridad": "node pruebas/integridad-finanzas.mjs",
+    "prueba:red": "node pruebas/red-local.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",

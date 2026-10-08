@@ -59,10 +59,17 @@ echo "    $copiados paquetes"
 # que NO puede viajar al colegio: cada instalacion genera las suyas.
 rm -f "$DESTINO"/.env "$DESTINO"/.env.*
 
+# Scripts de la red local: el arranque los necesita para decidir si esta
+# computadora manda o se suma a otra instalacion del colegio.
+mkdir -p "$DESTINO/scripts"
+cp scripts/protocolo-red.mjs scripts/red-escolar.mjs scripts/elegir-papel.mjs "$DESTINO/scripts/"
+chmod +x "$DESTINO/scripts/red-escolar.mjs" "$DESTINO/scripts/elegir-papel.mjs"
+
 cp scripts/arrancar-paquete.sh "$DESTINO/arrancar.sh"
 chmod +x "$DESTINO/arrancar.sh"
 cp scripts/instalar-linux.sh "$DESTINO/instalar-linux.sh"
-chmod +x "$DESTINO/instalar-linux.sh"
+cp scripts/abrir-base-a-la-red.sh "$DESTINO/abrir-base-a-la-red.sh"
+chmod +x "$DESTINO/instalar-linux.sh" "$DESTINO/abrir-base-a-la-red.sh"
 cp scripts/instalar-windows.ps1 "$DESTINO/instalar-windows.ps1"
 cp docs/instalacion-local.md "$DESTINO/LEEME.md"
 

@@ -174,10 +174,128 @@ Dos recomendaciones:
 Desde **fuera** del colegio no se entra: el sistema vive en la red interna.
 Eso es a proposito — es la contraparte de no depender de internet.
 
-## 8. Respaldos
+## 8. Varias computadoras, una sola informacion
+
+Lo anterior alcanza para un colegio chico: una computadora guarda los datos y
+las demas entran por el navegador. Pero si esa computadora se apaga, nadie
+entra. Para no depender de una sola, el sistema se puede **instalar en varias**.
+
+Cada instalacion trae su propia base de datos y puede trabajar sola. Lo que
+hace la diferencia es la **clave de red del colegio**: con la misma clave, las
+instalaciones se reconocen y se comportan como un solo sistema.
+
+### Como funciona
+
+```
+   Al prender, cada computadora pregunta a la red:
+   "¿alguien del colegio ya tiene los datos abiertos?"
+
+        ┌─ Nadie contesta  ──►  abre su propia base y queda al mando
+        │
+        └─ Alguien contesta ──►  se suma a esa: muestra los mismos datos
+                                 y deja su base local en reposo
+```
+
+No hay que designar una computadora como servidor ni configurar nada: **la
+primera que arranque guarda los datos** y las demas trabajan contra ella. Da
+igual cual sea. Todas muestran lo mismo y se puede trabajar desde cualquiera:
+lo que captura caja aparece al instante en direccion.
+
+### Por que solo una guarda los datos
+
+Esto es deliberado y conviene entenderlo. Si cada computadora escribiera en su
+propia base, dos cajas cobrando a la vez generarian **el mismo folio de recibo
+dos veces**, y el mismo alumno tendria **dos saldos distintos** segun donde se
+consultara. En control escolar eso es molesto; en finanzas y facturacion es
+inadmisible. Por eso en una red solo una base esta activa.
+
+La contraparte honesta: si la computadora que tiene los datos se apaga, las
+demas **no abren el sistema**. No es un descuido — es la decision de no partir
+los datos en dos. El sistema lo dice con claridad en lugar de abrir una copia
+paralela que despues nadie podria reconciliar.
+
+### Instalar la segunda computadora
+
+Al terminar, el instalador de la primera imprime la clave de red:
+
+```
+ Clave de red del colegio:
+
+     7fKq2mXpR4vLnB8dTcHs
+
+ Corre el instalador en la otra computadora pasandole esa clave:
+
+     sudo CLAVE_RED='7fKq2mXpR4vLnB8dTcHs' ./instalar-linux.sh
+```
+
+En Windows:
+
+```powershell
+.\instalar-windows.ps1 -ClaveRed '7fKq2mXpR4vLnB8dTcHs'
+```
+
+Eso es todo. La segunda computadora encuentra a la primera, se suma, y no pide
+correr el asistente otra vez.
+
+**Guarda esa clave.** Es lo que impide que un aparato ajeno conectado al WiFi
+del colegio se haga pasar por el sistema y mande a todos a una pantalla falsa.
+Sin clave, cada instalacion queda como un colegio aparte.
+
+Para saber en cualquier momento quien tiene los datos:
+
+```
+http://<direccion-de-la-computadora>:3000/api/red/estado
+```
+
+### Falta un paso en Windows
+
+En Linux el instalador abre PostgreSQL a la red local solo. En **Windows hay
+que hacerlo a mano**, una vez, en la computadora que vaya a guardar los datos:
+
+1. Abre `C:\Program Files\PostgreSQL\16\data\postgresql.conf` con el Bloc de
+   notas (como administrador) y deja la linea:
+
+   ```
+   listen_addresses = '*'
+   ```
+
+2. En `C:\Program Files\PostgreSQL\16\data\pg_hba.conf`, agrega al final, con
+   la red del colegio (si las computadoras son `192.168.1.x`, se escribe
+   `192.168.1.0/24`):
+
+   ```
+   host escuela escuela 192.168.1.0/24 scram-sha-256
+   ```
+
+3. Reinicia el servicio de PostgreSQL desde *Servicios* de Windows. El primer
+   cambio **no toma efecto con recargar**: hace falta reiniciar.
+
+Esa linea es a proposito lo mas estrecha posible: solo esa red, solo el usuario
+del sistema, solo esa base, y siempre con contrasena.
+
+### Lo que esto asume
+
+Que la red del colegio no es hostil. Quien este conectado a ella y conozca la
+contrasena puede llegar a la base. Si el colegio comparte su WiFi con
+visitantes, la computadora de los datos deberia estar en una red aparte.
+
+### Si dos arrancan al mismo segundo
+
+Cada computadora espera un lapso propio antes de declararse al mando y vuelve a
+mirar la red, asi que la segunda alcanza a ver a la primera. La ventana en que
+las dos podrian creerse al mando es de fracciones de segundo, pero **no es
+cero**: no es un protocolo de consenso, es una eleccion sencilla y basta para
+una red de colegio. Si quieres evitarla por completo, prende primero la
+computadora de los datos y las demas despues.
+
+## 9. Respaldos
 
 Esto es lo mas importante de toda la guia. Los datos viven en el disco de esa
 computadora; si el disco falla y no hay respaldo, no hay de donde recuperarlos.
+
+Si el colegio tiene varias computadoras instaladas (punto 8), el respaldo se
+hace **en la que tiene los datos**, no en todas: las demas no guardan nada. Se
+sabe cual es con `/api/red/estado`.
 
 **Linux** — respaldo diario automatico:
 
@@ -209,18 +327,18 @@ Para restaurar:
 gunzip -c escuela-2026-03-01.sql.gz | psql -U escuela escuela
 ```
 
-## 9. Actualizaciones
+## 10. Actualizaciones
 
 Cuando llega una version nueva:
 
-1. **Respalda primero** (punto 8).
+1. **Respalda primero** (punto 9).
 2. Descomprime el paquete nuevo.
 3. Corre el mismo instalador otra vez.
 
 El instalador conserva la base de datos y la configuracion, y aplica solas las
 migraciones que falten. No hay que volver a correr el asistente.
 
-## 10. Si algo falla
+## 11. Si algo falla
 
 | Sintoma | Que revisar |
 |---|---|
@@ -228,17 +346,21 @@ migraciones que falten. No hay que volver a correr el asistente.
 | No abre ni en el servidor | `systemctl status sistema-escolar` (Linux) o la tarea programada (Windows) |
 | Abre pero dice que no hay base | PostgreSQL no arranco: `systemctl status postgresql` |
 | Dejo de encontrarse la direccion | La IP del servidor cambio; ver punto 7 |
+| Dice "hay una base activa en la red que no se alcanza" | La computadora con los datos esta apagada o fuera de la red. Prendela, o revisa el cable/WiFi. Es a proposito: ver punto 8 |
+| Una computadora quedo como colegio aparte | Se instalo sin la clave de red. Reinstalala pasando `CLAVE_RED` |
+| La segunda computadora no alcanza la base | Falta abrir PostgreSQL a la red local; en Windows es a mano (punto 8) |
 
 En **Windows**, el detalle de cada arranque queda en
 `C:\SistemaEscolar\registro.txt`. Es el primer archivo que hay que abrir si el
 sistema no responde. En **Linux** lo mismo se ve con
 `journalctl -u sistema-escolar -f`.
 
-La ruta `/api/salud` dice en texto claro como esta el sistema y su base de
-datos. Sirve para distinguir "el sistema no arranco" de "el sistema arranco
-pero no ve la base".
+Las rutas `/api/salud` y `/api/red/estado` dicen en texto claro como esta el
+sistema, su base de datos y su papel en la red del colegio. La primera sirve
+para distinguir "el sistema no arranco" de "el sistema arranco pero no ve la
+base"; la segunda, para saber cual computadora tiene los datos.
 
-## 11. Servicio local o servicio en la nube
+## 12. Servicio local o servicio en la nube
 
 Las dos formas funcionan con el mismo codigo; cambia quien se hace cargo de
 que.

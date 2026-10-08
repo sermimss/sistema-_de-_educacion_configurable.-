@@ -15,7 +15,11 @@
 param(
   [string]$Destino = "C:\SistemaEscolar",
   [int]$Puerto = 3000,
-  [string]$Base = "escuela"
+  [string]$Base = "escuela",
+  # Clave de red del colegio. En la PRIMERA computadora se omite y el
+  # instalador la genera; en las demas se pasa la misma que imprimio aquella,
+  # para que se reconozcan y trabajen como un solo sistema.
+  [string]$ClaveRed = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -107,14 +111,37 @@ if ($actualizacion) {
   $bytesSecreto = New-Object byte[] 48
   [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytesSecreto)
   $secreto = [Convert]::ToBase64String($bytesSecreto)
+
+  # Identificador de esta computadora dentro de la red del colegio.
+  $bytesSitio = New-Object byte[] 8
+  [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytesSitio)
+  $sitio = ($bytesSitio | ForEach-Object { $_.ToString("x2") }) -join ""
+
+  # Clave compartida del colegio. La primera computadora la genera; en las
+  # demas se pasa con -ClaveRed para que se reconozcan entre si.
+  if ($ClaveRed) {
+    $claveRed = $ClaveRed
+  } else {
+    $bytesClave = New-Object byte[] 18
+    [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytesClave)
+    $claveRed = [Convert]::ToBase64String($bytesClave) -replace '[/+=]', ''
+  }
+
   @(
     $cadenaBase
     "AUTH_SECRET=$secreto"
     "PORT=$Puerto"
     "SESSION_HORAS=12"
+    "SITIO_ID=$sitio"
+    "CLAVE_RED=$claveRed"
   ) | Set-Content -Path $archivoEntorno -Encoding ASCII
   Write-Host "    archivo de configuracion creado"
 }
+
+# Se lee del archivo para mostrarla al final, tanto en instalacion nueva como
+# en actualizacion.
+$claveRedActual = ((Get-Content $archivoEntorno) -match '^CLAVE_RED=' |
+  Select-Object -First 1) -replace '^CLAVE_RED=', ''
 
 # Solo el administrador puede leer las claves.
 $permisos = Get-Acl $archivoEntorno
@@ -125,7 +152,7 @@ foreach ($cuenta in @("SYSTEM", "Administrators")) {
 }
 Set-Acl -Path $archivoEntorno -AclObject $permisos
 
-# Arranque: aplica migraciones y levanta el servidor.
+# Arranque: decide el papel en la red, aplica migraciones y levanta el servidor.
 $arranque = Join-Path $Destino 'arrancar.cmd'
 @"
 @echo off
@@ -133,17 +160,42 @@ cd /d "%~dp0"
 for /f "usebackq tokens=1,* delims==" %%a in ("entorno") do set %%a=%%b
 rem Escuchar en todas las interfaces para que lo alcancen las demas computadoras.
 set HOSTNAME=0.0.0.0
-rem Al prender la computadora, PostgreSQL puede tardar en estar listo.
-for /l %%i in (1,1,3) do (
-  echo [arranque] aplicando migraciones, intento %%i de 3 >> registro.txt
-  node node_modules\prisma\build\index.js migrate deploy --schema prisma\schema.prisma >> registro.txt 2>&1 && goto :servidor
-  rem Se espera con ping porque 'timeout' falla cuando no hay consola.
-  ping -n 6 127.0.0.1 > nul
+set /p VERSION_SISTEMA=<VERSION
+
+rem Si hay otra instalacion del colegio en esta red, solo una base queda
+rem activa y esta computadora se suma a ella. Lo decide elegir-papel.
+node scripts\elegir-papel.mjs papel.env >> registro.txt 2>&1
+if errorlevel 3 (
+  echo [arranque] no se abre el sistema aqui: hay una base activa en la red que no se alcanza. >> registro.txt
+  exit /b 1
 )
-echo [arranque] ADVERTENCIA: no se pudieron aplicar las migraciones >> registro.txt
-:servidor
-echo [arranque] sistema escolar escuchando en el puerto %PORT% >> registro.txt
+for /f "usebackq tokens=1,* delims==" %%a in ("papel.env") do set %%a=%%b
+if not defined MANDA set MANDA=1
+
+if "%MANDA%"=="1" (
+  rem Al prender la computadora, PostgreSQL puede tardar en estar listo.
+  for /l %%i in (1,1,3) do (
+    echo [arranque] aplicando migraciones, intento %%i de 3 >> registro.txt
+    node node_modules\prisma\build\index.js migrate deploy --schema prisma\schema.prisma >> registro.txt 2>&1 && goto :red
+    rem Se espera con ping porque 'timeout' falla cuando no hay consola.
+    ping -n 6 127.0.0.1 > nul
+  )
+  echo [arranque] ADVERTENCIA: no se pudieron aplicar las migraciones >> registro.txt
+) else (
+  echo [arranque] la base la administra %SITIO_QUE_MANDA%; aqui no se migra. >> registro.txt
+)
+
+:red
+if defined CLAVE_RED if defined SITIO_ID (
+  start "red escolar" /b node scripts\red-escolar.mjs anunciar >> registro.txt 2>&1
+)
+
+echo [arranque] sistema escolar escuchando en el puerto %PORT% (manda=%MANDA%) >> registro.txt
 node server.js >> registro.txt 2>&1
+
+rem Si el sistema se detiene, el anuncio se detiene con el: una computadora que
+rem ya no sirve el sistema no debe seguir diciendo que tiene la base.
+taskkill /f /fi "WINDOWTITLE eq red escolar" > nul 2>&1
 "@ | Set-Content -Path $arranque -Encoding ASCII
 
 Write-Host "==> Registrando el arranque automatico"
@@ -172,7 +224,36 @@ Write-Host ""
 Write-Host " Desde esta computadora:     http://localhost:$Puerto"
 if ($ip) { Write-Host " Desde el resto del colegio: http://${ip}:$Puerto" }
 Write-Host ""
-Write-Host " Abre esa direccion y completa el asistente de instalacion."
+$papel = ""
+try {
+  $papel = (Invoke-WebRequest -Uri "http://localhost:$Puerto/api/red/estado" -TimeoutSec 5 -UseBasicParsing).Content
+} catch { }
+if ($papel -match '"manda":false') {
+  Write-Host " Esta computadora se SUMO a otra instalacion del colegio que ya"
+  Write-Host " tenia los datos. Ambas muestran la misma informacion; su base"
+  Write-Host " local quedo en reposo. No hay que correr el asistente otra vez."
+} else {
+  Write-Host " Esta computadora tiene la base activa del colegio."
+  Write-Host " Abre esa direccion y completa el asistente de instalacion."
+}
+Write-Host ""
+Write-Host " ---- Para instalar en otra computadora del colegio ----"
+Write-Host ""
+Write-Host " Clave de red del colegio:"
+Write-Host ""
+Write-Host "     $claveRedActual"
+Write-Host ""
+Write-Host " Corre el instalador en la otra computadora con esa clave:"
+Write-Host ""
+Write-Host "     .\instalar-windows.ps1 -ClaveRed '$claveRedActual'"
+Write-Host ""
+Write-Host " Con la misma clave se reconocen y se comportan como un solo"
+Write-Host " sistema: la que arranque primero guarda los datos y las demas"
+Write-Host " trabajan contra ella. Guarda esa clave."
+Write-Host ""
+Write-Host " FALTA UN PASO para que las demas computadoras puedan usar esta"
+Write-Host " base: abrir PostgreSQL a la red local. En Windows hay que hacerlo"
+Write-Host " a mano; viene explicado en LEEME.md, seccion 'Varias computadoras'."
 Write-Host ""
 Write-Host " Si algo falla, el detalle queda en: $Destino\registro.txt"
 Write-Host ""
