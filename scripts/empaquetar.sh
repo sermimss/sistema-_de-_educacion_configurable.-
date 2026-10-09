@@ -69,8 +69,12 @@ cp scripts/arrancar-paquete.sh "$DESTINO/arrancar.sh"
 chmod +x "$DESTINO/arrancar.sh"
 cp scripts/instalar-linux.sh "$DESTINO/instalar-linux.sh"
 cp scripts/abrir-base-a-la-red.sh "$DESTINO/abrir-base-a-la-red.sh"
-chmod +x "$DESTINO/instalar-linux.sh" "$DESTINO/abrir-base-a-la-red.sh"
+cp scripts/respaldar.sh "$DESTINO/respaldar.sh"
+cp scripts/restaurar.sh "$DESTINO/restaurar.sh"
+chmod +x "$DESTINO/instalar-linux.sh" "$DESTINO/abrir-base-a-la-red.sh" \
+         "$DESTINO/respaldar.sh" "$DESTINO/restaurar.sh"
 cp scripts/instalar-windows.ps1 "$DESTINO/instalar-windows.ps1"
+cp scripts/respaldar-windows.ps1 "$DESTINO/respaldar-windows.ps1"
 cp docs/instalacion-local.md "$DESTINO/LEEME.md"
 
 echo "$VERSION" > "$DESTINO/VERSION"

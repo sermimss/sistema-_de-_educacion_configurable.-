@@ -341,3 +341,96 @@ documentado.
 - **Sin relevo automatico.** Si la computadora con los datos se apaga, otra no
   toma su lugar: tendria la base vacia. Un relevo de verdad necesita
   replicacion, que es el trabajo que sigue si el colegio lo necesita.
+
+---
+
+# Entrega adicional: respaldos verificados
+
+El respaldo existia solo como una linea de cron en la guia. Una linea en un
+documento no respalda nada: hay que escribirla bien, acordarse de ponerla, y
+no equivocarse. Ahora es parte del sistema y queda programada al instalar.
+
+## Lo que hace
+
+Todas las noches a las 22:00, en la computadora que tiene los datos:
+
+1. Saca la copia y la comprime.
+2. **La restaura en una base temporal y compara los conteos tabla por tabla.**
+3. Deja una segunda copia en el disco externo, si esta disponible.
+4. Rota las de mas de 30 dias.
+
+El paso 2 es la razon de ser de esto. Una copia que nunca se probo no es un
+respaldo: es un archivo del que nadie sabe nada hasta el dia en que hace falta.
+Si no restaura o no coincide, el respaldo falla con codigo distinto de cero
+para que systemd lo reporte, en lugar de quedarse callado.
+
+## Medido
+
+Base con 504 alumnos y un ciclo completo de pase de lista, 285,000 registros
+de asistencia:
+
+| | |
+|---|---|
+| Base en disco | 43 MB |
+| Respaldo comprimido | 1.2 MB |
+
+Un ciclo entero de un colegio mediano cabe en poco mas de un megabyte. El
+almacenamiento no es el costo del resguardo local; la disciplina si.
+
+## Piezas
+
+- `scripts/respaldar.sh`: respaldo con verificacion (Linux, probado).
+- `scripts/restaurar.sh`: restauracion con confirmacion y copia de seguridad
+  previa (Linux, probado).
+- `scripts/respaldar-windows.ps1`: equivalente para Windows (sin probar).
+- Unidad y temporizador de systemd, registrados por el instalador de Linux.
+- Tarea programada equivalente en el instalador de Windows.
+
+## Fallas encontradas al probarlo, y corregidas
+
+1. **La restauracion dejaba el sistema inservible.** Al recrear el esquema como
+   `postgres`, las tablas quedaban a nombre de `postgres` y el usuario de la
+   aplicacion no veia ninguna. Lo peor: el guion imprimia "Restauracion
+   terminada" con los conteos correctos, porque consultaba como administrador.
+   Ahora el esquema queda a nombre del usuario del sistema, la restauracion
+   corre con sus credenciales, y **la comprobacion final consulta por donde
+   consulta la aplicacion**, no como administrador.
+2. **`psql` no acepta la cadena de conexion de Prisma.** El parametro
+   `?schema=public` lo hace fallar con "invalid URI query parameter". Se arma
+   una cadena limpia dejando solo los parametros que libpq conoce, y el esquema
+   se pasa por separado.
+3. **Se respaldaba la base vacia de una computadora secundaria.** El guion
+   preguntaba al sistema su papel en la red, pero si el sistema esta apagado
+   no hay respuesta y terminaba copiando una base sin datos: un archivo de unos
+   kilobytes que parece un respaldo correcto. Ahora tambien se mira la base
+   misma y se niega a respaldar si no hay colegio cargado.
+4. **Una copia a medias quedaba guardada.** Si `pg_dump` fallaba despues de
+   haber escrito algo, el archivo quedaba roto en la carpeta de respaldos. Se
+   comprueba la integridad del comprimido y se borra si no pasa.
+
+## Verificado en este entorno
+
+- Respaldo con verificacion por restauracion sobre 285,000 registros.
+- Copia a disco externo conectado, y aviso ruidoso cuando no esta.
+- Un respaldo truncado se rechaza antes de tocar la base.
+- **Desastre total simulado** (esquema borrado) y restauracion completa: 60
+  tablas, 504 alumnos, 285,000 asistencias, cargos y pagos de vuelta.
+- Tras restaurar, las tablas quedan a nombre del usuario de la aplicacion, el
+  sistema reporta el colegio instalado y pasan las 26 pruebas de humo.
+- Una base sin colegio cargado no genera ningun archivo.
+- Las unidades de systemd pasan `systemd-analyze verify` y el horario se
+  normaliza correctamente.
+- Ciclo completo repetido desde el paquete final recien armado.
+
+## Pendiente declarado
+
+- **El respaldo de Windows no pudo probarse**: este entorno no tiene
+  PowerShell. Queda con un aviso en la cabecera del propio guion, en el
+  instalador y en la guia: hay que correrlo a mano y restaurar en un equipo de
+  prueba antes de depender de el. Un respaldo en el que no se puede confiar es
+  peor que no tener ninguno, porque da falsa tranquilidad.
+- **Las copias de Windows usan el formato propio de PostgreSQL** (`.dump`) y
+  las de Linux `.sql.gz`. Cada una se restaura con el guion de su sistema; no
+  son intercambiables.
+- **La copia fuera de la computadora sigue dependiendo de una persona.** El
+  sistema avisa cuando el disco externo no esta, pero no puede conectarlo.

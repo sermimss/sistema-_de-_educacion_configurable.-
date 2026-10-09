@@ -161,6 +161,31 @@ Los anuncios en la red van firmados con esa clave, para que un aparato ajeno
 conectado al WiFi del colegio no pueda hacerse pasar por el sistema ni obtener
 las credenciales de la base.
 
+#### Respaldos verificados
+
+El instalador deja el respaldo programado todos los dias a las 22:00. Cada
+noche saca la copia y **la restaura en una base temporal para comparar los
+datos tabla por tabla**: una copia que nunca se probo no es un respaldo. Si no
+restaura o no coincide, falla ruidosamente en lugar de quedarse callado.
+
+```bash
+sudo /opt/sistema-escolar/respaldar.sh            # a mano
+sudo /opt/sistema-escolar/restaurar.sh            # lista los respaldos
+sudo /opt/sistema-escolar/restaurar.sh <archivo>  # restaura ese
+systemctl list-timers respaldo-escolar.timer      # cuando toca el proximo
+```
+
+Restaurar pide escribir el nombre de la base para confirmar, guarda una copia
+del estado actual antes de reemplazar nada, detiene el sistema mientras trabaja
+y lo vuelve a levantar.
+
+Medido: una base con 504 alumnos y un ciclo completo de pase de lista (285,000
+registros de asistencia) ocupa 43 MB en disco y **1.2 MB comprimida**. El
+almacenamiento no es el costo; la disciplina si. Falta un paso que el sistema
+no puede hacer solo: conectar una USB o disco externo y ponerlo en `entorno`
+como `RESPALDOS_EXTERNO`, porque un respaldo en el mismo disco que los datos no
+protege de que ese disco falle.
+
 > El paquete se arma en el mismo sistema operativo donde se va a instalar: el
 > motor de base de datos de Prisma es distinto en Windows y en Linux.
 >

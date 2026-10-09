@@ -293,39 +293,114 @@ computadora de los datos y las demas despues.
 Esto es lo mas importante de toda la guia. Los datos viven en el disco de esa
 computadora; si el disco falla y no hay respaldo, no hay de donde recuperarlos.
 
-Si el colegio tiene varias computadoras instaladas (punto 8), el respaldo se
-hace **en la que tiene los datos**, no en todas: las demas no guardan nada. Se
-sabe cual es con `/api/red/estado`.
+El instalador **ya deja el respaldo programado**: todos los dias a las 22:00.
+No hay que configurar nada para que empiece a funcionar.
 
-**Linux** — respaldo diario automatico:
+### Lo que hace cada noche
+
+1. Saca una copia de la base y la comprime.
+2. **La restaura en una base temporal y compara los datos tabla por tabla.**
+3. Si configuraste un disco externo, deja alli una segunda copia.
+4. Borra las copias de mas de 30 dias.
+
+El paso 2 es el que distingue un respaldo de un archivo. Una copia que nunca
+se probo no es un respaldo: es un archivo del que nadie sabe nada hasta el dia
+en que hace falta. Si la copia no restaura, o no coincide con la base, el
+respaldo **falla ruidosamente** en lugar de quedarse callado.
+
+```
+[respaldo] copia lista (1.2M)
+[respaldo] verificando: se restaura en una base temporal y se comparan los datos
+[respaldo]   Institucion: 1
+[respaldo]   Alumno: 504
+[respaldo]   RegistroAsistencia: 285000
+[respaldo] verificado: la copia restaura y coincide con la base
+```
+
+### Cuanto pesa
+
+Medido sobre una base con 504 alumnos y un ciclo completo de pase de lista
+(285,000 registros de asistencia):
+
+| | |
+|---|---|
+| Base en disco | 43 MB |
+| **Respaldo comprimido** | **1.2 MB** |
+
+Un ciclo entero de un colegio mediano cabe en poco mas de un megabyte. Una USB
+de las mas baratas guarda años de respaldos diarios: **el almacenamiento no es
+el costo, la disciplina si**.
+
+### El paso que falta, y es el importante
+
+El respaldo queda en la misma computadora que los datos. Si se quema, se la
+roban o falla el disco, se pierden los dos. Conecta una USB o un disco externo
+y agrega su ruta al archivo `entorno`:
+
+```
+RESPALDOS_EXTERNO=/media/usb-colegio
+```
+
+En Windows:
+
+```
+RESPALDOS_EXTERNO=D:\respaldos-colegio
+```
+
+Si esa ruta no esta disponible el respaldo **lo dice fuerte**, a proposito: la
+falla clasica es que la USB se desconecto hace meses, los respaldos siguen
+saliendo "bien", y el dia del problema no hay nada afuera.
+
+### Correrlo a mano
 
 ```bash
-sudo crontab -e
+sudo /opt/sistema-escolar/respaldar.sh
 ```
-
-y agrega esta linea (respalda a las 10 de la noche, conserva 30 dias):
-
-```
-0 22 * * * su postgres -c "pg_dump escuela" | gzip > /var/respaldos/escuela-$(date +\%F).sql.gz; find /var/respaldos -name '*.sql.gz' -mtime +30 -delete
-```
-
-Antes, crea la carpeta: `sudo mkdir -p /var/respaldos`
-
-**Windows** — respaldo manual o por tarea programada:
 
 ```powershell
-& "C:\Program Files\PostgreSQL\16\bin\pg_dump.exe" -U escuela escuela > D:\respaldos\escuela.sql
+.\respaldar-windows.ps1
 ```
 
-**Y copia esos respaldos fuera de la computadora**: una USB, un disco externo o
-la nube. Un respaldo que vive en el mismo disco que los datos no protege de
-nada.
-
-Para restaurar:
+### Ver que de verdad se esta haciendo
 
 ```bash
-gunzip -c escuela-2026-03-01.sql.gz | psql -U escuela escuela
+systemctl list-timers respaldo-escolar.timer    # cuando toca el proximo
+journalctl -u respaldo-escolar -n 40            # como fue el ultimo
+ls -lh /var/respaldos-escolares                 # que hay guardado
 ```
+
+Vale la pena mirarlo una vez al mes. Un respaldo programado que lleva semanas
+fallando se ve igual que uno que funciona, hasta que lo necesitas.
+
+### Restaurar
+
+```bash
+sudo /opt/sistema-escolar/restaurar.sh            # lista los respaldos
+sudo /opt/sistema-escolar/restaurar.sh <archivo>  # restaura ese
+```
+
+Pide escribir el nombre de la base para confirmar, porque reemplaza todo lo
+que hay. Antes de tocar nada **guarda una copia del estado actual**, asi que
+equivocarse de archivo no es irreversible: el propio guion te dice como volver
+atras. Tambien detiene el sistema mientras restaura, para que nadie escriba a
+medias, y lo vuelve a levantar al terminar.
+
+### Una advertencia sobre Windows
+
+El respaldo de Linux esta probado de punta a punta: se simulo la perdida total
+de la base y se recupero completa. **El de Windows no pudo probarse.** Antes de
+depender de el, correlo a mano, revisa que diga "respaldo verificado", y
+restaura esa copia en un equipo de prueba. Un respaldo en el que no se puede
+confiar es peor que no tener ninguno, porque da una falsa tranquilidad.
+
+Las copias de Windows se guardan en el formato propio de PostgreSQL (`.dump`)
+y las de Linux en `.sql.gz`. Cada una se restaura con el guion de su sistema.
+
+### Si hay varias computadoras
+
+El respaldo se hace **en la que tiene los datos**, no en todas. Las demas no
+guardan nada, y el guion lo detecta solo: si lo corres en una secundaria, te
+dice cual computadora tiene los datos y no hace nada.
 
 ## 10. Actualizaciones
 
@@ -349,6 +424,8 @@ migraciones que falten. No hay que volver a correr el asistente.
 | Dice "hay una base activa en la red que no se alcanza" | La computadora con los datos esta apagada o fuera de la red. Prendela, o revisa el cable/WiFi. Es a proposito: ver punto 8 |
 | Una computadora quedo como colegio aparte | Se instalo sin la clave de red. Reinstalala pasando `CLAVE_RED` |
 | La segunda computadora no alcanza la base | Falta abrir PostgreSQL a la red local; en Windows es a mano (punto 8) |
+| No se estan haciendo respaldos | `systemctl list-timers respaldo-escolar.timer` y `journalctl -u respaldo-escolar` |
+| El respaldo avisa que no coincide | NO confies en esa copia. Revisa el disco y corre el respaldo a mano |
 
 En **Windows**, el detalle de cada arranque queda en
 `C:\SistemaEscolar\registro.txt`. Es el primer archivo que hay que abrir si el

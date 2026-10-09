@@ -206,6 +206,22 @@ $opciones = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries `
 Register-ScheduledTask -TaskName "SistemaEscolar" -Action $accion -Trigger $disparador `
   -Settings $opciones -User "SYSTEM" -RunLevel Highest -Force | Out-Null
 
+Write-Host "==> Programando el respaldo diario"
+$guionRespaldo = Join-Path $Destino 'respaldar-windows.ps1'
+if (Test-Path $guionRespaldo) {
+  $accionR = New-ScheduledTaskAction -Execute "powershell.exe" `
+    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$guionRespaldo`" -Destino `"$Destino`"" `
+    -WorkingDirectory $Destino
+  $disparadorR = New-ScheduledTaskTrigger -Daily -At 10pm
+  $opcionesR = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries `
+    -DontStopIfGoingOnBatteries -StartWhenAvailable
+  Register-ScheduledTask -TaskName "SistemaEscolarRespaldo" -Action $accionR `
+    -Trigger $disparadorR -Settings $opcionesR -User "SYSTEM" -RunLevel Highest -Force | Out-Null
+  Write-Host "    programado todos los dias a las 22:00"
+} else {
+  Write-Host "    AVISO: no se encontro respaldar-windows.ps1; sin respaldo automatico"
+}
+
 Write-Host "==> Abriendo el puerto $Puerto en el firewall"
 New-NetFirewallRule -DisplayName "Sistema escolar" -Direction Inbound `
   -LocalPort $Puerto -Protocol TCP -Action Allow -ErrorAction SilentlyContinue | Out-Null
@@ -254,6 +270,23 @@ Write-Host ""
 Write-Host " FALTA UN PASO para que las demas computadoras puedan usar esta"
 Write-Host " base: abrir PostgreSQL a la red local. En Windows hay que hacerlo"
 Write-Host " a mano; viene explicado en LEEME.md, seccion 'Varias computadoras'."
+Write-Host ""
+Write-Host " ---- Respaldos ----"
+Write-Host ""
+Write-Host " Quedo programado todos los dias a las 22:00 y se verifica a si"
+Write-Host " mismo restaurando la copia y comparando los datos."
+Write-Host ""
+Write-Host "     Ahora:     .\respaldar-windows.ps1"
+Write-Host "     Ver tarea: Get-ScheduledTask SistemaEscolarRespaldo"
+Write-Host ""
+Write-Host " ANTES DE CONFIAR EN EL: el guion de respaldo de Windows no pudo"
+Write-Host " probarse durante el desarrollo. Correlo a mano una vez, revisa"
+Write-Host " que diga 'respaldo verificado', y restaura esa copia en un equipo"
+Write-Host " de prueba. Un respaldo en el que no se puede confiar es peor que"
+Write-Host " no tener ninguno."
+Write-Host ""
+Write-Host " Y agrega una USB o disco externo al archivo entorno:"
+Write-Host "     RESPALDOS_EXTERNO=D:\respaldos-colegio"
 Write-Host ""
 Write-Host " Si algo falla, el detalle queda en: $Destino\registro.txt"
 Write-Host ""

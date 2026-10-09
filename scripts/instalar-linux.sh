@@ -117,6 +117,38 @@ clave_red_actual="$(grep -E '^CLAVE_RED=' "$DESTINO/entorno" | cut -d= -f2- || t
 chmod 600 "$DESTINO/entorno"
 chown -R "$USUARIO":"$USUARIO" "$DESTINO"
 
+echo "==> Programando el respaldo diario"
+# El respaldo corre como administrador (necesita pg_dump y crear la base
+# temporal de verificacion), no como el usuario del sistema.
+cat > /etc/systemd/system/respaldo-escolar.service <<UNIDAD
+[Unit]
+Description=Respaldo verificado de la base del colegio
+After=postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=$DESTINO
+ExecStart=$DESTINO/respaldar.sh
+StandardOutput=journal
+StandardError=journal
+UNIDAD
+
+cat > /etc/systemd/system/respaldo-escolar.timer <<TEMPORIZADOR
+[Unit]
+Description=Respaldo diario de la base del colegio
+
+[Timer]
+# A las 22:00. Si la computadora estaba apagada a esa hora, se hace en cuanto
+# se prenda: un respaldo tarde sirve, uno que no se hizo no.
+OnCalendar=*-*-* 22:00:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target
+TEMPORIZADOR
+
 echo "==> Registrando el servicio"
 cat > /etc/systemd/system/sistema-escolar.service <<UNIDAD
 [Unit]
@@ -146,10 +178,15 @@ if ! systemctl daemon-reload 2>/dev/null; then
   echo "Para levantarlo a mano:"
   echo "  sudo -u $USUARIO $DESTINO/arrancar.sh"
   echo
+  echo "Y el respaldo, a mano o con cron:"
+  echo "  sudo $DESTINO/respaldar.sh"
+  echo
   exit 0
 fi
 systemctl enable sistema-escolar >/dev/null 2>&1
 systemctl restart sistema-escolar
+systemctl enable respaldo-escolar.timer >/dev/null 2>&1
+systemctl start respaldo-escolar.timer >/dev/null 2>&1
 
 echo "==> Esperando a que el sistema responda"
 for intento in $(seq 1 30); do
@@ -195,6 +232,25 @@ echo " sistema: la que arranque primero guarda los datos y las demas trabajan"
 echo " contra ella. Sin la clave, cada una quedaria como un colegio aparte."
 echo " Guarda esa clave; es lo que impide que un aparato ajeno a la red se"
 echo " haga pasar por el sistema del colegio."
+echo
+echo " ---- Respaldos ----"
+echo
+echo " Queda programado todos los dias a las 22:00, y se verifica a si mismo"
+echo " restaurando la copia y comparando los datos."
+echo
+echo "     Carpeta:   ${RESPALDOS:-/var/respaldos-escolares}"
+echo "     Ahora:     sudo $DESTINO/respaldar.sh"
+echo "     Restaurar: sudo $DESTINO/restaurar.sh"
+echo "     Ver:       systemctl list-timers respaldo-escolar.timer"
+echo
+echo " FALTA UN PASO, y es el importante: que la copia salga de esta"
+echo " computadora. Conecta una USB o disco externo y agrega su ruta al"
+echo " archivo $DESTINO/entorno:"
+echo
+echo "     RESPALDOS_EXTERNO=/media/usb-colegio"
+echo
+echo " Un respaldo en el mismo disco que los datos no protege de que ese"
+echo " disco falle."
 echo
 echo " Para ver como va:     systemctl status sistema-escolar"
 echo " Para ver el registro: journalctl -u sistema-escolar -f"
