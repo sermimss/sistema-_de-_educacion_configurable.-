@@ -75,6 +75,7 @@ chmod +x "$DESTINO/instalar-linux.sh" "$DESTINO/abrir-base-a-la-red.sh" \
          "$DESTINO/respaldar.sh" "$DESTINO/restaurar.sh"
 cp scripts/instalar-windows.ps1 "$DESTINO/instalar-windows.ps1"
 cp scripts/respaldar-windows.ps1 "$DESTINO/respaldar-windows.ps1"
+cp scripts/restaurar-windows.ps1 "$DESTINO/restaurar-windows.ps1"
 cp docs/instalacion-local.md "$DESTINO/LEEME.md"
 
 echo "$VERSION" > "$DESTINO/VERSION"

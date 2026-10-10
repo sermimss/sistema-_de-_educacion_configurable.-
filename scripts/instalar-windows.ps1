@@ -80,6 +80,19 @@ if ($existeBase -ne "1") {
   Write-Host "    base '$Base' ya existia; se conservan sus datos"
 }
 
+# Base donde el respaldo se prueba a si mismo cada noche. Se crea aqui, con el
+# administrador de PostgreSQL, porque el usuario del sistema no puede crear
+# bases: sin esta, la verificacion del respaldo se saltaria y el respaldo
+# diria "listo" sin haber comprobado nada.
+$baseVerificacion = "${Base}_verificacion"
+$existeVerif = & psql -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$baseVerificacion'"
+if ($existeVerif -ne "1") {
+  & psql -U postgres -c "CREATE DATABASE $baseVerificacion OWNER escuela;" | Out-Null
+  Write-Host "    base de verificacion de respaldos creada"
+} else {
+  Write-Host "    base de verificacion de respaldos ya existia"
+}
+
 Write-Host "==> Copiando archivos a $Destino"
 $archivoEntorno = Join-Path $Destino 'entorno'
 
@@ -277,13 +290,14 @@ Write-Host " Quedo programado todos los dias a las 22:00 y se verifica a si"
 Write-Host " mismo restaurando la copia y comparando los datos."
 Write-Host ""
 Write-Host "     Ahora:     .\respaldar-windows.ps1"
+Write-Host "     Restaurar: .\restaurar-windows.ps1"
 Write-Host "     Ver tarea: Get-ScheduledTask SistemaEscolarRespaldo"
 Write-Host ""
-Write-Host " ANTES DE CONFIAR EN EL: el guion de respaldo de Windows no pudo"
-Write-Host " probarse durante el desarrollo. Correlo a mano una vez, revisa"
-Write-Host " que diga 'respaldo verificado', y restaura esa copia en un equipo"
-Write-Host " de prueba. Un respaldo en el que no se puede confiar es peor que"
-Write-Host " no tener ninguno."
+Write-Host " Correlo a mano una vez y revisa que termine en 'respaldo"
+Write-Host " verificado'. Lo que no pudo probarse en el desarrollo es el"
+Write-Host " Programador de tareas que lo dispara cada noche, asi que al dia"
+Write-Host " siguiente confirma que la tarea corrio:"
+Write-Host "     Get-ScheduledTaskInfo SistemaEscolarRespaldo"
 Write-Host ""
 Write-Host " Y agrega una USB o disco externo al archivo entorno:"
 Write-Host "     RESPALDOS_EXTERNO=D:\respaldos-colegio"

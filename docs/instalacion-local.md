@@ -358,7 +358,9 @@ sudo /opt/sistema-escolar/respaldar.sh
 ```
 
 ```powershell
-.\respaldar-windows.ps1
+.\respaldar-windows.ps1          # respaldar ahora
+.\restaurar-windows.ps1          # lista los respaldos
+.\restaurar-windows.ps1 -Archivo <ruta>
 ```
 
 ### Ver que de verdad se esta haciendo
@@ -385,16 +387,52 @@ equivocarse de archivo no es irreversible: el propio guion te dice como volver
 atras. Tambien detiene el sistema mientras restaura, para que nadie escriba a
 medias, y lo vuelve a levantar al terminar.
 
-### Una advertencia sobre Windows
+### Que tan probado esta cada uno
 
-El respaldo de Linux esta probado de punta a punta: se simulo la perdida total
-de la base y se recupero completa. **El de Windows no pudo probarse.** Antes de
-depender de el, correlo a mano, revisa que diga "respaldo verificado", y
-restaura esa copia en un equipo de prueba. Un respaldo en el que no se puede
-confiar es peor que no tener ninguno, porque da una falsa tranquilidad.
+**Linux**: probado de punta a punta. Se simulo la perdida total de la base y se
+recupero completa, con el sistema funcionando despues.
+
+**Windows**: el respaldo y la restauracion estan probados en PowerShell 7
+contra un PostgreSQL de verdad, incluido el ciclo completo de desastre y
+recuperacion. Ninguno de los dos guiones usa comandos exclusivos de Windows.
+Lo que **no** se pudo probar son las piezas propias del sistema: las rutas
+(`C:\Program Files`, `C:\SistemaEscolar`) y el **Programador de tareas** que
+dispara el respaldo cada noche.
+
+Asi que en Windows, despues de instalar, haz dos cosas:
+
+1. Corre el respaldo a mano y revisa que termine en `respaldo verificado`.
+2. Al dia siguiente confirma que la tarea programada corrio sola:
+
+   ```powershell
+   Get-ScheduledTaskInfo SistemaEscolarRespaldo
+   ```
+
+Si `LastTaskResult` no es 0, el respaldo automatico no esta funcionando. Un
+respaldo en el que no se puede confiar es peor que no tener ninguno, porque da
+falsa tranquilidad.
 
 Las copias de Windows se guardan en el formato propio de PostgreSQL (`.dump`)
-y las de Linux en `.sql.gz`. Cada una se restaura con el guion de su sistema.
+y las de Linux en `.sql.gz`. Cada una se restaura con el guion de su sistema:
+`restaurar-windows.ps1` y `restaurar.sh`.
+
+### La base de verificacion, en Windows
+
+En Windows el usuario del sistema no puede crear bases de datos, asi que el
+respaldo no puede inventarse una base temporal donde probar la copia. El
+instalador crea una base fija para eso, `<base>_verificacion`, y el respaldo la
+reutiliza cada noche.
+
+Si esa base falta, el respaldo **se guarda igual pero avisa a gritos y termina
+con error**, para que el Programador de tareas lo marque como fallido y alguien
+lo vea. Se arregla una sola vez:
+
+```powershell
+createdb -U postgres -O escuela escuela_verificacion
+```
+
+Sin ese detalle, el respaldo correria cada noche diciendo "listo" sin haber
+comprobado nada: exactamente lo que estos guiones existen para evitar.
 
 ### Si hay varias computadoras
 

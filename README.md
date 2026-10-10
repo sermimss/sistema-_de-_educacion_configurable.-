@@ -189,8 +189,11 @@ protege de que ese disco falle.
 > El paquete se arma en el mismo sistema operativo donde se va a instalar: el
 > motor de base de datos de Prisma es distinto en Windows y en Linux.
 >
-> El instalador de Linux esta probado de punta a punta. El de Windows no pudo
-> probarse en un Windows real; conviene correrlo primero en un equipo de prueba.
+> El instalador de Linux esta probado de punta a punta. Del lado de Windows,
+> el respaldo y la restauracion estan probados en PowerShell 7 contra un
+> PostgreSQL real, pero el instalador usa piezas que solo existen en Windows
+> (tareas programadas, firewall, permisos de archivo) y esas no pudieron
+> probarse: conviene correrlo primero en un equipo de prueba.
 
 ### Con Docker
 

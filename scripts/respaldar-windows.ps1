@@ -8,14 +8,20 @@
 # viejas.
 #
 # ======================================================================
-#  AVISO: este guion NO pudo probarse en una computadora Windows real.
-#  Un respaldo en el que no se puede confiar es peor que no tener ninguno,
-#  porque da una falsa tranquilidad. ANTES de depender de el:
+#  Que tan probado esta esto:
 #
-#    1. Correlo a mano y revisa que termine en "respaldo verificado".
-#    2. Restaura esa copia en un equipo de prueba y entra al sistema.
+#  SI se probo, en PowerShell 7 contra un PostgreSQL de verdad: el respaldo,
+#  la verificacion por restauracion, la comparacion de conteos, la copia al
+#  disco externo, la rotacion, y los casos en que debe negarse (base sin
+#  colegio cargado, falta la base de verificacion, disco externo ausente).
+#  Este guion no usa ningun comando exclusivo de Windows.
 #
-#  Solo despues programalo. El de Linux si esta probado de punta a punta.
+#  NO se probo en Windows: las rutas propias del sistema (C:\Program Files,
+#  C:\SistemaEscolar) y el Programador de tareas que lo dispara cada noche.
+#
+#  Aun asi, antes de depender de el: correlo a mano una vez y revisa que
+#  termine en "respaldo verificado". Un respaldo en el que no se puede
+#  confiar es peor que no tener ninguno, porque da falsa tranquilidad.
 # ======================================================================
 #
 # A diferencia del de Linux, aqui la copia se guarda en el formato propio de
@@ -97,6 +103,27 @@ if (-not $pgDump) { Morir "no se encontro pg_dump. Instala PostgreSQL o agregalo
 
 $env:PGPASSWORD = $claveBd
 
+# El sistema puede estar apagado, y entonces la pregunta de arriba no contesta
+# nada. Asi que no se confia solo en eso: se mira la base misma. Una
+# computadora secundaria tiene su base local vacia, y respaldarla daria un
+# archivo de unos kilobytes que parece un respaldo correcto y no sirve.
+if ($psql) {
+  $hayColegio = (& $psql -tAc 'SELECT instalado FROM "Institucion" WHERE id=1' `
+                 --host=$servidor --port=$puertoBd --username=$usuarioBd $base 2>$null |
+                 Out-String).Trim()
+  if ($hayColegio -ne "t") {
+    Decir "la base '$base' de esta computadora no tiene ningun colegio cargado."
+    Decir "No se respalda: un archivo de una base vacia parece un respaldo"
+    Decir "correcto y no sirve para nada."
+    if ($papel) {
+      Decir "Si esta computadora se suma a otra del colegio, el respaldo va alla."
+    } else {
+      Decir "Revisa que el sistema este corriendo y el colegio instalado."
+    }
+    exit 0
+  }
+}
+
 # --- 1. La copia ----------------------------------------------------------
 
 New-Item -ItemType Directory -Force -Path $Respaldos | Out-Null
@@ -124,8 +151,13 @@ if ($SinVerificar) {
 } elseif (-not $pgRestore -or -not $psql) {
   Decir "AVISO: falta pg_restore o psql; la copia NO se pudo verificar."
 } else {
-  $temporal = "verificacion_respaldo_$(Get-Random -Maximum 99999)"
-  Decir "verificando: se restaura en una base temporal y se comparan los datos"
+  # Se usa una base de verificacion fija, creada por el instalador y propiedad
+  # del usuario del sistema. No se crea una temporal cada vez porque el usuario
+  # de la aplicacion normalmente NO tiene permiso de crear bases: la
+  # verificacion se saltaria en silencio y el respaldo diria "listo" sin haber
+  # comprobado nada, que es exactamente lo que este guion existe para evitar.
+  $verificacion = "${base}_verificacion"
+  Decir "verificando: se restaura en '$verificacion' y se comparan los datos"
 
   function ContarEn($cualBase, $tabla) {
     $r = & $psql -tAc "SELECT count(*) FROM `"$tabla`"" `
@@ -134,44 +166,65 @@ if ($SinVerificar) {
     return ($r | Out-String).Trim()
   }
 
-  function BorrarTemporal {
-    & $psql -q -c "DROP DATABASE IF EXISTS `"$temporal`"" `
-      --host=$servidor --port=$puertoBd --username=$usuarioBd postgres 2>$null | Out-Null
+  # ¿Existe la base de verificacion?
+  & $psql -tAc "SELECT 1" --host=$servidor --port=$puertoBd `
+    --username=$usuarioBd $verificacion 2>$null | Out-Null
+  $hayBase = ($LASTEXITCODE -eq 0)
+
+  if (-not $hayBase) {
+    # Se intenta crearla, por si este usuario si puede.
+    & $psql -q -c "CREATE DATABASE `"$verificacion`"" --host=$servidor `
+      --port=$puertoBd --username=$usuarioBd postgres 2>$null | Out-Null
+    $hayBase = ($LASTEXITCODE -eq 0)
   }
 
-  BorrarTemporal
-  & $psql -q -c "CREATE DATABASE `"$temporal`"" `
-    --host=$servidor --port=$puertoBd --username=$usuarioBd postgres 2>$null | Out-Null
-  if ($LASTEXITCODE -ne 0) {
-    Decir "AVISO: no se pudo crear la base temporal (el usuario '$usuarioBd' quiza"
-    Decir "no tiene permiso de crear bases). La copia quedo SIN VERIFICAR."
-  } else {
-    & $pgRestore --no-owner --no-privileges --dbname=$temporal `
-      --host=$servidor --port=$puertoBd --username=$usuarioBd "$archivo" 2>$null
-    $restauro = ($LASTEXITCODE -eq 0)
+  if (-not $hayBase) {
+    Decir ""
+    Decir "=============================================================="
+    Decir " LA COPIA NO SE PUDO VERIFICAR"
+    Decir ""
+    Decir " Falta la base '$verificacion', y el usuario '$usuarioBd' no"
+    Decir " tiene permiso para crearla. El archivo del respaldo SI se"
+    Decir " guardo, pero nadie comprobo que sirva para restaurar."
+    Decir ""
+    Decir " Para arreglarlo, una sola vez, como administrador de PostgreSQL:"
+    Decir "   createdb -O $usuarioBd $verificacion"
+    Decir "=============================================================="
+    # Se sale con error a proposito: asi el Programador de tareas marca la
+    # corrida como fallida y alguien lo ve, en lugar de pasar inadvertido.
+    exit 2
+  }
 
-    $diferencias = 0
-    if ($restauro) {
-      foreach ($tabla in @("Institucion","Usuario","Alumno","Empleado","Cargo",
-                           "Pago","Inscripcion","CalificacionPeriodo","RegistroAsistencia")) {
-        $origen = ContarEn $base $tabla
-        $copia = ContarEn $temporal $tabla
-        if ($null -eq $origen -or $null -eq $copia) {
-          Decir "  $tabla : no se pudo comparar"; $diferencias++
-        } elseif ($origen -ne $copia) {
-          Decir "  $tabla : original $origen, copia $copia  <-- NO COINCIDE"; $diferencias++
-        } else {
-          Decir "  $tabla : $origen"
-        }
-      }
+  # Se vacia y se restaura dentro. El dueño de la base puede recrear su
+  # esquema sin permisos especiales.
+  & $psql -q --set ON_ERROR_STOP=on -c "DROP SCHEMA public CASCADE" `
+    -c "CREATE SCHEMA public" --host=$servidor --port=$puertoBd `
+    --username=$usuarioBd $verificacion 2>$null | Out-Null
+  if ($LASTEXITCODE -ne 0) { Morir "no se pudo preparar la base de verificacion '$verificacion'" }
+
+  & $pgRestore --no-owner --no-privileges --dbname=$verificacion `
+    --host=$servidor --port=$puertoBd --username=$usuarioBd "$archivo" 2>$null
+  $restauro = ($LASTEXITCODE -eq 0)
+  if (-not $restauro) { Morir "el respaldo NO sirve para restaurar." }
+
+  $diferencias = 0
+  foreach ($tabla in @("Institucion","Usuario","Alumno","Empleado","Cargo",
+                       "Pago","Inscripcion","CalificacionPeriodo","RegistroAsistencia")) {
+    $origen = ContarEn $base $tabla
+    $copia = ContarEn $verificacion $tabla
+    if ($null -eq $origen -or $null -eq $copia) {
+      Decir "  $tabla : no se pudo comparar"; $diferencias++
+    } elseif ($origen -ne $copia) {
+      Decir "  $tabla : original $origen, copia $copia  <-- NO COINCIDE"; $diferencias++
+    } else {
+      Decir "  $tabla : $origen"
     }
-
-    BorrarTemporal
-
-    if (-not $restauro) { Morir "el respaldo NO sirve para restaurar." }
-    if ($diferencias -ne 0) { Morir "el respaldo no coincide con la base en $diferencias tabla(s). NO confies en el." }
-    Decir "respaldo verificado: la copia restaura y coincide con la base"
   }
+
+  if ($diferencias -ne 0) {
+    Morir "el respaldo no coincide con la base en $diferencias tabla(s). NO confies en el."
+  }
+  Decir "respaldo verificado: la copia restaura y coincide con la base"
 }
 
 # --- 3. Segunda copia fuera de esta computadora --------------------------

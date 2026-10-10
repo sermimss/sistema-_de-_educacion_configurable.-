@@ -434,3 +434,71 @@ almacenamiento no es el costo del resguardo local; la disciplina si.
   son intercambiables.
 - **La copia fuera de la computadora sigue dependiendo de una persona.** El
   sistema avisa cuando el disco externo no esta, pero no puede conectarlo.
+
+---
+
+# Nota de verificacion: PowerShell instalado en el entorno
+
+Hasta aqui, todo lo de Windows se habia entregado sin probar, porque el entorno
+de desarrollo no tenia PowerShell. Se instalo PowerShell 7.6.6 desde el
+repositorio oficial de Microsoft (`packages.microsoft.com`) y con eso se pudo
+cerrar buena parte de ese hueco.
+
+## Lo que el analisis revelo
+
+Inventariando los comandos de cada guion contra los que existen en PowerShell
+para Linux:
+
+- **`respaldar-windows.ps1` no usa ni un comando exclusivo de Windows.** Es
+  decir, se podia probar completo. Lo mismo para el restaurador.
+- **`instalar-windows.ps1` usa ocho que solo existen en Windows**:
+  `Register-ScheduledTask`, `New-ScheduledTaskAction`,
+  `New-ScheduledTaskSettingsSet`, `New-ScheduledTaskTrigger`,
+  `Start-ScheduledTask`, `New-NetFirewallRule`, `Get-NetIPAddress`,
+  `Get-Acl`/`Set-Acl`. Esas siguen sin poder probarse.
+
+## Fallas encontradas al poder correrlo, y corregidas
+
+1. **La verificacion del respaldo se saltaba en silencio.** El guion intentaba
+   crear una base temporal para probar la copia, y el usuario del sistema no
+   tiene permiso de crear bases. Resultado: cada noche habria dicho "listo"
+   sin comprobar nada, que es justo lo que el guion existe para evitar. Ahora
+   el instalador crea una base fija `<base>_verificacion` propiedad del usuario
+   del sistema, el respaldo la reutiliza, y si falta avisa a gritos y termina
+   con error para que el Programador de tareas lo marque como fallido.
+2. **Faltaba el guardia de base vacia.** En Linux ya se habia agregado, en
+   Windows no: una computadora secundaria habria generado cada noche un archivo
+   de unos kilobytes que parece un respaldo correcto.
+3. **No habia restaurador para Windows.** Habia respaldo y no habia como
+   recuperarlo. Se escribio `restaurar-windows.ps1`, con la misma logica que el
+   de Linux: confirmacion escribiendo el nombre de la base, copia de seguridad
+   previa, restauracion con el usuario del sistema, y comprobacion de que la
+   aplicacion alcanza los datos.
+4. **Un mensaje de error que no decia que hacer.** Si el esquema de la base no
+   es del usuario del sistema, el vaciado falla; el guion se detenia sin perder
+   nada, pero sin explicar. Ahora nombra la causa probable y da el comando
+   exacto para arreglarlo.
+
+## Verificado en PowerShell 7 contra PostgreSQL real
+
+- Sintaxis de los tres guiones: valida (analizador de PowerShell, no `bash -n`).
+- Respaldo con verificacion por restauracion y comparacion de conteos.
+- Copia al disco externo conectado, y aviso ruidoso cuando no esta.
+- Base sin colegio cargado: no genera ningun archivo.
+- Falta la base de verificacion: guarda el respaldo, avisa y sale con codigo 2.
+- Respaldo dañado: el restaurador lo rechaza antes de tocar la base.
+- **Ciclo completo**: desastre simulado, restauracion, 60 tablas de vuelta a
+  nombre del usuario de la aplicacion, sistema reportando el colegio instalado
+  y las 26 pruebas de humo pasando.
+
+## Lo que sigue sin probarse
+
+- El **Programador de tareas** de Windows que dispara el respaldo cada noche.
+  Por eso la guia pide confirmar al dia siguiente con
+  `Get-ScheduledTaskInfo SistemaEscolarRespaldo`.
+- El **firewall**, los **permisos de archivo** y la **deteccion de la direccion
+  de red** del instalador de Windows.
+- Las **rutas propias de Windows** (`C:\Program Files\PostgreSQL`,
+  `C:\SistemaEscolar`).
+
+Eso ya no se arregla con PowerShell en Linux: necesita una computadora Windows.
