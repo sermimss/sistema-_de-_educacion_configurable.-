@@ -47,12 +47,28 @@ if ($versionNode -lt 22) {
   Write-Error "Node $versionNode es muy viejo; hace falta 22 o mayor."
   exit 1
 }
-$psql = Get-Command psql -ErrorAction SilentlyContinue
+# El instalador de PostgreSQL para Windows NO agrega sus programas al PATH, asi
+# que no basta con buscar 'psql' por nombre: tambien se busca donde se instala
+# normalmente. De otro modo la instalacion falla en el primer paso aunque
+# PostgreSQL este perfectamente puesto.
+function BuscarHerramienta($nombre) {
+  $cmd = Get-Command $nombre -ErrorAction SilentlyContinue
+  if ($cmd) { return $cmd.Source }
+  $encontrado = Get-ChildItem "C:\Program Files\PostgreSQL\*\bin\$nombre.exe" -ErrorAction SilentlyContinue |
+    Sort-Object FullName -Descending | Select-Object -First 1
+  if ($encontrado) { return $encontrado.FullName }
+  $encontrado = Get-ChildItem "C:\Program Files (x86)\PostgreSQL\*\bin\$nombre.exe" -ErrorAction SilentlyContinue |
+    Sort-Object FullName -Descending | Select-Object -First 1
+  if ($encontrado) { return $encontrado.FullName }
+  return $null
+}
+
+$psql = BuscarHerramienta "psql"
 if (-not $psql) {
-  Write-Error "Falta PostgreSQL. Instalalo desde postgresql.org y asegurate de que 'psql' este en el PATH."
+  Write-Error "Falta PostgreSQL. Instalalo desde postgresql.org y vuelve a correr esto."
   exit 1
 }
-Write-Host "    Node $(& node -v), PostgreSQL presente"
+Write-Host "    Node $(& node -v), PostgreSQL en $psql"
 
 Write-Host "==> Preparando la base de datos '$Base'"
 $bytes = New-Object byte[] 18
@@ -63,18 +79,18 @@ $env:PGPASSWORD = Read-Host "Contrasena del usuario 'postgres' de PostgreSQL" -A
   ForEach-Object { [Runtime.InteropServices.Marshal]::PtrToStringAuto(
     [Runtime.InteropServices.Marshal]::SecureStringToBSTR($_)) }
 
-$existeRol = & psql -U postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='escuela'"
+$existeRol = & $psql -U postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='escuela'"
 if ($existeRol -ne "1") {
-  & psql -U postgres -c "CREATE USER escuela WITH PASSWORD '$claveBd';" | Out-Null
+  & $psql -U postgres -c "CREATE USER escuela WITH PASSWORD '$claveBd';" | Out-Null
   Write-Host "    usuario de base de datos creado"
 } else {
-  & psql -U postgres -c "ALTER USER escuela WITH PASSWORD '$claveBd';" | Out-Null
+  & $psql -U postgres -c "ALTER USER escuela WITH PASSWORD '$claveBd';" | Out-Null
   Write-Host "    usuario de base de datos ya existia; se actualizo su contrasena"
 }
 
-$existeBase = & psql -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$Base'"
+$existeBase = & $psql -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$Base'"
 if ($existeBase -ne "1") {
-  & psql -U postgres -c "CREATE DATABASE $Base OWNER escuela;" | Out-Null
+  & $psql -U postgres -c "CREATE DATABASE $Base OWNER escuela;" | Out-Null
   Write-Host "    base '$Base' creada"
 } else {
   Write-Host "    base '$Base' ya existia; se conservan sus datos"
@@ -85,9 +101,9 @@ if ($existeBase -ne "1") {
 # bases: sin esta, la verificacion del respaldo se saltaria y el respaldo
 # diria "listo" sin haber comprobado nada.
 $baseVerificacion = "${Base}_verificacion"
-$existeVerif = & psql -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$baseVerificacion'"
+$existeVerif = & $psql -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$baseVerificacion'"
 if ($existeVerif -ne "1") {
-  & psql -U postgres -c "CREATE DATABASE $baseVerificacion OWNER escuela;" | Out-Null
+  & $psql -U postgres -c "CREATE DATABASE $baseVerificacion OWNER escuela;" | Out-Null
   Write-Host "    base de verificacion de respaldos creada"
 } else {
   Write-Host "    base de verificacion de respaldos ya existia"
