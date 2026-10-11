@@ -108,7 +108,15 @@ fi
 
 # Nombre que busca la herramienta de Prisma en Windows.
 cp "$exe" "$DESTINO/node_modules/@prisma/engines/schema-engine-windows.exe"
-cp "$exe" "$DESTINO/node_modules/prisma/schema-engine-windows.exe"
+
+# Los motores de Prisma vienen repetidos: el empaquetado los copia junto al
+# cliente generado, junto a la herramienta y dentro de @prisma/engines. Solo
+# hacen falta dos: el de consultas junto al cliente (lo usa el sistema al
+# correr) y el de migraciones en @prisma/engines (lo usa la herramienta). Se
+# comprobo quitando los demas: migra las 60 tablas y el sistema levanta igual.
+rm -f "$DESTINO"/node_modules/prisma/query_engine-windows.dll.node
+rm -f "$DESTINO"/node_modules/prisma/schema-engine-windows.exe
+rm -f "$DESTINO"/node_modules/@prisma/engines/query_engine-windows.dll.node
 
 # Next copia el .env del desarrollo dentro de standalone. Ese archivo trae la
 # contrasena de la base y la clave de firma de sesiones de quien compila, asi

@@ -63,6 +63,13 @@ rm -f "$DESTINO"/.env "$DESTINO"/.env.*
 # desde aqui. En uno de Linux no sirve de nada y son unos 40 MB.
 find "$DESTINO" -name "*-windows.dll.node" -delete
 find "$DESTINO" -name "schema-engine-windows*" -delete
+# Los motores de Prisma vienen repetidos: el empaquetado los copia junto al
+# cliente generado, junto a la herramienta y dentro de @prisma/engines. Solo
+# hacen falta dos: el de consultas junto al cliente (lo usa el sistema al
+# correr) y el de migraciones en @prisma/engines (lo usa la herramienta). Se
+# comprobo quitando los demas: migra las 60 tablas y el sistema levanta igual.
+rm -f "$DESTINO"/node_modules/prisma/libquery_engine-*.so.node
+rm -f "$DESTINO"/node_modules/@prisma/engines/libquery_engine-*.so.node
 
 # Scripts de la red local: el arranque los necesita para decidir si esta
 # computadora manda o se suma a otra instalacion del colegio.
