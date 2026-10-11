@@ -7,6 +7,10 @@
 
 generator client {
   provider = "prisma-client-js"
+  // Se pide tambien el motor de Windows, no solo el de esta computadora, para
+  // poder armar el paquete instalable de Windows sin tener que compilarlo
+  // alla. Cada guion de empaquetado se queda solo con el motor que necesita.
+  binaryTargets = ["native", "windows"]
 }
 
 datasource db {

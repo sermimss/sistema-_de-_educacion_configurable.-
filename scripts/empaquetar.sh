@@ -59,6 +59,11 @@ echo "    $copiados paquetes"
 # que NO puede viajar al colegio: cada instalacion genera las suyas.
 rm -f "$DESTINO"/.env "$DESTINO"/.env.*
 
+# El esquema pide tambien el motor de Windows, para poder armar ese paquete
+# desde aqui. En uno de Linux no sirve de nada y son unos 40 MB.
+find "$DESTINO" -name "*-windows.dll.node" -delete
+find "$DESTINO" -name "schema-engine-windows*" -delete
+
 # Scripts de la red local: el arranque los necesita para decidir si esta
 # computadora manda o se suma a otra instalacion del colegio.
 mkdir -p "$DESTINO/scripts"

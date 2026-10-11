@@ -174,6 +174,9 @@ for /f "usebackq tokens=1,* delims==" %%a in ("entorno") do set %%a=%%b
 rem Escuchar en todas las interfaces para que lo alcancen las demas computadoras.
 set HOSTNAME=0.0.0.0
 set /p VERSION_SISTEMA=<VERSION
+rem Se le dice a Prisma exactamente donde esta el motor de migraciones, en
+rem lugar de confiar en que lo encuentre por convencion.
+set PRISMA_SCHEMA_ENGINE_BINARY=%~dp0node_modules\@prisma\engines\schema-engine-windows.exe
 
 rem Si hay otra instalacion del colegio en esta red, solo una base queda
 rem activa y esta computadora se suma a ella. Lo decide elegir-papel.

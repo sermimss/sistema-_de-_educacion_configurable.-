@@ -111,8 +111,18 @@ prefieren no depender de internet. Se instala en una computadora del colegio y
 las demas entran desde su navegador por la red interna.
 
 ```bash
-./scripts/empaquetar.sh     # arma dist/sistema-escolar-<version>-<sistema>.tar.gz
+./scripts/empaquetar.sh           # paquete de Linux  -> dist/
+./scripts/empaquetar-windows.sh   # paquete de Windows -> dist-windows/
 ```
+
+El de Windows se arma **desde Linux**, asi que el colegio no compila nada:
+recibe un `.zip`, lo descomprime y corre el instalador. Es posible porque el
+servidor compilado de Next es el mismo JavaScript en los dos sistemas, el motor
+de consultas de Prisma para Windows se pide en el esquema (`binaryTargets`), y
+el de migraciones se baja del sitio oficial de Prisma. Los binarios de `sharp`
+que trae Next son de Linux, pero este sistema no usa `next/image`, asi que se
+excluyen. El empaquetado **aborta** si queda cualquier archivo de Linux dentro
+o si aparece un `.env`.
 
 El paquete es autocontenido: lleva el servidor compilado, sus dependencias, las
 migraciones y la herramienta que las aplica. En la computadora del colegio:

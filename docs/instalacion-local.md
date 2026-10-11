@@ -64,10 +64,17 @@ Ese paquete es **autocontenido**: lleva dentro el sistema ya compilado, sus
 dependencias, las migraciones de la base y la herramienta que las aplica. La
 instalacion **no descarga nada de internet**.
 
-> El paquete se arma en el mismo sistema operativo donde se va a instalar,
-> porque el motor de base de datos que usa el sistema es distinto en Windows y
-> en Linux. Un paquete armado en Linux no sirve para Windows, y al reves.
-> Quien arma el paquete corre `./scripts/empaquetar.sh` desde el codigo fuente.
+> Los dos paquetes se arman desde una computadora con Linux, con el codigo
+> fuente a la mano:
+>
+> ```bash
+> ./scripts/empaquetar.sh           # el de Linux
+> ./scripts/empaquetar-windows.sh   # el de Windows
+> ```
+>
+> El de Windows incluye los motores de base de datos propios de Windows, asi
+> que el colegio **no tiene que compilar nada**: descomprime y corre el
+> instalador.
 
 ## 4. Instalar en Linux
 
