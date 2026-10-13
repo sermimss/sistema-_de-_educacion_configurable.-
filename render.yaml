@@ -30,10 +30,17 @@ services:
     startCommand: ./scripts/arrancar.sh
     healthCheckPath: /api/salud
     envVars:
+      # La base vive en Neon (PostgreSQL gratis y permanente), no en Render: la
+      # cuenta solo admite una base gratuita activa y esa la ocupa otro
+      # proyecto. La cadena de conexion se pone a mano en el tablero, y
+      # 'sync: false' hace que Render la ignore al sincronizar este archivo. Sin
+      # esto, cada cambio subido al repositorio volveria a apuntar el servicio
+      # a escuela-db y pisaria la cadena de Neon.
+      #
+      # Usar la conexion DIRECTA de Neon, sin '-pooler' en el servidor: las
+      # migraciones del arranque necesitan conexion directa.
       - key: DATABASE_URL
-        fromDatabase:
-          name: escuela-db
-          property: connectionString
+        sync: false
       # Render genera la clave de sesion y no la ve nadie mas.
       - key: AUTH_SECRET
         generateValue: true
@@ -50,6 +57,11 @@ services:
       - key: NODE_VERSION
         value: "22"
 
+# escuela-db ya no la usa el servicio (ver DATABASE_URL arriba). Se deja
+# declarada solo para que la sincronizacion del Blueprint no haga nada con
+# ella: la documentacion de Render no aclara si quitarla de aqui la borra. Es
+# del plan gratuito y caduca sola; cuando se decida eliminarla, se borra desde
+# el tablero de Render y despues se quita este bloque.
 databases:
   - name: escuela-db
     region: oregon

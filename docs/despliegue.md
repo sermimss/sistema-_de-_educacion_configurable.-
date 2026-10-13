@@ -24,7 +24,44 @@ su base de datos. Render lo lee y crea todo solo.
    conceptos de cobro y la cuenta de administrador.
 
 No hay que capturar `AUTH_SECRET` a mano: Render la genera y nadie mas la ve.
-`DATABASE_URL` se conecta sola a la base del blueprint.
+
+`DATABASE_URL` **si se captura a mano** (ver la seccion siguiente): el
+blueprint la marca `sync: false`, asi que Render la pide al crear el blueprint
+y despues nunca la toca.
+
+### La base de datos: en Neon, no en Render
+
+El servicio web vive en Render, pero su base PostgreSQL vive en
+[Neon](https://neon.com). Dos razones:
+
+- Una cuenta de Render admite **una sola base gratuita activa**. Si otro
+  proyecto de la misma cuenta ya la ocupa, la del colegio no puede activarse.
+- La base gratuita de Render **caduca a los 30 dias**. La gratuita de Neon es
+  permanente y no pide tarjeta.
+
+Pasos en Neon:
+
+1. Crear un proyecto `sistema-escolar`, PostgreSQL 16, region **AWS US West
+   (Oregon)** — la misma del servicio en Render; otra region agrega demora a
+   cada consulta.
+2. No activar funciones extra (almacenamiento de objetos, Auth, Data API): el
+   sistema no guarda archivos, tiene su propio inicio de sesion y se conecta
+   directo.
+3. Boton **Connect** > **Connection string**, con **Connection pooling
+   apagado**. El servidor de la cadena no debe llevar `-pooler`: las
+   migraciones del arranque necesitan conexion directa.
+4. Pegar esa cadena en Render: servicio > *Environment* > `DATABASE_URL`.
+
+La cadena que da Neon trae `sslmode=require&channel_binding=require`. Se
+comprobo que Prisma la acepta tal cual, tanto para migrar como para consultar.
+
+No sirve el comando `psql -h pg.neon.tech` que muestra Neon: es un acceso sin
+contrasena para una persona en una terminal, que se completa en el navegador.
+
+**Por que `sync: false` importa:** el blueprint se sincroniza solo con cada
+cambio subido a la rama. Si `DATABASE_URL` siguiera declarada con
+`fromDatabase`, cada sincronizacion volveria a apuntar el servicio a la base de
+Render y pisaria la cadena de Neon.
 
 ### Si el despliegue falla
 
@@ -54,7 +91,7 @@ sistema responde y `/api/salud` dice que pasa:
 
 - `"baseDeDatos":"ok"` — todo bien.
 - `"baseDeDatos":"sin-conexion"` — la base no es alcanzable. Revisa que
-  `DATABASE_URL` apunte a la base del blueprint y que esta ya exista.
+  `DATABASE_URL` tenga la cadena directa de Neon y que el proyecto exista.
 - `"baseDeDatos":"lenta"` — contesta, pero tarda mas de dos segundos.
 
 Si aun asi da 502, mira los registros del servicio: si el proceso murio, el
@@ -75,12 +112,13 @@ El blueprint sale con `plan: free` para que puedas probarlo sin costo, pero:
 
 - El servicio gratuito **se duerme** tras unos minutos sin trafico y el primer
   acceso despues tarda.
-- La base de datos gratuita de Render **caduca**. Si el colegio ya capturo
-  alumnos y pagos, eso es perdida de datos.
+- La base gratuita de Neon no caduca, pero tiene un tope de horas de computo
+  al mes: alcanza para demostraciones y una prueba piloto; con un colegio
+  usandolo a diario hay que vigilar el consumo en el tablero de Neon. Si se
+  pasa del tope, la base se pausa hasta el mes siguiente sin borrar datos.
 
-Antes de operar de verdad, sube el servicio y la base a un plan de paga en el
-panel de Render, o cambia `plan: free` por el plan que contrates y vuelve a
-aplicar el blueprint.
+Antes de operar de verdad, sube el servicio a un plan de paga en Render (para
+que no se duerma) y revisa si el consumo de Neon pide su plan de paga.
 
 ### Un segundo colegio
 
