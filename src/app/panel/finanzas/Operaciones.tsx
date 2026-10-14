@@ -16,11 +16,9 @@ import {
 } from "./operaciones";
 
 export function FormularioGeneracion({
-  ciclos,
   grupos,
   moneda,
 }: {
-  ciclos: Opcion[];
   grupos: Opcion[];
   moneda: string;
 }) {
@@ -35,16 +33,13 @@ export function FormularioGeneracion({
       <input type="hidden" name="accion" value={confirmar ? "confirmar" : "previa"} />
       <Avisos estado={estado} />
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Selector etiqueta="Ciclo escolar" name="cicloId" required>
-          {ciclos.map((ciclo) => (
-            <option key={ciclo.id} value={ciclo.id}>
-              {ciclo.etiqueta}
-            </option>
-          ))}
-        </Selector>
-        <Selector etiqueta="Solo un grupo" name="grupoId">
-          <option value="">Todos los grupos</option>
+      <p className="text-xs text-slate-500">
+        Las colegiaturas de cada alumno se calculan con las fechas de inicio y termino de clases de
+        su grupo.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Selector etiqueta="Grupo" name="grupoId">
+          <option value="">Todos los grupos activos</option>
           {grupos.map((grupo) => (
             <option key={grupo.id} value={grupo.id}>
               {grupo.etiqueta}
@@ -113,14 +108,13 @@ export function FormularioGeneracion({
   );
 }
 
-export function BotonRecargos({ cicloId }: { cicloId: number }) {
+export function BotonRecargos() {
   const [estado, accion, pendiente] = useActionState<EstadoFinanzas, FormData>(
     accionActualizarRecargos,
     {}
   );
   return (
     <form action={accion} className="space-y-3">
-      <input type="hidden" name="cicloId" value={cicloId} />
       <Avisos estado={estado} />
       <Boton type="submit" variante="secundario" disabled={pendiente}>
         {pendiente ? "Revisando..." : "Aplicar recargos a los cargos vencidos"}

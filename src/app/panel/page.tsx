@@ -3,7 +3,7 @@ import { requerirSesion } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { obtenerInstitucion } from "@/lib/institucion";
 import { configNumero, configTexto } from "@/lib/configuracion";
-import { formatearFecha } from "@/lib/formato";
+import { formatearDia } from "@/lib/formato";
 import { estaDisponible, navegacionPara } from "@/lib/navegacion";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
 
@@ -23,15 +23,21 @@ export default async function PaginaPanel() {
   const sesion = await requerirSesion();
   const institucion = await obtenerInstitucion();
 
-  const [alumnos, docentes, grupos, planes, ciclo] = await Promise.all([
+  const hoy = new Date();
+  const [alumnos, docentes, grupos, planes, gruposEnClases] = await Promise.all([
     db.alumno.count({ where: { estado: "ACTIVO" } }),
     db.empleado.count({ where: { esDocente: true, estado: "ACTIVO" } }),
     db.grupo.count({ where: { activo: true } }),
     db.planEstudios.count({ where: { activo: true } }),
-    db.cicloEscolar.findFirst({
-      where: { estado: "ACTIVO" },
-      include: { periodos: { orderBy: { numero: "asc" } } },
-      orderBy: { fechaInicio: "desc" },
+    // Cada grupo tiene sus propias fechas: aqui van los que hoy estan en clases.
+    db.grupo.findMany({
+      where: {
+        activo: true,
+        ciclo: { estado: "ACTIVO", fechaInicio: { lte: hoy }, fechaFin: { gte: hoy } },
+      },
+      include: { grado: true, ciclo: { include: { periodos: { orderBy: { numero: "asc" } } } } },
+      orderBy: { nombre: "asc" },
+      take: 12,
     }),
   ]);
 
@@ -49,7 +55,6 @@ export default async function PaginaPanel() {
         </h1>
         <p className="mt-1 text-sm text-slate-600">
           {institucion?.nombre}
-          {ciclo && ` · ${ciclo.nombre}`}
         </p>
       </header>
 
@@ -63,30 +68,41 @@ export default async function PaginaPanel() {
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <Tarjeta titulo="Ciclo escolar activo">
-              {ciclo ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-slate-900">{ciclo.nombre}</span>
-                    <Insignia tono="exito">{ciclo.estado}</Insignia>
-                  </div>
-                  <p className="text-sm text-slate-600">
-                    {formatearFecha(ciclo.fechaInicio)} — {formatearFecha(ciclo.fechaFin)}
-                  </p>
-                  <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">
-                    {ciclo.periodos.map((periodo) => (
-                      <li key={periodo.id} className="flex items-center justify-between px-3 py-2 text-sm">
-                        <span className="text-slate-700">{periodo.nombre}</span>
-                        <span className="flex items-center gap-2 text-xs text-slate-500">
-                          {formatearFecha(periodo.fechaInicio)} — {formatearFecha(periodo.fechaFin)}
-                          {periodo.capturaAbierta && <Insignia tono="exito">Captura abierta</Insignia>}
-                        </span>
+            <Tarjeta titulo="Grupos en clases" descripcion="Cada grupo con sus propias fechas">
+              {gruposEnClases.length > 0 ? (
+                <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+                  {gruposEnClases.map((grupo) => {
+                    const parcial = grupo.ciclo.periodos.find(
+                      (p) => p.fechaInicio <= hoy && p.fechaFin >= hoy
+                    );
+                    return (
+                      <li key={grupo.id} className="px-3 py-2 text-sm">
+                        <div className="flex items-center justify-between gap-2">
+                          <Link
+                            href={`/panel/grupos/${grupo.id}`}
+                            className="font-medium text-slate-900 hover:text-marca-600"
+                          >
+                            {grupo.nombre} · {grupo.grado.nombre}
+                          </Link>
+                          {parcial && (
+                            <Insignia tono={parcial.capturaAbierta ? "exito" : "neutro"}>
+                              {parcial.nombre}
+                              {parcial.capturaAbierta ? " · captura abierta" : ""}
+                            </Insignia>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          {formatearDia(grupo.ciclo.fechaInicio)} — {formatearDia(grupo.ciclo.fechaFin)}
+                        </p>
                       </li>
-                    ))}
-                  </ul>
-                </div>
+                    );
+                  })}
+                </ul>
               ) : (
-                <EstadoVacio titulo="No hay un ciclo activo" />
+                <EstadoVacio
+                  titulo="Ningun grupo esta en clases hoy"
+                  mensaje="Al crear un grupo se definen sus fechas de inicio y termino de clases."
+                />
               )}
             </Tarjeta>
 

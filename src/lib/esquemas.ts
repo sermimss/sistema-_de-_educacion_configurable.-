@@ -79,7 +79,8 @@ export const esquemaPlanMateria = z.object({
 
 export const esquemaGrupo = z.object({
   nombre: z.string().trim().min(1, "El nombre del grupo es obligatorio."),
-  cicloId: z.coerce.number().int().positive("Selecciona el ciclo."),
+  fechaInicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Indica la fecha de inicio de clases."),
+  fechaFin: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Indica la fecha de termino de clases."),
   planId: z.coerce.number().int().positive("Selecciona el plan."),
   gradoId: z.coerce.number().int().positive("Selecciona el grado."),
   plantelId: z.coerce.number().int().optional(),
@@ -87,6 +88,22 @@ export const esquemaGrupo = z.object({
   aulaId: z.coerce.number().int().optional(),
   cupoMaximo: z.coerce.number().int().min(1).optional(),
   activo: z.coerce.boolean().optional(),
+});
+
+export const esquemaParcialGrupo = z.object({
+  nombre: z.string().trim().min(1, "Cada parcial necesita nombre."),
+  fechaInicio: z.string(),
+  fechaFin: z.string(),
+});
+
+/// Un renglon del horario del grupo: que materia, con quien, que dia y a que hora.
+export const esquemaRenglonHorario = z.object({
+  planMateriaId: z.coerce.number().int().positive("Cada renglon del horario necesita materia."),
+  docenteId: z.coerce.number().int().positive("Cada renglon del horario necesita docente."),
+  diaSemana: z.coerce.number().int().min(1, "Elige el dia.").max(7, "Elige el dia."),
+  horaInicio: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Las horas deben tener el formato HH:MM."),
+  horaFin: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Las horas deben tener el formato HH:MM."),
+  aulaId: z.coerce.number().int().positive().optional(),
 });
 
 export const esquemaClase = z.object({

@@ -108,7 +108,7 @@ export default async function PaginaBecas() {
                   </Link>
                   <p className="text-xs text-slate-500">
                     {asignacion.descuento.nombre} ·{" "}
-                    {asignacion.ciclo?.nombre ?? "todos los ciclos"} ·{" "}
+                    {asignacion.ciclo?.nombre ?? "en cualquier grupo"} ·{" "}
                     {formatearFecha(asignacion.fechaAutorizacion)}
                   </p>
                 </div>

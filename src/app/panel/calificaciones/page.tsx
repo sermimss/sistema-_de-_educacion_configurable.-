@@ -217,7 +217,7 @@ export default async function PaginaCalificaciones({
       )}
 
       {sesion.rol === "ADMIN" && (
-        <Tarjeta titulo="Captura por periodo" descripcion="Abre o cierra la captura para todo el colegio">
+        <Tarjeta titulo="Captura por periodo" descripcion="Abre o cierra la captura de cada parcial de este grupo">
           <ul className="divide-y divide-slate-100">
             {periodos.map((p) => (
               <li key={p.id} className="flex items-center justify-between py-2 text-sm">

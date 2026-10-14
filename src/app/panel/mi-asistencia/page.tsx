@@ -1,5 +1,6 @@
 import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { cicloVigenteDeAlumno } from "@/lib/calendarioGrupo";
 import { alumnoDeSesion } from "@/lib/alumnoSesion";
 import { configBool, configNumero } from "@/lib/configuracion";
 import { faltasEfectivas, porcentajeAsistencia } from "@/lib/asistencia";
@@ -17,8 +18,10 @@ export default async function PaginaMiAsistencia() {
     return <Alerta tipo="aviso">El colegio tiene desactivada esta seccion.</Alerta>;
   }
 
-  const ciclo = await db.cicloEscolar.findFirst({ where: { estado: "ACTIVO" } });
-  if (!ciclo) return <Alerta tipo="aviso">No hay un ciclo escolar activo.</Alerta>;
+  // Cada grupo tiene sus fechas: se muestra el del grupo en el que el alumno
+  // esta tomando clases hoy.
+  const ciclo = await cicloVigenteDeAlumno(alumno.id);
+  if (!ciclo) return <Alerta tipo="aviso">Aun no estas inscrito en ningun grupo.</Alerta>;
 
   const [registros, retardosPorFalta] = await Promise.all([
     db.registroAsistencia.findMany({

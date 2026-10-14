@@ -6,6 +6,7 @@ import { nombreCompleto } from "@/lib/catalogos";
 import { obtenerInstitucion } from "@/lib/institucion";
 import { configNumero } from "@/lib/configuracion";
 import { faltasEfectivas, porcentajeAsistencia } from "@/lib/asistencia";
+import { cicloVigenteDeAlumno } from "@/lib/calendarioGrupo";
 import { promedioDePeriodos } from "@/lib/calificaciones";
 import { formatearFecha } from "@/lib/formato";
 import { Alerta } from "@/components/ui";
@@ -33,10 +34,8 @@ export default async function PaginaBoleta({
   });
   if (!alumno) notFound();
 
-  const cicloId =
-    Number(cicloParam) ||
-    (await db.cicloEscolar.findFirst({ where: { estado: "ACTIVO" } }))?.id ||
-    0;
+  // Sin ciclo indicado, la boleta del grupo en el que el alumno esta hoy.
+  const cicloId = Number(cicloParam) || (await cicloVigenteDeAlumno(id))?.id || 0;
 
   const [ciclo, inscripcion, escala, retardosPorFalta] = await Promise.all([
     db.cicloEscolar.findUnique({
@@ -51,7 +50,7 @@ export default async function PaginaBoleta({
     configNumero("asistencia.retardos_equivalen_falta", 3),
   ]);
 
-  if (!ciclo) return <Alerta tipo="aviso">El ciclo escolar no existe.</Alerta>;
+  if (!ciclo) return <Alerta tipo="aviso">El alumno no esta inscrito en ningun grupo.</Alerta>;
 
   const escalaBase = {
     valorMinimo: Number(escala?.valorMinimo ?? 0),

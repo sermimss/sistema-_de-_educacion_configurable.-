@@ -1,6 +1,7 @@
 import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { nombreCompleto } from "@/lib/catalogos";
+import { cicloVigenteDeAlumno } from "@/lib/calendarioGrupo";
 import { alumnoDeSesion, bloqueoPorAdeudo } from "@/lib/alumnoSesion";
 import { configBool } from "@/lib/configuracion";
 import { promedioDePeriodos } from "@/lib/calificaciones";
@@ -20,11 +21,10 @@ export default async function PaginaMisCalificaciones() {
   const bloqueo = await bloqueoPorAdeudo(alumno.id, "BOLETA");
   if (bloqueo) return <Alerta tipo="aviso">{bloqueo}</Alerta>;
 
-  const ciclo = await db.cicloEscolar.findFirst({
-    where: { estado: "ACTIVO" },
-    include: { periodos: { orderBy: { numero: "asc" } } },
-  });
-  if (!ciclo) return <Alerta tipo="aviso">No hay un ciclo escolar activo.</Alerta>;
+  // Cada grupo tiene sus fechas y parciales: se muestra el del grupo en el que
+  // el alumno esta tomando clases hoy.
+  const ciclo = await cicloVigenteDeAlumno(alumno.id);
+  if (!ciclo) return <Alerta tipo="aviso">Aun no estas inscrito en ningun grupo.</Alerta>;
 
   const [clases, escala, promedio] = await Promise.all([
     db.alumnoClase.findMany({

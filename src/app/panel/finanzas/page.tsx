@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { nombreCompleto } from "@/lib/catalogos";
 import { obtenerInstitucion } from "@/lib/institucion";
 import { aNumero, centavos } from "@/lib/finanzas";
-import { formatearMoneda } from "@/lib/formato";
+import { formatearDia, formatearMoneda } from "@/lib/formato";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
 import { FormularioGeneracion, BotonRecargos } from "./Operaciones";
 
@@ -22,9 +22,12 @@ export default async function PaginaFinanzas({
   const institucion = await obtenerInstitucion();
   const moneda = institucion?.moneda ?? "MXN";
 
-  const [ciclos, grupos, cargos, pagos, conceptosActivos] = await Promise.all([
-    db.cicloEscolar.findMany({ where: { activo: true }, orderBy: { fechaInicio: "desc" } }),
-    db.grupo.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
+  const [grupos, cargos, pagos, conceptosActivos] = await Promise.all([
+    db.grupo.findMany({
+      where: { activo: true, ciclo: { estado: "ACTIVO" } },
+      orderBy: { nombre: "asc" },
+      include: { ciclo: true, grado: true },
+    }),
     db.cargo.findMany({ where: { estado: { notIn: ["CANCELADO", "CONDONADO"] } } }),
     db.pago.findMany({ where: { estado: { not: "CANCELADO" } } }),
     db.conceptoCobro.count({ where: { activo: true } }),
@@ -59,8 +62,6 @@ export default async function PaginaFinanzas({
         take: 30,
         include: { cargos: { where: { estado: { notIn: ["CANCELADO", "CONDONADO"] } } } },
       });
-
-  const cicloActivo = ciclos.find((ciclo) => ciclo.estado === "ACTIVO") ?? ciclos[0];
 
   return (
     <div className="space-y-6">
@@ -110,26 +111,29 @@ export default async function PaginaFinanzas({
             Definir el primero
           </Link>
         </Alerta>
-      ) : cicloActivo ? (
+      ) : grupos.length > 0 ? (
         <Tarjeta
-          titulo="Generar cargos del ciclo"
+          titulo="Generar cargos"
           descripcion="Usa el motivo, el monto y las fechas que configuraste en cada concepto"
         >
           <FormularioGeneracion
             moneda={moneda}
-            ciclos={ciclos.map((ciclo) => ({ id: ciclo.id, etiqueta: ciclo.nombre }))}
-            grupos={grupos.map((grupo) => ({ id: grupo.id, etiqueta: grupo.nombre }))}
+            grupos={grupos.map((grupo) => ({
+              id: grupo.id,
+              etiqueta: `${grupo.nombre} · ${grupo.grado.nombre} (${formatearDia(grupo.ciclo.fechaInicio)} al ${formatearDia(grupo.ciclo.fechaFin)})`,
+            }))}
           />
         </Tarjeta>
       ) : (
-        <Alerta tipo="aviso">No hay ciclos escolares activos.</Alerta>
+        <Alerta tipo="aviso">
+          No hay grupos activos. Los cargos se generan a partir de los alumnos inscritos en cada
+          grupo.
+        </Alerta>
       )}
 
-      {cicloActivo && (
-        <Tarjeta titulo="Recargos" descripcion="Recalcula los recargos de los cargos vencidos">
-          <BotonRecargos cicloId={cicloActivo.id} />
-        </Tarjeta>
-      )}
+      <Tarjeta titulo="Recargos" descripcion="Recalcula los recargos de los cargos vencidos">
+        <BotonRecargos />
+      </Tarjeta>
 
       <Tarjeta
         titulo={busqueda ? `Resultados para "${busqueda}"` : "Alumnos con adeudo vencido"}

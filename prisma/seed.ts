@@ -82,18 +82,20 @@ async function sembrarDemostracion() {
     );
   }
 
+  // Cada grupo tiene su propio calendario: este es el del grupo 1A. Su clave
+  // lleva el id del grupo y se fija en cuanto el grupo existe.
   const ciclo = await db.cicloEscolar.create({
     data: {
-      nombre: "Ciclo escolar 2026-2027",
-      clave: "2026-2027",
+      nombre: "1A · 17 ago 2026 al 9 jul 2027",
+      clave: "G-demo",
       fechaInicio: new Date("2026-08-17"),
       fechaFin: new Date("2027-07-09"),
       estado: "ACTIVO",
     },
   });
 
-  // Las fechas de los parciales se reparten entre el inicio y el fin del ciclo,
-  // igual que lo hace el asistente de instalacion.
+  // Las fechas de los parciales se reparten entre el inicio y el fin de clases,
+  // igual que lo propone el formulario de nuevo grupo.
   const NUMERO_PARCIALES = 3;
   const inicioCiclo = ciclo.fechaInicio.getTime();
   const duracionParcial = (ciclo.fechaFin.getTime() - inicioCiclo) / NUMERO_PARCIALES;
@@ -241,6 +243,7 @@ async function sembrarDemostracion() {
       cupoMaximo: 30,
     },
   });
+  await db.cicloEscolar.update({ where: { id: ciclo.id }, data: { clave: `G${grupo.id}` } });
 
   for (const planMateria of planMaterias.slice(0, 3)) {
     await db.clase.create({

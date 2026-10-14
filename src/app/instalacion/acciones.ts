@@ -35,9 +35,6 @@ export async function instalarSistema(datos: DatosInstalacion): Promise<Resultad
   if (planHuerfano) {
     return { ok: false, error: `El plan "${planHuerfano.nombre}" apunta a un nivel que no existe.` };
   }
-  if (new Date(d.ciclo.fechaFin) <= new Date(d.ciclo.fechaInicio)) {
-    return { ok: false, error: "La fecha de fin del ciclo debe ser posterior a la de inicio." };
-  }
   if (d.escala.minimaAprobatoria < d.escala.valorMinimo || d.escala.minimaAprobatoria > d.escala.valorMaximo) {
     return { ok: false, error: "La calificacion minima aprobatoria debe estar dentro de la escala." };
   }
@@ -102,47 +99,12 @@ export async function instalarSistema(datos: DatosInstalacion): Promise<Resultad
           }
         }
 
-        // 4. Ciclo escolar y periodos de evaluacion
-        const inicio = new Date(d.ciclo.fechaInicio);
-        const fin = new Date(d.ciclo.fechaFin);
-        const ciclo = await tx.cicloEscolar.create({
-          data: {
-            nombre: d.ciclo.nombre,
-            clave: d.ciclo.clave,
-            fechaInicio: inicio,
-            fechaFin: fin,
-            estado: "ACTIVO",
-            activo: true,
-          },
-        });
-        const duracionTotal = fin.getTime() - inicio.getTime();
-        const duracionPeriodo = duracionTotal / d.ciclo.numeroPeriodos;
-        for (let numero = 1; numero <= d.ciclo.numeroPeriodos; numero++) {
-          const desde = new Date(inicio.getTime() + duracionPeriodo * (numero - 1));
-          const hasta = new Date(inicio.getTime() + duracionPeriodo * numero - 86_400_000);
-          await tx.periodoEvaluacion.create({
-            data: {
-              cicloId: ciclo.id,
-              numero,
-              nombre: d.ciclo.plantillaPeriodo.replace(/\{N\}/g, String(numero)),
-              fechaInicio: desde,
-              fechaFin: numero === d.ciclo.numeroPeriodos ? fin : hasta,
-              capturaAbierta: numero === 1,
-            },
-          });
-        }
-
-        // 5. Escala de calificacion
+        // 4. Escala de calificacion
         await tx.escalaCalificacion.create({
           data: { ...d.escala, predeterminada: true, activa: true },
         });
 
-        // 6. Modulos de horario
-        for (const [indice, modulo] of d.horarios.modulos.entries()) {
-          await tx.moduloHorario.create({ data: { ...modulo, orden: indice } });
-        }
-
-        // 7. Conceptos de cobro y regla de recargo
+        // 5. Conceptos de cobro y regla de recargo
         for (const [indice, concepto] of d.finanzas.conceptos.entries()) {
           await tx.conceptoCobro.create({
             data: {
@@ -166,7 +128,7 @@ export async function instalarSistema(datos: DatosInstalacion): Promise<Resultad
           });
         }
 
-        // 8. Cuenta de administrador + su registro de personal
+        // 6. Cuenta de administrador + su registro de personal
         const usuario = await tx.usuario.create({
           data: {
             usuario: d.administrador.usuario.toLowerCase(),
@@ -195,7 +157,7 @@ export async function instalarSistema(datos: DatosInstalacion): Promise<Resultad
       { timeout: 60_000, maxWait: 15_000 }
     );
 
-    // 9. Parametros configurables derivados del asistente
+    // 7. Parametros configurables derivados del asistente
     await sembrarConfiguracion();
     const ajustes: Array<[string, string]> = [
       ["asistencia.docente_decide_modo", String(d.asistencia.docenteDecideModo)],
@@ -203,8 +165,6 @@ export async function instalarSistema(datos: DatosInstalacion): Promise<Resultad
       ["asistencia.docente_decide_afectacion", String(d.asistencia.docenteDecideAfectacion)],
       ["asistencia.faltas_consecutivas_alerta", String(d.asistencia.faltasConsecutivasAlerta)],
       ["asistencia.retardos_equivalen_falta", String(d.asistencia.retardosEquivalenFalta)],
-      ["horarios.dias_habiles", JSON.stringify(d.horarios.diasHabiles)],
-      ["horarios.duracion_modulo_minutos", String(d.horarios.duracionModuloMinutos)],
       ["finanzas.dia_vencimiento_default", String(d.finanzas.diaVencimientoDefault)],
       ["finanzas.permite_pagos_parciales", String(d.finanzas.permitePagosParciales)],
       ["finanzas.permite_convenios", String(d.finanzas.permiteConvenios)],

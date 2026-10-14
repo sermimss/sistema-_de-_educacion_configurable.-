@@ -18,6 +18,15 @@ export function formatearFecha(fecha: Date | string | null | undefined, locale =
   return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(valor);
 }
 
+/// Para fechas de calendario (inicio de clases, parciales), que se guardan a
+/// medianoche UTC: se muestran en UTC para que en una computadora con hora de
+/// Mexico no aparezcan como el dia anterior.
+export function formatearDia(fecha: Date | string | null | undefined, locale = "es-MX"): string {
+  if (!fecha) return "—";
+  const valor = typeof fecha === "string" ? new Date(fecha) : fecha;
+  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(valor);
+}
+
 export function formatearFechaHora(fecha: Date | string | null | undefined, locale = "es-MX"): string {
   if (!fecha) return "—";
   const valor = typeof fecha === "string" ? new Date(fecha) : fecha;

@@ -48,15 +48,7 @@ await p.getByLabel("Nombre de cada periodo").fill("Cuatrimestre {N}");
 await p.getByRole("button", { name: "Continuar" }).click();
 await p.waitForTimeout(300);
 
-// Paso 4: ciclo
-comprobar("Llega al ciclo", (await p.textContent("body")).includes("Nombre del ciclo"));
-await p.getByLabel("Nombre del ciclo").fill("Ciclo 2026-A");
-await p.getByLabel("Clave", { exact: true }).fill("2026A");
-await p.getByLabel("Numero de periodos de evaluacion").fill("4");
-await p.getByRole("button", { name: "Continuar" }).click();
-await p.waitForTimeout(300);
-
-// Paso 5: escala (valida rango y usa 0-10 con aprobatoria 6)
+// Paso 4: escala (valida rango y usa 0-10 con aprobatoria 6)
 comprobar("Llega a la escala", (await p.textContent("body")).includes("Calificacion minima aprobatoria"));
 await p.getByLabel("Valor maximo").fill("10");
 await p.getByLabel("Calificacion minima aprobatoria").fill("80");
@@ -70,19 +62,13 @@ await p.getByLabel("Decimales").fill("1");
 await p.getByRole("button", { name: "Continuar" }).click();
 await p.waitForTimeout(300);
 
-// Paso 6: horarios (quita el viernes)
-comprobar("Llega a horarios", (await p.textContent("body")).includes("Dias habiles"));
-await p.getByRole("button", { name: "Viernes" }).click();
-await p.getByRole("button", { name: "Continuar" }).click();
-await p.waitForTimeout(300);
-
-// Paso 7: asistencia (alerta a las 4 faltas)
+// Paso 5: asistencia (alerta a las 4 faltas)
 comprobar("Llega a asistencia", (await p.textContent("body")).includes("Faltas consecutivas que disparan alerta"));
 await p.getByLabel("Faltas consecutivas que disparan alerta").fill("4");
 await p.getByRole("button", { name: "Continuar" }).click();
 await p.waitForTimeout(300);
 
-// Paso 8: finanzas
+// Paso 6: finanzas
 comprobar("Llega a finanzas", (await p.textContent("body")).includes("Conceptos de cobro"));
 await p.getByLabel("Dia de vencimiento predeterminado").fill("5");
 const montos = p.getByLabel("Monto", { exact: true });
@@ -92,7 +78,7 @@ await p.getByLabel("Valor", { exact: true }).fill("12");
 await p.getByRole("button", { name: "Continuar" }).click();
 await p.waitForTimeout(300);
 
-// Paso 9: administrador
+// Paso 7: administrador
 comprobar("Llega al administrador", (await p.textContent("body")).includes("Nombre de usuario"));
 await p.getByRole("button", { name: "Continuar" }).click();
 await p.waitForTimeout(400);
@@ -111,11 +97,13 @@ await p.getByLabel("Contrasena").fill("Vanguardia2026");
 await p.getByRole("button", { name: "Continuar" }).click();
 await p.waitForTimeout(400);
 
-// Paso 10: resumen
+// Paso 8: resumen
 const resumen = (await p.textContent("body")).replace(/\s+/g, " ");
 comprobar("Resumen muestra la institucion", resumen.includes("Instituto Vanguardia"));
 comprobar("Resumen cuenta 9 grados", resumen.includes("9 grados"), resumen.slice(resumen.indexOf("Oferta academica"), resumen.indexOf("Oferta academica") + 90));
 comprobar("Resumen muestra la escala 0 a 10", resumen.includes("0 a 10 · aprueba con 6"));
+comprobar("El asistente ya no pide ciclo escolar", !resumen.includes("Nombre del ciclo") && !resumen.includes("Ciclo escolar"));
+comprobar("El asistente ya no pide horarios", !resumen.includes("Dias habiles"));
 
 await p.getByRole("button", { name: "Instalar sistema" }).click();
 await p.waitForURL("**/acceso**", { timeout: 30000 });

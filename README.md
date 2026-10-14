@@ -258,7 +258,8 @@ npm run prueba:academico          # 40 comprobaciones del modulo academico (base
 npm run prueba:finanzas           # 40 comprobaciones de finanzas (base recien sembrada)
 npm run prueba:integridad         # 27 comprobaciones de finanzas contra la base de datos
 npm run prueba:nomina             # 42 comprobaciones de nomina (base recien sembrada)
-npm run prueba:asistente          # 30 comprobaciones del asistente (base vacia)
+npm run prueba:grupos             # 33 comprobaciones de grupos con calendario y horario (base recien sembrada)
+npm run prueba:asistente          # 29 comprobaciones del asistente (base vacia)
 ```
 
 `prueba:asistente` necesita una base **sin instalar**; ver `pruebas/README.md`.
@@ -271,7 +272,7 @@ prisma/seed.ts            Siembra de configuracion y datos de demostracion
 src/lib/configuracion.ts  Motor de configuracion (catalogo de 59 parametros)
 src/lib/auth.ts           Sesiones, bloqueo por intentos fallidos, RBAC
 src/lib/bitacora.ts       Auditoria
-src/app/instalacion/      Asistente de instalacion en 10 pasos
+src/app/instalacion/      Asistente de instalacion en 8 pasos
 src/app/acceso/           Acceso al sistema
 src/app/panel/            Panel, alumnos, personal, materias, grupos, importador,
                           horarios, asistencia, calificaciones, boletas,

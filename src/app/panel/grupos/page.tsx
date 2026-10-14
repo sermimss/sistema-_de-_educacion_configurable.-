@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { catalogosEscolares } from "@/lib/catalogos";
+import { catalogosEscolares, nombreCompleto } from "@/lib/catalogos";
+import { formatearDia } from "@/lib/formato";
 import { configTexto } from "@/lib/configuracion";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
 import { FormularioNuevoGrupo } from "./Formularios";
@@ -13,9 +14,9 @@ export default async function PaginaGrupos() {
   const catalogos = await catalogosEscolares();
   const sugerencia = await configTexto("academico.nombre_grupo_sugerido", "{GRADO}{LETRA}");
 
-  const [grupos, planes] = await Promise.all([
+  const [grupos, planes, docentes] = await Promise.all([
     db.grupo.findMany({
-      orderBy: [{ cicloId: "desc" }, { nombre: "asc" }],
+      orderBy: [{ ciclo: { fechaInicio: "desc" } }, { nombre: "asc" }],
       include: {
         ciclo: true,
         plan: { include: { nivel: true } },
@@ -27,11 +28,20 @@ export default async function PaginaGrupos() {
     db.planEstudios.findMany({
       where: { activo: true },
       orderBy: { nombre: "asc" },
-      include: { nivel: true, grados: { orderBy: { numero: "asc" } } },
+      include: {
+        nivel: true,
+        grados: {
+          orderBy: { numero: "asc" },
+          include: { materias: { include: { materia: true }, orderBy: { orden: "asc" } } },
+        },
+      },
+    }),
+    db.empleado.findMany({
+      where: { esDocente: true, estado: "ACTIVO" },
+      orderBy: [{ apellidoPaterno: "asc" }, { nombres: "asc" }],
     }),
   ]);
 
-  const hayCiclos = catalogos.ciclos.length > 0;
   const hayPlanes = planes.length > 0;
 
   return (
@@ -41,15 +51,16 @@ export default async function PaginaGrupos() {
         <p className="mt-1 text-sm text-slate-600">{grupos.length} grupo(s) registrados</p>
       </header>
 
-      {!hayCiclos || !hayPlanes ? (
-        <Alerta tipo="aviso">
-          Para crear grupos necesitas al menos un ciclo escolar activo y un plan de estudios.
-        </Alerta>
+      {!hayPlanes ? (
+        <Alerta tipo="aviso">Para crear grupos necesitas al menos un plan de estudios.</Alerta>
       ) : (
         <Tarjeta titulo="Nuevo grupo">
           <FormularioNuevoGrupo
             sugerencia={sugerencia}
-            ciclos={catalogos.ciclos.map((c) => ({ id: c.id, etiqueta: c.nombre }))}
+            docentes={docentes.map((d) => ({
+              id: d.id,
+              etiqueta: `${nombreCompleto(d)} (${d.numeroEmpleado})`,
+            }))}
             planteles={catalogos.planteles.map((p) => ({ id: p.id, etiqueta: p.nombre }))}
             turnos={catalogos.turnos.map((t) => ({ id: t.id, etiqueta: t.nombre }))}
             aulas={catalogos.aulas.map((a) => ({ id: a.id, etiqueta: a.nombre }))}
@@ -57,7 +68,14 @@ export default async function PaginaGrupos() {
               id: plan.id,
               nombre: plan.nombre,
               nivel: plan.nivel.nombre,
-              grados: plan.grados.map((g) => ({ id: g.id, nombre: g.nombre })),
+              grados: plan.grados.map((g) => ({
+                id: g.id,
+                nombre: g.nombre,
+                materias: g.materias.map((m) => ({
+                  id: m.id,
+                  etiqueta: `${m.materia.clave} · ${m.materia.nombre}`,
+                })),
+              })),
             }))}
           />
         </Tarjeta>
@@ -72,7 +90,7 @@ export default async function PaginaGrupos() {
               <thead>
                 <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                   <th className="pb-2 pr-4 font-medium">Grupo</th>
-                  <th className="pb-2 pr-4 font-medium">Ciclo</th>
+                  <th className="pb-2 pr-4 font-medium">Clases</th>
                   <th className="pb-2 pr-4 font-medium">Plan y grado</th>
                   <th className="pb-2 pr-4 font-medium">Turno</th>
                   <th className="pb-2 pr-4 font-medium">Materias</th>
@@ -91,7 +109,9 @@ export default async function PaginaGrupos() {
                         </span>
                       )}
                     </td>
-                    <td className="py-2 pr-4 text-slate-600">{grupo.ciclo.nombre}</td>
+                    <td className="py-2 pr-4 text-slate-600">
+                      {formatearDia(grupo.ciclo.fechaInicio)} — {formatearDia(grupo.ciclo.fechaFin)}
+                    </td>
                     <td className="py-2 pr-4 text-slate-600">
                       {grupo.plan.nombre} · {grupo.grado.nombre}
                     </td>

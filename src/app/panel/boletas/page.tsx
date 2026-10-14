@@ -17,7 +17,7 @@ export default async function PaginaBoletas({
 
   const ciclos = await db.cicloEscolar.findMany({ orderBy: { fechaInicio: "desc" } });
   if (ciclos.length === 0) {
-    return <Alerta tipo="aviso">No hay ciclos escolares registrados.</Alerta>;
+    return <Alerta tipo="aviso">Aun no hay grupos registrados.</Alerta>;
   }
 
   const cicloId = Number(params.ciclo) || ciclos.find((c) => c.estado === "ACTIVO")?.id || ciclos[0].id;
@@ -60,7 +60,7 @@ export default async function PaginaBoletas({
         <form method="get" className="flex flex-wrap items-end gap-3">
           <div>
             <label className="etiqueta-campo" htmlFor="ciclo">
-              Ciclo escolar
+              Calendario
             </label>
             <select id="ciclo" name="ciclo" defaultValue={cicloId} className="campo min-w-[14rem]">
               {ciclos.map((ciclo) => (

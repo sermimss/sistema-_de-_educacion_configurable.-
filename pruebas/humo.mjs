@@ -34,7 +34,7 @@ comprobar("Panel muestra indicadores", panel.includes("Alumnos activos"));
 // Cuenta los alumnos del demo; otras suites pueden haber agregado mas.
 const alumnosEnPanel = Number(panel.replace(/\s+/g, " ").match(/Alumnos activos\s*(\d+)/)?.[1] ?? 0);
 comprobar("Panel cuenta los alumnos activos", alumnosEnPanel >= 4, `${alumnosEnPanel} alumnos`);
-comprobar("Panel muestra el ciclo activo", panel.includes("Ciclo escolar 2026-2027"));
+comprobar("Panel muestra los grupos en clases", panel.includes("Grupos en clases") && panel.includes("1A"));
 comprobar("Panel muestra la minima aprobatoria", panel.includes("70"));
 
 // Estructura academica

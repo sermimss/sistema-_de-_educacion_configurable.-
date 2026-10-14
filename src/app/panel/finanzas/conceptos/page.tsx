@@ -52,8 +52,11 @@ export default async function PaginaConceptos({
       orderBy: { apellidoPaterno: "asc" },
       take: 500,
     }),
+    // Cada grupo tiene sus fechas; la columna "Cuando" toma de ejemplo las del
+    // grupo que empezo mas recientemente.
     db.cicloEscolar.findFirst({
-      where: { estado: "ACTIVO" },
+      where: { estado: "ACTIVO", grupos: { some: { activo: true } } },
+      orderBy: { fechaInicio: "desc" },
       include: { periodos: { orderBy: { numero: "asc" } } },
     }),
   ]);

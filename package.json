@@ -26,6 +26,7 @@
     "prueba:finanzas": "node pruebas/finanzas.mjs",
     "prueba:nomina": "node pruebas/nomina.mjs",
     "prueba:integridad": "node pruebas/integridad-finanzas.mjs",
+    "prueba:grupos": "node pruebas/grupos-horario.mjs",
     "prueba:red": "node pruebas/red-local.mjs"
   },
   "dependencies": {

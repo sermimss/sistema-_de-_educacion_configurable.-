@@ -1,6 +1,7 @@
 import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { nombreCompleto } from "@/lib/catalogos";
+import { cicloVigenteDeAlumno } from "@/lib/calendarioGrupo";
 import { alumnoDeSesion } from "@/lib/alumnoSesion";
 import { configBool, configJson } from "@/lib/configuracion";
 import { DIAS_SEMANA } from "@/lib/formato";
@@ -17,8 +18,10 @@ export default async function PaginaMiHorario() {
     return <Alerta tipo="aviso">El colegio tiene desactivada esta seccion.</Alerta>;
   }
 
-  const ciclo = await db.cicloEscolar.findFirst({ where: { estado: "ACTIVO" } });
-  if (!ciclo) return <Alerta tipo="aviso">No hay un ciclo escolar activo.</Alerta>;
+  // Cada grupo tiene sus fechas: se muestra el del grupo en el que el alumno
+  // esta tomando clases hoy.
+  const ciclo = await cicloVigenteDeAlumno(alumno.id);
+  if (!ciclo) return <Alerta tipo="aviso">Aun no estas inscrito en ningun grupo.</Alerta>;
 
   const [clases, diasHabiles] = await Promise.all([
     db.alumnoClase.findMany({
@@ -38,7 +41,12 @@ export default async function PaginaMiHorario() {
     configJson<number[]>("horarios.dias_habiles", [1, 2, 3, 4, 5]),
   ]);
 
-  const dias = DIAS_SEMANA.filter((dia) => diasHabiles.includes(dia.valor));
+  const diasUsados = new Set(
+    clases.flatMap((inscripcion) => inscripcion.clase.horarios.map((h) => h.diaSemana))
+  );
+  const dias = DIAS_SEMANA.filter(
+    (dia) => diasHabiles.includes(dia.valor) || diasUsados.has(dia.valor)
+  );
 
   const bloques = clases.flatMap((inscripcion) =>
     inscripcion.clase.horarios.map((horario) => ({

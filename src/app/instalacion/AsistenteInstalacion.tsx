@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { z } from "zod";
 import { Alerta, Boton, Campo, Selector, Tarjeta } from "@/components/ui";
-import { DIAS_SEMANA } from "@/lib/formato";
 import type { esquemaInstalacion, DatosInstalacion } from "@/lib/esquemas-instalacion";
 import { instalarSistema } from "./acciones";
 
@@ -14,9 +13,7 @@ const PASOS = [
   { id: "institucion", titulo: "Institucion", descripcion: "Identidad, contacto y datos fiscales" },
   { id: "planteles", titulo: "Planteles y turnos", descripcion: "Donde y cuando opera la escuela" },
   { id: "academico", titulo: "Niveles y planes", descripcion: "Que se imparte y cuanto dura" },
-  { id: "ciclo", titulo: "Ciclo escolar", descripcion: "Fechas y periodos de evaluacion" },
   { id: "escala", titulo: "Evaluacion", descripcion: "Escala y minima aprobatoria" },
-  { id: "horarios", titulo: "Horarios", descripcion: "Dias habiles y modulos" },
   { id: "asistencia", titulo: "Asistencia", descripcion: "Como se pasa lista y cuando alertar" },
   { id: "finanzas", titulo: "Finanzas", descripcion: "Conceptos, recargos y recibos" },
   { id: "admin", titulo: "Administrador", descripcion: "Tu cuenta de acceso" },
@@ -59,14 +56,6 @@ const ESTADO_INICIAL: Estado = {
       plantillaGrado: "{N}o Semestre",
     },
   ],
-  ciclo: {
-    nombre: "Ciclo escolar 2026-2027",
-    clave: "2026-2027",
-    fechaInicio: "2026-08-17",
-    fechaFin: "2027-07-09",
-    numeroPeriodos: 3,
-    plantillaPeriodo: "Parcial {N}",
-  },
   escala: {
     nombre: "Escala 0 a 100",
     tipo: "NUMERICA",
@@ -75,17 +64,6 @@ const ESTADO_INICIAL: Estado = {
     decimales: 2,
     redondeo: "NINGUNO",
     minimaAprobatoria: 70,
-  },
-  horarios: {
-    diasHabiles: [1, 2, 3, 4, 5],
-    duracionModuloMinutos: 50,
-    modulos: [
-      { nombre: "Modulo 1", horaInicio: "07:00", horaFin: "07:50", esReceso: false },
-      { nombre: "Modulo 2", horaInicio: "07:50", horaFin: "08:40", esReceso: false },
-      { nombre: "Receso", horaInicio: "08:40", horaFin: "09:00", esReceso: true },
-      { nombre: "Modulo 3", horaInicio: "09:00", horaFin: "09:50", esReceso: false },
-      { nombre: "Modulo 4", horaInicio: "09:50", horaFin: "10:40", esReceso: false },
-    ],
   },
   asistencia: {
     docenteDecideModo: true,
@@ -195,10 +173,6 @@ export default function AsistenteInstalacion() {
         if (datos.planes.some((p) => !datos.niveles.some((n) => n.clave === p.nivelClave)))
           return "Cada plan debe pertenecer a un nivel existente.";
         return null;
-      case "ciclo":
-        if (new Date(datos.ciclo.fechaFin) <= new Date(datos.ciclo.fechaInicio))
-          return "La fecha de fin debe ser posterior a la de inicio.";
-        return null;
       case "escala": {
         const { valorMinimo, valorMaximo, minimaAprobatoria } = datos.escala;
         if (Number(valorMaximo) <= Number(valorMinimo)) return "El valor maximo debe ser mayor al minimo.";
@@ -206,10 +180,6 @@ export default function AsistenteInstalacion() {
           return "La minima aprobatoria debe estar dentro de la escala.";
         return null;
       }
-      case "horarios":
-        if (!datos.horarios.diasHabiles.length) return "Selecciona al menos un dia habil.";
-        if (!datos.horarios.modulos.length) return "Define al menos un modulo de horario.";
-        return null;
       case "admin": {
         const a = datos.administrador;
         if (!a.usuario || a.usuario.length < 3) return "El usuario debe tener al menos 3 caracteres.";
@@ -763,54 +733,6 @@ export default function AsistenteInstalacion() {
           </div>
         )}
 
-        {actual.id === "ciclo" && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Campo
-              etiqueta="Nombre del ciclo"
-              value={datos.ciclo.nombre}
-              onChange={(e) => actualizar("ciclo", { nombre: e.target.value })}
-            />
-            <Campo
-              etiqueta="Clave"
-              value={datos.ciclo.clave}
-              onChange={(e) => actualizar("ciclo", { clave: e.target.value })}
-            />
-            <Campo
-              etiqueta="Fecha de inicio"
-              type="date"
-              value={datos.ciclo.fechaInicio}
-              onChange={(e) => actualizar("ciclo", { fechaInicio: e.target.value })}
-            />
-            <Campo
-              etiqueta="Fecha de fin"
-              type="date"
-              value={datos.ciclo.fechaFin}
-              onChange={(e) => actualizar("ciclo", { fechaFin: e.target.value })}
-            />
-            <Campo
-              etiqueta="Numero de periodos de evaluacion"
-              type="number"
-              min={1}
-              max={12}
-              value={String(datos.ciclo.numeroPeriodos)}
-              onChange={(e) => actualizar("ciclo", { numeroPeriodos: Number(e.target.value) })}
-              ayuda="Parciales, bimestres o como los llame tu escuela"
-            />
-            <Campo
-              etiqueta="Nombre de cada periodo"
-              value={datos.ciclo.plantillaPeriodo}
-              onChange={(e) => actualizar("ciclo", { plantillaPeriodo: e.target.value })}
-              ayuda="Usa {N} para el numero"
-            />
-            <div className="sm:col-span-2">
-              <Alerta tipo="info">
-                Las fechas de cada periodo se reparten automaticamente entre el inicio y el fin del
-                ciclo. Podras ajustarlas una por una despues de instalar.
-              </Alerta>
-            </div>
-          </div>
-        )}
-
         {actual.id === "escala" && (
           <div className="grid gap-4 sm:grid-cols-2">
             <Campo
@@ -865,170 +787,6 @@ export default function AsistenteInstalacion() {
               <option value="HACIA_ARRIBA">Siempre hacia arriba</option>
               <option value="HACIA_ABAJO">Siempre hacia abajo</option>
             </Selector>
-          </div>
-        )}
-
-        {actual.id === "horarios" && (
-          <div className="space-y-6">
-            <div>
-              <p className="etiqueta-campo">Dias habiles</p>
-              <div className="flex flex-wrap gap-2">
-                {DIAS_SEMANA.map((dia) => {
-                  const activo = datos.horarios.diasHabiles.includes(dia.valor);
-                  return (
-                    <button
-                      key={dia.valor}
-                      type="button"
-                      onClick={() =>
-                        setDatos((p) => ({
-                          ...p,
-                          horarios: {
-                            ...p.horarios,
-                            diasHabiles: activo
-                              ? p.horarios.diasHabiles.filter((d) => d !== dia.valor)
-                              : [...p.horarios.diasHabiles, dia.valor].sort((a, b) => Number(a) - Number(b)),
-                          },
-                        }))
-                      }
-                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                        activo
-                          ? "border-marca-600 bg-marca-50 text-marca-700"
-                          : "border-slate-300 bg-white text-slate-500"
-                      }`}
-                    >
-                      {dia.nombre}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <Campo
-              etiqueta="Duracion de cada modulo (minutos)"
-              type="number"
-              min={10}
-              max={300}
-              className="sm:w-64"
-              value={String(datos.horarios.duracionModuloMinutos)}
-              onChange={(e) =>
-                setDatos((p) => ({
-                  ...p,
-                  horarios: { ...p.horarios, duracionModuloMinutos: Number(e.target.value) },
-                }))
-              }
-            />
-
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-800">Modulos del dia</h3>
-                <Boton
-                  type="button"
-                  variante="secundario"
-                  onClick={() =>
-                    setDatos((p) => ({
-                      ...p,
-                      horarios: {
-                        ...p.horarios,
-                        modulos: [
-                          ...p.horarios.modulos,
-                          {
-                            nombre: `Modulo ${p.horarios.modulos.filter((m) => !m.esReceso).length + 1}`,
-                            horaInicio: "10:40",
-                            horaFin: "11:30",
-                            esReceso: false,
-                          },
-                        ],
-                      },
-                    }))
-                  }
-                >
-                  Agregar modulo
-                </Boton>
-              </div>
-              <div className="space-y-2">
-                {datos.horarios.modulos.map((modulo, indice) => (
-                  <FilaLista
-                    key={indice}
-                    alQuitar={() =>
-                      setDatos((p) => ({
-                        ...p,
-                        horarios: {
-                          ...p.horarios,
-                          modulos: p.horarios.modulos.filter((_, i) => i !== indice),
-                        },
-                      }))
-                    }
-                  >
-                    <Campo
-                      etiqueta="Nombre"
-                      value={modulo.nombre}
-                      onChange={(e) =>
-                        setDatos((p) => ({
-                          ...p,
-                          horarios: {
-                            ...p.horarios,
-                            modulos: p.horarios.modulos.map((x, i) =>
-                              i === indice ? { ...x, nombre: e.target.value } : x
-                            ),
-                          },
-                        }))
-                      }
-                    />
-                    <Campo
-                      etiqueta="Inicio"
-                      type="time"
-                      value={modulo.horaInicio}
-                      onChange={(e) =>
-                        setDatos((p) => ({
-                          ...p,
-                          horarios: {
-                            ...p.horarios,
-                            modulos: p.horarios.modulos.map((x, i) =>
-                              i === indice ? { ...x, horaInicio: e.target.value } : x
-                            ),
-                          },
-                        }))
-                      }
-                    />
-                    <Campo
-                      etiqueta="Fin"
-                      type="time"
-                      value={modulo.horaFin}
-                      onChange={(e) =>
-                        setDatos((p) => ({
-                          ...p,
-                          horarios: {
-                            ...p.horarios,
-                            modulos: p.horarios.modulos.map((x, i) =>
-                              i === indice ? { ...x, horaFin: e.target.value } : x
-                            ),
-                          },
-                        }))
-                      }
-                    />
-                    <label className="flex items-center gap-2 pb-2 text-sm text-slate-600">
-                      <input
-                        type="checkbox"
-                        checked={modulo.esReceso ?? false}
-                        onChange={(e) =>
-                          setDatos((p) => ({
-                            ...p,
-                            horarios: {
-                              ...p.horarios,
-                              modulos: p.horarios.modulos.map((x, i) =>
-                                i === indice ? { ...x, esReceso: e.target.checked } : x
-                              ),
-                            },
-                          }))
-                        }
-                        className="h-4 w-4 rounded border-slate-300 text-marca-600"
-                      />
-                      Es receso
-                    </label>
-                  </FilaLista>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
@@ -1385,12 +1143,6 @@ export default function AsistenteInstalacion() {
                 <dd className="mt-1 font-medium text-slate-900">
                   {datos.niveles.length} nivel(es), {datos.planes.length} plan(es),{" "}
                   {datos.planes.reduce((suma, p) => suma + Number(p.duracionPeriodos), 0)} grados
-                </dd>
-              </div>
-              <div className="rounded-lg border border-slate-200 p-3">
-                <dt className="text-xs uppercase tracking-wide text-slate-500">Ciclo</dt>
-                <dd className="mt-1 font-medium text-slate-900">
-                  {datos.ciclo.nombre} · {datos.ciclo.numeroPeriodos} periodos
                 </dd>
               </div>
               <div className="rounded-lg border border-slate-200 p-3">

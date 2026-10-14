@@ -154,13 +154,18 @@ Stop-ScheduledTask  SistemaEscolar        # detenerlo
 Abre la direccion que imprimio el instalador. La primera vez el sistema
 muestra el **asistente de instalacion**, que pide:
 
-1. Nombre, clave, logo y datos fiscales del colegio.
-2. La primera cuenta de administrador (correo y contrasena).
-3. El ciclo escolar con el que arrancan.
+1. Nombre, logo y datos fiscales del colegio.
+2. Planteles, turnos, niveles y planes de estudio.
+3. Escala de calificacion, reglas de asistencia y de cobro.
+4. La primera cuenta de administrador (correo y contrasena).
 
-A partir de ahi todo lo demas — niveles, planes de estudio, materias,
-horarios, escalas de calificacion, conceptos de cobro, recargos, descuentos,
-nomina — se configura desde el propio sistema. Nada esta fijo en el codigo.
+El asistente no pide ciclo escolar ni horarios: cada grupo trae los suyos.
+Al crear un grupo se capturan su inicio y termino de clases, sus parciales y
+su tabla de horario (materia, docente, dia y hora).
+
+A partir de ahi todo lo demas — materias, grupos, conceptos de cobro,
+descuentos, nomina — se configura desde el propio sistema. Nada esta fijo en
+el codigo.
 
 El asistente **solo aparece una vez**. Si el sistema ya tiene una institucion
 registrada, esa ruta redirige al inicio de sesion.

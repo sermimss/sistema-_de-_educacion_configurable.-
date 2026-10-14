@@ -55,15 +55,6 @@ export const esquemaPlan = z.object({
   plantillaGrado: z.string().default("{N}o Semestre"),
 });
 
-export const esquemaCiclo = z.object({
-  nombre: z.string().min(2),
-  clave: z.string().min(1),
-  fechaInicio: z.string().min(8),
-  fechaFin: z.string().min(8),
-  numeroPeriodos: z.coerce.number().int().min(1).max(12),
-  plantillaPeriodo: z.string().default("Parcial {N}"),
-});
-
 export const esquemaEscala = z.object({
   nombre: z.string().min(2),
   tipo: z.enum(["NUMERICA", "LETRA", "CONCEPTUAL"]),
@@ -72,13 +63,6 @@ export const esquemaEscala = z.object({
   decimales: z.coerce.number().int().min(0).max(4),
   redondeo: z.enum(["NINGUNO", "MATEMATICO", "HACIA_ARRIBA", "HACIA_ABAJO"]),
   minimaAprobatoria: z.coerce.number(),
-});
-
-export const esquemaModulo = z.object({
-  nombre: z.string().min(1),
-  horaInicio: z.string().regex(/^\d{2}:\d{2}$/),
-  horaFin: z.string().regex(/^\d{2}:\d{2}$/),
-  esReceso: z.boolean().default(false),
 });
 
 export const esquemaConceptoCobro = z.object({
@@ -102,13 +86,7 @@ export const esquemaInstalacion = z.object({
   turnos: z.array(esquemaTurno).min(1, "Registra al menos un turno."),
   niveles: z.array(esquemaNivel).min(1, "Registra al menos un nivel educativo."),
   planes: z.array(esquemaPlan).min(1, "Registra al menos un plan de estudios."),
-  ciclo: esquemaCiclo,
   escala: esquemaEscala,
-  horarios: z.object({
-    diasHabiles: z.array(z.coerce.number().int().min(1).max(7)).min(1),
-    duracionModuloMinutos: z.coerce.number().int().min(10).max(300),
-    modulos: z.array(esquemaModulo).min(1, "Define al menos un modulo de horario."),
-  }),
   asistencia: z.object({
     docenteDecideModo: z.boolean(),
     modoPredeterminado: z.enum(["POR_DIA", "POR_CLASE"]),

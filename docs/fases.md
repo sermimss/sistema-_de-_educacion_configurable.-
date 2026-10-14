@@ -502,3 +502,30 @@ para Linux:
   `C:\SistemaEscolar`).
 
 Eso ya no se arregla con PowerShell en Linux: necesita una computadora Windows.
+
+## Calendario y horario por grupo
+
+El asistente de instalacion ya no pide ciclo escolar ni horarios. Esa parte
+paso al momento de crear cada grupo:
+
+- **Fechas propias**: cada grupo tiene su inicio y termino de clases. Por
+  dentro se guarda como un ciclo que pertenece solo a ese grupo, asi que
+  calificaciones, asistencia, inscripciones y cargos siguen funcionando igual.
+- **Parciales por grupo**: al crear el grupo se dice cuantos son; el sistema
+  reparte las fechas en partes iguales y cada una se puede ajustar.
+- **Horario completo al crear**: una tabla con materia, docente, dia y hora.
+  Se abre una clase por materia (una materia, un docente) y se revisan los
+  choques antes de guardar; si algo choca no se guarda nada.
+- **Choques por fechas**: un docente, un aula o un alumno solo chocan con
+  grupos cuyas fechas de clases se cruzan.
+- **Dias habiles** ya no bloquean un horario: un grupo puede tener clase en
+  sabado y la pantalla de horarios agrega esa columna.
+- **Finanzas**: las colegiaturas de cada alumno salen de las fechas de su
+  grupo; se generan por grupo o para todos los grupos activos.
+- **Portal del alumno y boletas**: muestran el grupo en el que el alumno esta
+  tomando clases hoy.
+
+Verificado con las 8 suites, cada una sobre su propia base: humo 26, control
+escolar 28, academico 40, finanzas 40, integridad 27, nomina 41, grupos y
+horario 33 (nueva), asistente 29.
+

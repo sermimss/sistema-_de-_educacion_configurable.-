@@ -3,7 +3,7 @@ import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { nombreCompleto } from "@/lib/catalogos";
 import { configJson } from "@/lib/configuracion";
-import { DIAS_SEMANA } from "@/lib/formato";
+import { DIAS_SEMANA, formatearDia } from "@/lib/formato";
 import { Alerta, EstadoVacio, Tarjeta } from "@/components/ui";
 import { BotonQuitarHorario, FormularioHorario } from "./Formularios";
 
@@ -19,13 +19,12 @@ export default async function PaginaHorarios({
 
   const grupos = await db.grupo.findMany({
     where: { activo: true, ciclo: { estado: "ACTIVO" } },
-    orderBy: [{ cicloId: "desc" }, { nombre: "asc" }],
+    orderBy: [{ ciclo: { fechaInicio: "desc" } }, { nombre: "asc" }],
     include: { ciclo: true, grado: true, turno: true, _count: { select: { clases: true } } },
   });
 
   const grupoId = Number(params.grupo) || grupos[0]?.id;
   const diasHabiles = await configJson<number[]>("horarios.dias_habiles", [1, 2, 3, 4, 5]);
-  const dias = DIAS_SEMANA.filter((dia) => diasHabiles.includes(dia.valor));
 
   const [grupo, modulos, aulas] = await Promise.all([
     grupoId
@@ -78,6 +77,15 @@ export default async function PaginaHorarios({
     }
   }
 
+  // Columnas: los dias habiles del colegio mas cualquier otro dia en que el
+  // grupo ya tenga clase (un sabado, por ejemplo).
+  const diasUsados = new Set(
+    (grupo?.clases ?? []).flatMap((clase) => clase.horarios.map((h) => h.diaSemana))
+  );
+  const dias = DIAS_SEMANA.filter(
+    (dia) => diasHabiles.includes(dia.valor) || diasUsados.has(dia.valor)
+  );
+
   // Filas del cuadro: los modulos configurados mas cualquier hora manual usada.
   const horasUsadas = new Set(modulos.filter((m) => !m.esReceso).map((m) => m.horaInicio));
   for (const llave of celdas.keys()) horasUsadas.add(llave.split("|")[1]);
@@ -99,7 +107,7 @@ export default async function PaginaHorarios({
 
       {grupos.length === 0 ? (
         <Alerta tipo="aviso">
-          No hay grupos activos en un ciclo activo.{" "}
+          No hay grupos activos.{" "}
           <Link href="/panel/grupos" className="font-medium underline">
             Crear un grupo
           </Link>
@@ -134,7 +142,7 @@ export default async function PaginaHorarios({
             <>
               <Tarjeta
                 titulo={`Horario de ${grupo.nombre}`}
-                descripcion={`${grupo.ciclo.nombre} · ${totalHorarios} bloque(s) programados`}
+                descripcion={`Clases del ${formatearDia(grupo.ciclo.fechaInicio)} al ${formatearDia(grupo.ciclo.fechaFin)} · ${totalHorarios} bloque(s) programados`}
               >
                 {filas.length === 0 ? (
                   <EstadoVacio
@@ -224,7 +232,7 @@ export default async function PaginaHorarios({
                 ) : (
                   <FormularioHorario
                     grupoId={grupo.id}
-                    dias={dias.map((d) => ({ valor: d.valor, nombre: d.nombre }))}
+                    dias={DIAS_SEMANA.map((d) => ({ valor: d.valor, nombre: d.nombre }))}
                     clases={grupo.clases.map((clase) => ({
                       id: clase.id,
                       etiqueta: `${clase.planMateria.materia.nombre} · ${nombreCompleto(clase.docente)}`,

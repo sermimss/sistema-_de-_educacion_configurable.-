@@ -1,6 +1,6 @@
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { db } from "./db";
-import { configBool, configJson } from "./configuracion";
+import { configBool } from "./configuracion";
 
 /// Dos rangos de "HH:MM" se traslapan si uno empieza antes de que el otro
 /// termine. Tocarse en el limite (10:00-10:50 y 10:50-11:40) no es choque.
@@ -26,13 +26,18 @@ type DatosHorario = {
 
 /// Revisa que el docente, el aula y el grupo no queden en dos lugares a la vez.
 /// Cada validacion se puede apagar desde Configuracion.
+///
+/// Cada grupo tiene sus propias fechas de clases, asi que solo chocan los
+/// horarios de grupos cuyas fechas se cruzan: un docente puede dar el lunes a
+/// las 7:00 en un grupo que termina en junio y en otro que empieza en agosto.
 export async function detectarChoques(
   datos: DatosHorario,
-  cliente: PrismaClient | typeof db = db
+  cliente: Prisma.TransactionClient | typeof db = db
 ): Promise<Choque[]> {
   const clase = await cliente.clase.findUnique({
     where: { id: datos.claseId },
     include: {
+      ciclo: true,
       docente: true,
       grupo: true,
       planMateria: { include: { materia: true } },
@@ -40,27 +45,25 @@ export async function detectarChoques(
   });
   if (!clase) return [];
 
-  const [validaDocente, validaAula, validaGrupo, diasHabiles] = await Promise.all([
+  const [validaDocente, validaAula, validaGrupo] = await Promise.all([
     configBool("horarios.validar_choque_docente", true),
     configBool("horarios.validar_choque_aula", true),
     configBool("horarios.validar_choque_grupo", true),
-    configJson<number[]>("horarios.dias_habiles", [1, 2, 3, 4, 5]),
   ]);
 
   const choques: Choque[] = [];
 
-  if (!diasHabiles.includes(datos.diaSemana)) {
-    choques.push({
-      tipo: "GRUPO",
-      mensaje: "Ese dia no esta marcado como habil en la configuracion del colegio.",
-    });
-  }
-
-  // Todos los horarios del mismo ciclo y dia, menos el que se esta editando.
+  // Los horarios del mismo dia en grupos que tienen clases en las mismas
+  // fechas, menos el que se esta editando.
   const candidatos = await cliente.horarioClase.findMany({
     where: {
       diaSemana: datos.diaSemana,
-      clase: { cicloId: clase.cicloId },
+      clase: {
+        ciclo: {
+          fechaInicio: { lte: clase.ciclo.fechaFin },
+          fechaFin: { gte: clase.ciclo.fechaInicio },
+        },
+      },
       ...(datos.horarioIdExcluido ? { NOT: { id: datos.horarioIdExcluido } } : {}),
     },
     include: {

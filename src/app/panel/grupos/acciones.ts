@@ -6,7 +6,17 @@ import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { registrarBitacora } from "@/lib/bitacora";
 import { configBool, configTexto } from "@/lib/configuracion";
-import { esquemaClase, esquemaGrupo } from "@/lib/esquemas";
+import { z } from "zod";
+import {
+  esquemaClase,
+  esquemaGrupo,
+  esquemaParcialGrupo,
+  esquemaRenglonHorario,
+} from "@/lib/esquemas";
+import { leerFecha, validarCalendario } from "@/lib/fechasGrupo";
+import { ciclosQueSeCruzan, crearCalendarioDeGrupo, fijarClaveDelCiclo } from "@/lib/calendarioGrupo";
+import { detectarChoques } from "@/lib/horarios";
+import { DIAS_SEMANA } from "@/lib/formato";
 
 export type EstadoFormulario = {
   error?: string;
@@ -22,6 +32,23 @@ function enteroONulo(valor: FormDataEntryValue | null): number | null {
   return Number.isInteger(numero) && numero > 0 ? numero : null;
 }
 
+class ChoquesDeHorario extends Error {
+  constructor(public detalles: string[]) {
+    super("choques");
+  }
+}
+
+function leerJson(valor: FormDataEntryValue | null): unknown {
+  try {
+    return JSON.parse(String(valor ?? "[]"));
+  } catch {
+    return null;
+  }
+}
+
+/// Crea el grupo completo en un solo paso: sus fechas de clases, sus
+/// parciales, las materias con su docente y la tabla de horario. Si algo del
+/// horario choca, no se guarda nada.
 export async function crearGrupo(
   _previo: EstadoFormulario,
   formData: FormData
@@ -29,7 +56,8 @@ export async function crearGrupo(
   const sesion = await requerirRol("ADMIN");
   const validacion = esquemaGrupo.safeParse({
     nombre: formData.get("nombre"),
-    cicloId: formData.get("cicloId"),
+    fechaInicio: formData.get("fechaInicio"),
+    fechaFin: formData.get("fechaFin"),
     planId: formData.get("planId"),
     gradoId: formData.get("gradoId"),
     plantelId: formData.get("plantelId") || undefined,
@@ -38,51 +66,188 @@ export async function crearGrupo(
     cupoMaximo: formData.get("cupoMaximo") || undefined,
     activo: true,
   });
-  if (!validacion.success) {
-    return {
-      error: "Revisa los datos del grupo.",
-      detalles: validacion.error.issues.map((i) => i.message),
-    };
+  const parciales = z.array(esquemaParcialGrupo).safeParse(leerJson(formData.get("parciales")));
+  const renglones = z.array(esquemaRenglonHorario).safeParse(leerJson(formData.get("horario")));
+
+  const problemas: string[] = [];
+  if (!validacion.success) problemas.push(...validacion.error.issues.map((i) => i.message));
+  if (!parciales.success) problemas.push(...parciales.error.issues.map((i) => i.message));
+  if (!renglones.success) problemas.push(...renglones.error.issues.map((i) => i.message));
+  if (!validacion.success || !parciales.success || !renglones.success) {
+    return { error: "Revisa los datos del grupo.", detalles: [...new Set(problemas)] };
   }
   const d = validacion.data;
+  const horario = renglones.data;
+
+  problemas.push(...validarCalendario(d.fechaInicio, d.fechaFin, parciales.data));
+  if (horario.length === 0) {
+    problemas.push("Agrega al menos un renglon al horario del grupo.");
+  }
+  horario.forEach((renglon, indice) => {
+    if (renglon.horaFin <= renglon.horaInicio) {
+      problemas.push(`Renglon ${indice + 1} del horario: la hora de fin debe ser posterior a la de inicio.`);
+    }
+  });
+  if (problemas.length > 0) return { error: "Revisa los datos del grupo.", detalles: problemas };
 
   const grado = await db.grado.findUnique({ where: { id: d.gradoId } });
   if (!grado || grado.planId !== d.planId) {
     return { error: "El grado seleccionado no pertenece al plan de estudios elegido." };
   }
 
-  let idCreado: number;
-  try {
-    const grupo = await db.grupo.create({
-      data: {
-        nombre: d.nombre,
-        cicloId: d.cicloId,
-        planId: d.planId,
-        gradoId: d.gradoId,
-        plantelId: enteroONulo(formData.get("plantelId")),
-        turnoId: enteroONulo(formData.get("turnoId")),
-        aulaId: enteroONulo(formData.get("aulaId")),
-        cupoMaximo: enteroONulo(formData.get("cupoMaximo")),
-      },
-    });
-    await registrarBitacora({
-      usuarioId: sesion.usuarioId,
-      accion: "CREAR",
-      entidad: "Grupo",
-      entidadId: grupo.id,
-      descripcion: `Grupo ${grupo.nombre} creado`,
-    });
-    idCreado = grupo.id;
-  } catch (error) {
-    const mensaje = error instanceof Error ? error.message : "Error desconocido.";
-    return {
-      error: mensaje.includes("Unique constraint")
-        ? `Ya existe un grupo llamado ${d.nombre} en ese ciclo escolar.`
-        : `No se pudo crear el grupo: ${mensaje}`,
-    };
+  // Materias: deben ser del plan y grado del grupo, y cada una con un solo docente.
+  const idsMaterias = [...new Set(horario.map((r) => r.planMateriaId))];
+  const idsDocentes = [...new Set(horario.map((r) => r.docenteId))];
+  const [planMaterias, docentes] = await Promise.all([
+    db.planMateria.findMany({ where: { id: { in: idsMaterias } }, include: { materia: true } }),
+    db.empleado.findMany({ where: { id: { in: idsDocentes } } }),
+  ]);
+  const materiaPorId = new Map(planMaterias.map((m) => [m.id, m]));
+  const docentePorId = new Map(docentes.map((e) => [e.id, e]));
+
+  const docenteDeMateria = new Map<number, number>();
+  for (const renglon of horario) {
+    const materia = materiaPorId.get(renglon.planMateriaId);
+    const docente = docentePorId.get(renglon.docenteId);
+    if (!materia || materia.planId !== d.planId || materia.gradoId !== d.gradoId) {
+      problemas.push("Hay una materia en el horario que no es del plan y grado del grupo.");
+      continue;
+    }
+    if (!docente?.esDocente) {
+      problemas.push(`${materia.materia.nombre}: la persona elegida no esta marcada como docente.`);
+      continue;
+    }
+    if (docente.estado !== "ACTIVO") {
+      problemas.push(`${docente.nombres} ${docente.apellidoPaterno} no esta activo.`);
+      continue;
+    }
+    const asignado = docenteDeMateria.get(materia.id);
+    if (asignado !== undefined && asignado !== docente.id) {
+      problemas.push(
+        `${materia.materia.nombre} tiene dos docentes distintos en el horario. Una materia del grupo la imparte un solo docente.`
+      );
+      continue;
+    }
+    docenteDeMateria.set(materia.id, docente.id);
+  }
+  if (problemas.length > 0) {
+    return { error: "Revisa el horario del grupo.", detalles: [...new Set(problemas)] };
   }
 
+  // Dos grupos con el mismo nombre en las mismas fechas se confundirian.
+  const inicio = leerFecha(d.fechaInicio)!;
+  const fin = leerFecha(d.fechaFin)!;
+  const homonimo = await db.grupo.findFirst({
+    where: { nombre: d.nombre, ciclo: ciclosQueSeCruzan(inicio, fin) },
+  });
+  if (homonimo) {
+    return { error: `Ya existe un grupo llamado ${d.nombre} con clases en esas fechas.` };
+  }
+
+  const escala = await db.escalaCalificacion.findFirst({ where: { predeterminada: true } });
+  const modoPredeterminado = await configTexto("asistencia.modo_predeterminado", "POR_CLASE");
+  const aulaGrupo = enteroONulo(formData.get("aulaId"));
+
+  let idCreado: number;
+  try {
+    idCreado = await db.$transaction(
+      async (tx) => {
+        const ciclo = await crearCalendarioDeGrupo(tx, {
+          nombreGrupo: d.nombre,
+          inicio: d.fechaInicio,
+          fin: d.fechaFin,
+          parciales: parciales.data,
+        });
+        const grupo = await tx.grupo.create({
+          data: {
+            nombre: d.nombre,
+            cicloId: ciclo.id,
+            planId: d.planId,
+            gradoId: d.gradoId,
+            plantelId: enteroONulo(formData.get("plantelId")),
+            turnoId: enteroONulo(formData.get("turnoId")),
+            aulaId: aulaGrupo,
+            cupoMaximo: enteroONulo(formData.get("cupoMaximo")),
+          },
+        });
+        await fijarClaveDelCiclo(tx, ciclo.id, grupo.id);
+
+        const clasePorMateria = new Map<number, number>();
+        for (const [planMateriaId, docenteId] of docenteDeMateria) {
+          const clase = await tx.clase.create({
+            data: {
+              cicloId: ciclo.id,
+              grupoId: grupo.id,
+              planMateriaId,
+              docenteId,
+              aulaId: aulaGrupo,
+              escalaId: escala?.id ?? null,
+              modoAsistencia: modoPredeterminado === "POR_DIA" ? "POR_DIA" : "POR_CLASE",
+            },
+          });
+          clasePorMateria.set(planMateriaId, clase.id);
+        }
+
+        const creados = [];
+        for (const renglon of horario) {
+          creados.push(
+            await tx.horarioClase.create({
+              data: {
+                claseId: clasePorMateria.get(renglon.planMateriaId)!,
+                diaSemana: renglon.diaSemana,
+                horaInicio: renglon.horaInicio,
+                horaFin: renglon.horaFin,
+                aulaId: renglon.aulaId ?? null,
+              },
+            })
+          );
+        }
+
+        // Se revisa ya guardado, para que cuente tanto contra otros grupos
+        // como entre los propios renglones del formulario.
+        const choques: string[] = [];
+        for (const creado of creados) {
+          const encontrados = await detectarChoques(
+            {
+              claseId: creado.claseId,
+              diaSemana: creado.diaSemana,
+              horaInicio: creado.horaInicio,
+              horaFin: creado.horaFin,
+              aulaId: creado.aulaId,
+              horarioIdExcluido: creado.id,
+            },
+            tx
+          );
+          const dia = DIAS_SEMANA.find((x) => x.valor === creado.diaSemana)?.nombre ?? "";
+          choques.push(...encontrados.map((c) => `${dia} ${creado.horaInicio}-${creado.horaFin}: ${c.mensaje}`));
+        }
+        if (choques.length > 0) throw new ChoquesDeHorario([...new Set(choques)]);
+
+        return grupo.id;
+      },
+      { timeout: 30_000, maxWait: 10_000 }
+    );
+  } catch (error) {
+    if (error instanceof ChoquesDeHorario) {
+      return {
+        error: "El horario choca con lo ya programado. No se guardo nada.",
+        detalles: error.detalles,
+      };
+    }
+    const mensaje = error instanceof Error ? error.message : "Error desconocido.";
+    return { error: `No se pudo crear el grupo: ${mensaje}` };
+  }
+
+  await registrarBitacora({
+    usuarioId: sesion.usuarioId,
+    accion: "CREAR",
+    entidad: "Grupo",
+    entidadId: idCreado,
+    descripcion: `Grupo ${d.nombre} creado: clases del ${d.fechaInicio} al ${d.fechaFin}, ${parciales.data.length} parcial(es), ${docenteDeMateria.size} materia(s), ${horario.length} bloque(s) de horario`,
+  });
+
   revalidatePath("/panel/grupos");
+  revalidatePath("/panel/horarios");
   redirect(`/panel/grupos/${idCreado}`);
 }
 
@@ -301,6 +466,7 @@ export async function inscribirAlumno(
     db.grupo.findUnique({
       where: { id: grupoId },
       include: {
+        ciclo: true,
         clases: { include: { planMateria: { include: { materia: true, prerrequisitos: true } } } },
         _count: { select: { inscripciones: true } },
       },
@@ -330,7 +496,23 @@ export async function inscribirAlumno(
     where: { alumnoId_cicloId: { alumnoId, cicloId: grupo.cicloId } },
   });
   if (yaInscrito && yaInscrito.estado === "INSCRITO") {
-    return { error: "El alumno ya esta inscrito en un grupo de este ciclo escolar." };
+    return { error: "El alumno ya esta inscrito en este grupo." };
+  }
+
+  // Cada grupo tiene sus fechas: un alumno no puede estar en dos grupos que
+  // tienen clases al mismo tiempo.
+  const enOtroGrupo = await db.inscripcion.findFirst({
+    where: {
+      alumnoId,
+      estado: "INSCRITO",
+      ciclo: ciclosQueSeCruzan(grupo.ciclo.fechaInicio, grupo.ciclo.fechaFin),
+    },
+    include: { grupo: true },
+  });
+  if (enOtroGrupo) {
+    return {
+      error: `El alumno ya esta inscrito en ${enOtroGrupo.grupo.nombre}, que tiene clases en esas mismas fechas.`,
+    };
   }
 
   // Materias que el alumno ya aprobo, para revisar prerrequisitos.

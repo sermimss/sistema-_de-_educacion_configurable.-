@@ -151,7 +151,7 @@ export function FormularioConcepto({
             name="fechaPrimerCargo"
             type="date"
             defaultValue={concepto?.fechaPrimerCargo ?? ""}
-            ayuda="Vacio: el inicio del ciclo."
+            ayuda="Vacio: el inicio de clases del grupo de cada alumno."
           />
           <Campo
             etiqueta="Dia de vencimiento"
@@ -172,7 +172,7 @@ export function FormularioConcepto({
             ayuda={
               periodicidad === "UNICO"
                 ? "Un solo cargo."
-                : "Vacio: los que quepan en el ciclo o los periodos del plan."
+                : "Vacio: los que quepan en las fechas del grupo o los periodos del plan."
             }
           />
         </div>
@@ -424,8 +424,8 @@ export function FormularioAsignarBeca({
             </option>
           ))}
         </Selector>
-        <Selector etiqueta="Ciclo" name="cicloId">
-          <option value="">Todos los ciclos</option>
+        <Selector etiqueta="Solo en el grupo" name="cicloId">
+          <option value="">En cualquier grupo</option>
           {ciclos.map((ciclo) => (
             <option key={ciclo.id} value={ciclo.id}>
               {ciclo.etiqueta}

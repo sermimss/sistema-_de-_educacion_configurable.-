@@ -20,6 +20,7 @@ import {
   recalcularCargo,
   type LineaPrevia,
 } from "@/lib/generacionCargos";
+import { cicloVigenteDeAlumno } from "@/lib/calendarioGrupo";
 import type { EstadoFinanzas } from "./acciones";
 
 export type EstadoGeneracion = EstadoFinanzas & {
@@ -56,23 +57,57 @@ function decimal(formData: FormData, clave: string): number | null {
   return Number.isFinite(parseado) ? centavos(parseado) : null;
 }
 
-/// Calcula los cargos del ciclo. Con "vistaPrevia" solo muestra lo que haria.
+/// Calcula los cargos. Cada grupo tiene sus propias fechas de clases, asi
+/// que las colegiaturas de cada alumno salen de las fechas de su grupo. Con
+/// "vistaPrevia" solo muestra lo que haria.
 export async function accionGenerarCargos(
   _previo: EstadoGeneracion,
   formData: FormData
 ): Promise<EstadoGeneracion> {
   const sesion = await requerirRol("ADMIN");
-  const cicloId = entero(formData, "cicloId");
-  if (!cicloId) return { error: "Selecciona el ciclo escolar." };
-
   const soloVistaPrevia = formData.get("accion") !== "confirmar";
   const grupoId = entero(formData, "grupoId");
   const alumnoId = entero(formData, "alumnoId");
 
-  const resultado = await generarCargos(
-    { cicloId, grupoId, alumnoId },
-    { soloVistaPrevia, creadoPor: sesion.usuarioId }
-  );
+  // Que calendarios de grupo recorrer.
+  let ciclos: number[];
+  if (grupoId) {
+    const grupo = await db.grupo.findUnique({ where: { id: grupoId } });
+    if (!grupo) return { error: "El grupo no existe." };
+    ciclos = [grupo.cicloId];
+  } else if (alumnoId) {
+    const inscripciones = await db.inscripcion.findMany({
+      where: { alumnoId, estado: "INSCRITO" },
+      select: { cicloId: true },
+    });
+    ciclos = [...new Set(inscripciones.map((i) => i.cicloId))];
+  } else {
+    const grupos = await db.grupo.findMany({
+      where: { activo: true, ciclo: { estado: "ACTIVO" } },
+      select: { cicloId: true },
+    });
+    ciclos = [...new Set(grupos.map((g) => g.cicloId))];
+  }
+  if (ciclos.length === 0) {
+    return { error: "No hay alumnos inscritos en grupos activos con esa seleccion." };
+  }
+
+  const resultado: Awaited<ReturnType<typeof generarCargos>> = {
+    lineas: [],
+    creados: 0,
+    omitidos: 0,
+    montoTotal: 0,
+  };
+  for (const cicloId of ciclos) {
+    const parcial = await generarCargos(
+      { cicloId, grupoId, alumnoId },
+      { soloVistaPrevia, creadoPor: sesion.usuarioId }
+    );
+    resultado.lineas.push(...parcial.lineas);
+    resultado.creados += parcial.creados;
+    resultado.omitidos += parcial.omitidos;
+    resultado.montoTotal = centavos(resultado.montoTotal + parcial.montoTotal);
+  }
 
   if (soloVistaPrevia) {
     return {
@@ -97,7 +132,7 @@ export async function accionGenerarCargos(
     usuarioId: sesion.usuarioId,
     accion: "CREAR",
     entidad: "Cargo",
-    entidadId: `ciclo-${cicloId}`,
+    entidadId: grupoId ? `grupo-${grupoId}` : alumnoId ? `alumno-${alumnoId}` : "todos",
     descripcion: `Generacion de cargos: ${resultado.creados} creados, ${resultado.omitidos} omitidos, total ${resultado.montoTotal}`,
   });
 
@@ -128,14 +163,15 @@ export async function crearCargoManual(
   const alumno = await db.alumno.findUnique({ where: { id: alumnoId } });
   if (!alumno) return { error: "El alumno no existe." };
 
-  const cicloActivo = await db.cicloEscolar.findFirst({ where: { estado: "ACTIVO" } });
+  // El cargo se liga al calendario del grupo en el que el alumno esta hoy.
+  const cicloVigente = await cicloVigenteDeAlumno(alumnoId);
 
   const cargo = await db.cargo.create({
     data: {
       folio: await siguienteFolioCargo(),
       alumnoId,
       conceptoId,
-      cicloId: cicloActivo?.id ?? null,
+      cicloId: cicloVigente?.id ?? null,
       descripcion,
       montoOriginal: monto,
       montoDescuento: 0,

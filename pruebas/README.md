@@ -38,6 +38,21 @@ distinto para las claves.
 npm run prueba:control
 ```
 
+## grupos-horario.mjs
+
+33 comprobaciones sobre una base **recien sembrada con los datos de
+demostracion**. Cada grupo trae su propio calendario: crea grupos con fechas
+de inicio y termino de clases, parciales y tabla de horario (materia, docente,
+dia y hora). Verifica el reparto de parciales, que una materia tenga un solo
+docente, los choques dentro del grupo y contra otros grupos con fechas que se
+cruzan (y que no choquen si las fechas no se cruzan), que con choque no se
+guarde nada, la inscripcion segun fechas, la pantalla de horarios y que las
+colegiaturas se calculen con las fechas del grupo de cada alumno.
+
+```bash
+npm run prueba:grupos
+```
+
 ## academico.mjs
 
 40 comprobaciones de la Fase 3. Requiere una base **recien sembrada con los
@@ -117,7 +132,7 @@ del modulo completo desde Configuracion.
 
 ## asistente.mjs
 
-30 comprobaciones del asistente de instalacion. Requiere una base **migrada
+29 comprobaciones del asistente de instalacion. Requiere una base **migrada
 pero sin instalar**, porque prueba precisamente la instalacion inicial.
 
 ```bash

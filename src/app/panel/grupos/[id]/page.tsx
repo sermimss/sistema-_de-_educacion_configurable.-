@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { catalogosEscolares, nombreCompleto } from "@/lib/catalogos";
+import { ciclosQueSeCruzan } from "@/lib/calendarioGrupo";
+import { DIAS_SEMANA, formatearDia } from "@/lib/formato";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
 import {
   BotonDarDeBaja,
@@ -24,7 +26,7 @@ export default async function PaginaGrupo({ params }: { params: Promise<{ id: st
   const grupo = await db.grupo.findUnique({
     where: { id: grupoId },
     include: {
-      ciclo: true,
+      ciclo: { include: { periodos: { orderBy: { numero: "asc" } } } },
       plan: { include: { nivel: true } },
       grado: true,
       plantel: true,
@@ -35,6 +37,7 @@ export default async function PaginaGrupo({ params }: { params: Promise<{ id: st
           planMateria: { include: { materia: true } },
           docente: true,
           aula: true,
+          horarios: { include: { aula: true } },
           _count: { select: { alumnos: true, calificaciones: true, sesiones: true } },
         },
       },
@@ -62,12 +65,34 @@ export default async function PaginaGrupo({ params }: { params: Promise<{ id: st
       where: {
         estado: "ACTIVO",
         planId: grupo.planId,
-        NOT: { inscripciones: { some: { cicloId: grupo.cicloId, estado: "INSCRITO" } } },
+        // Fuera quedan los que ya estan en un grupo con clases en estas fechas.
+        NOT: {
+          inscripciones: {
+            some: {
+              estado: "INSCRITO",
+              ciclo: ciclosQueSeCruzan(grupo.ciclo.fechaInicio, grupo.ciclo.fechaFin),
+            },
+          },
+        },
       },
       orderBy: [{ apellidoPaterno: "asc" }, { nombres: "asc" }],
       take: 300,
     }),
   ]);
+
+  const bloques = grupo.clases
+    .flatMap((clase) =>
+      clase.horarios.map((h) => ({
+        id: h.id,
+        diaSemana: h.diaSemana,
+        horaInicio: h.horaInicio,
+        horaFin: h.horaFin,
+        materia: clase.planMateria.materia.nombre,
+        docente: nombreCompleto(clase.docente),
+        aula: h.aula?.nombre ?? clase.aula?.nombre ?? grupo.aula?.nombre ?? null,
+      }))
+    )
+    .sort((a, b) => a.diaSemana - b.diaSemana || a.horaInicio.localeCompare(b.horaInicio));
 
   const yaAsignadas = new Set(grupo.clases.map((clase) => clase.planMateriaId));
   const materiasPorAsignar = materiasDelGrado.filter((m) => !yaAsignadas.has(m.id));
@@ -86,8 +111,8 @@ export default async function PaginaGrupo({ params }: { params: Promise<{ id: st
           </Link>
           <h1 className="mt-1 text-xl font-semibold text-slate-900">{grupo.nombre}</h1>
           <p className="mt-1 text-sm text-slate-600">
-            {grupo.plan.nivel.nombre} · {grupo.plan.nombre} · {grupo.grado.nombre} ·{" "}
-            {grupo.ciclo.nombre}
+            {grupo.plan.nivel.nombre} · {grupo.plan.nombre} · {grupo.grado.nombre} · clases del{" "}
+            {formatearDia(grupo.ciclo.fechaInicio)} al {formatearDia(grupo.ciclo.fechaFin)}
             {grupo.turno && ` · ${grupo.turno.nombre}`}
           </p>
         </div>
@@ -118,6 +143,61 @@ export default async function PaginaGrupo({ params }: { params: Promise<{ id: st
           aulas={catalogos.aulas.map((a) => ({ id: a.id, etiqueta: a.nombre }))}
         />
       </Tarjeta>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Tarjeta
+          titulo="Calendario del grupo"
+          descripcion={`Clases del ${formatearDia(grupo.ciclo.fechaInicio)} al ${formatearDia(grupo.ciclo.fechaFin)}`}
+        >
+          {grupo.ciclo.periodos.length === 0 ? (
+            <EstadoVacio titulo="Sin parciales" />
+          ) : (
+            <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+              {grupo.ciclo.periodos.map((periodo) => (
+                <li
+                  key={periodo.id}
+                  className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm"
+                >
+                  <span className="text-slate-700">{periodo.nombre}</span>
+                  <span className="flex items-center gap-2 text-xs text-slate-500">
+                    {formatearDia(periodo.fechaInicio)} — {formatearDia(periodo.fechaFin)}
+                    {periodo.capturaAbierta && <Insignia tono="exito">Captura abierta</Insignia>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Tarjeta>
+
+        <Tarjeta
+          titulo="Horario"
+          descripcion={`${bloques.length} bloque(s) a la semana`}
+          acciones={
+            <Link href={`/panel/horarios?grupo=${grupo.id}`} className="text-sm font-medium text-marca-600 hover:underline">
+              Editar horario
+            </Link>
+          }
+        >
+          {bloques.length === 0 ? (
+            <EstadoVacio titulo="Sin horario" mensaje="Agrega bloques desde la pantalla de Horarios." />
+          ) : (
+            <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+              {bloques.map((bloque) => (
+                <li key={bloque.id} className="px-3 py-2 text-sm">
+                  <p className="font-medium text-slate-800">
+                    {DIAS_SEMANA.find((d) => d.valor === bloque.diaSemana)?.nombre} {bloque.horaInicio}
+                    -{bloque.horaFin} · {bloque.materia}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {bloque.docente}
+                    {bloque.aula ? ` · ${bloque.aula}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Tarjeta>
+      </div>
 
       <Tarjeta
         titulo="Materias y docentes"

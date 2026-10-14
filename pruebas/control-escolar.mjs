@@ -118,6 +118,18 @@ await p.goto(`${BASE}/panel/grupos`);
 const nombreGrupo = `G-${sello}`;
 await p.getByLabel(/^Nombre del grupo\*?$/).fill(nombreGrupo);
 await p.getByLabel(/^Cupo maximo\*?$/).fill("2");
+// Cada grupo trae sus fechas, sus parciales y su horario.
+await p.getByLabel(/^Inicio de clases\*?$/).fill("2026-08-17");
+await p.getByLabel(/^Termino de clases\*?$/).fill("2027-01-15");
+await p.getByLabel(/^Numero de parciales\*?$/).fill("2");
+await p.getByLabel("Materia del renglon 1").selectOption({ index: 1 });
+const opcionesDocente = await p.getByLabel("Docente del renglon 1").locator("option").allTextContents();
+await p.getByLabel("Docente del renglon 1").selectOption({
+  label: opcionesDocente.find((o) => o.includes(`Docente${sello}`)),
+});
+await p.getByLabel("Dia del renglon 1").selectOption("6");
+await p.getByLabel("Inicio del renglon 1").fill("09:00");
+await p.getByLabel("Fin del renglon 1").fill("10:00");
 await p.getByRole("button", { name: "Crear grupo" }).click();
 await p.waitForURL(/\/panel\/grupos\/\d+/, { timeout: 20000 });
 comprobar("Crea un grupo", (await limpio(p)).includes(nombreGrupo));
