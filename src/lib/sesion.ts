@@ -10,6 +10,9 @@ export type DatosSesion = {
   rol: RolUsuario;
   nombre: string;
   jti: string;
+  /// En modo plataforma, el colegio al que pertenece la sesion. Va firmado:
+  /// es lo que impide que una cuenta de un colegio abra el panel de otro.
+  colegioId?: number;
 };
 
 function claveSecreta(): Uint8Array {
@@ -45,7 +48,26 @@ export async function verificarSesion(token: string): Promise<DatosSesion | null
       rol: payload.rol as RolUsuario,
       nombre: String(payload.nombre ?? ""),
       jti: String(payload.jti ?? ""),
+      ...(payload.colegioId ? { colegioId: Number(payload.colegioId) } : {}),
     };
+  } catch {
+    return null;
+  }
+}
+
+/// Firma de datos cortos (codigo de alta canjeado). Mismo secreto que la sesion.
+export async function firmarDato(datos: Record<string, unknown>, horas: number): Promise<string> {
+  return new SignJWT(datos)
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime(Math.floor(Date.now() / 1000) + horas * 3600)
+    .sign(claveSecreta());
+}
+
+export async function verificarDato(token: string): Promise<Record<string, unknown> | null> {
+  try {
+    const { payload } = await jwtVerify(token, claveSecreta());
+    return payload as Record<string, unknown>;
   } catch {
     return null;
   }

@@ -34,6 +34,13 @@ if [[ "$aplicadas" != "1" ]]; then
   echo "[arranque] registros para ver si la base es alcanzable."
 fi
 
+# En la plataforma cada colegio tiene su propio espacio en la base; se ponen al
+# dia en segundo plano para no retrasar el arranque.
+if [[ "${MODO_PLATAFORMA:-}" == "1" && "$aplicadas" == "1" ]]; then
+  echo "[arranque] poniendo al dia el espacio de cada colegio (en segundo plano)"
+  node scripts/migrar-colegios.mjs &
+fi
+
 # El servidor de Next escucha en la direccion que traiga HOSTNAME, y el
 # hospedaje ya trae esa variable puesta con el nombre del contenedor
 # (srv-...-hibernate-...). Atado a ese nombre, el enrutador del proveedor tarda

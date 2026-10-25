@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Alerta, Boton } from "@/components/ui";
-import { ESTADOS_ASISTENCIA } from "@/lib/asistencia";
+import { ESTADOS_ASISTENCIA } from "@/lib/estadosAsistencia";
 import { guardarAsistencia, type EstadoAsistenciaForm } from "./acciones";
 
 export type AlumnoLista = {

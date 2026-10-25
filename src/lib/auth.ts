@@ -12,6 +12,24 @@ import {
   type DatosSesion,
 } from "./sesion";
 import { registrarBitacora } from "./bitacora";
+import { colegioActual } from "./colegio";
+import { modoPlataforma } from "./modo";
+
+/// Por que un colegio de la plataforma no deja entrar, o null si si deja.
+export function motivoColegioCerrado(estado: string): string | null {
+  switch (estado) {
+    case "ACTIVO":
+      return null;
+    case "CONFIGURANDO":
+      return "Este colegio todavia no termina su configuracion.";
+    case "PENDIENTE_PAGO":
+      return "Este colegio ya esta configurado y se abrira en cuanto se confirme el pago del servicio.";
+    case "SUSPENDIDO":
+      return "El acceso a este colegio esta suspendido. Comunicate con la administracion de la plataforma.";
+    default:
+      return "Este colegio no esta disponible.";
+  }
+}
 
 const MAX_INTENTOS = 5;
 const MINUTOS_BLOQUEO = 15;
@@ -25,6 +43,14 @@ export async function iniciarSesion(
   password: string,
   contexto: { ip?: string; userAgent?: string } = {}
 ): Promise<ResultadoAcceso> {
+  // En la plataforma se entra al colegio por cuya direccion se llego.
+  const colegio = modoPlataforma() ? await colegioActual() : null;
+  if (modoPlataforma()) {
+    if (!colegio) return { ok: false, error: "Primero entra por la direccion de tu colegio." };
+    const cerrado = motivoColegioCerrado(colegio.estado);
+    if (cerrado) return { ok: false, error: cerrado };
+  }
+
   const clave = identificador.trim().toLowerCase();
   const usuario = await db.usuario.findFirst({
     where: { OR: [{ usuario: clave }, { email: clave }] },
@@ -81,12 +107,12 @@ export async function iniciarSesion(
   const jti = randomUUID();
   const expiraEn = new Date(Date.now() + horasSesion() * 3_600_000);
 
-  await db.$transaction([
-    db.usuario.update({
+  await db.$transaction(async (tx) => {
+    await tx.usuario.update({
       where: { id: usuario.id },
       data: { intentosFallidos: 0, bloqueadoHasta: null, ultimoAcceso: new Date() },
-    }),
-    db.sesion.create({
+    });
+    await tx.sesion.create({
       data: {
         usuarioId: usuario.id,
         token: jti,
@@ -94,11 +120,18 @@ export async function iniciarSesion(
         ip: contexto.ip,
         userAgent: contexto.userAgent,
       },
-    }),
-  ]);
+    });
+  });
 
   const token = await firmarSesion(
-    { usuarioId: usuario.id, usuario: usuario.usuario, rol: usuario.rol, nombre, jti },
+    {
+      usuarioId: usuario.id,
+      usuario: usuario.usuario,
+      rol: usuario.rol,
+      nombre,
+      jti,
+      ...(colegio ? { colegioId: colegio.id } : {}),
+    },
     expiraEn
   );
   await escribirCookieSesion(token, expiraEn);
@@ -132,6 +165,13 @@ export async function cerrarSesion() {
 export async function sesionActual(): Promise<DatosSesion | null> {
   const sesion = await leerCookieSesion();
   if (!sesion) return null;
+  if (modoPlataforma()) {
+    // La sesion solo vale en su propio colegio, y solo si el colegio esta abierto.
+    const colegio = await colegioActual();
+    if (!colegio || colegio.id !== sesion.colegioId || motivoColegioCerrado(colegio.estado)) {
+      return null;
+    }
+  }
   const registro = await db.sesion.findUnique({ where: { token: sesion.jti } });
   if (!registro || registro.revocada || registro.expiraEn < new Date()) return null;
   return sesion;
@@ -139,7 +179,10 @@ export async function sesionActual(): Promise<DatosSesion | null> {
 
 export async function requerirSesion(): Promise<DatosSesion> {
   const sesion = await sesionActual();
-  if (!sesion) redirect("/acceso");
+  if (!sesion) {
+    const colegio = modoPlataforma() ? await colegioActual() : null;
+    redirect(colegio && motivoColegioCerrado(colegio.estado) ? `/acceso?aviso=${colegio.estado}` : "/acceso");
+  }
   return sesion;
 }
 

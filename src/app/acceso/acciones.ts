@@ -25,7 +25,8 @@ export async function accionAcceder(
   });
 
   if (!resultado.ok) return { error: resultado.error };
-  redirect(destino.startsWith("/") ? destino : "/panel");
+  // Solo rutas internas: "//otro-sitio.com" tambien empieza con "/".
+  redirect(destino.startsWith("/") && !destino.startsWith("//") ? destino : "/panel");
 }
 
 export async function accionSalir() {

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, hayColegio } from "@/lib/db";
+import { clientePublico } from "@/lib/clientes";
+import { modoPlataforma } from "@/lib/modo";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +13,8 @@ const TOPE_MS = 2000;
 
 async function revisarBase(): Promise<"ok" | "sin-conexion" | "lenta"> {
   try {
-    const consulta = db.$queryRaw`SELECT 1`;
+    // En modo plataforma la salud es la de la base compartida, no la de un colegio.
+    const consulta = clientePublico.$queryRaw`SELECT 1`;
     const resultado = await Promise.race([
       consulta.then(() => "ok" as const),
       new Promise<"lenta">((resolver) => setTimeout(() => resolver("lenta"), TOPE_MS)),
@@ -26,7 +29,7 @@ export async function GET() {
   const baseDeDatos = await revisarBase();
 
   let instalado = false;
-  if (baseDeDatos === "ok") {
+  if (baseDeDatos === "ok" && (await hayColegio())) {
     try {
       const institucion = await db.institucion.findUnique({
         where: { id: 1 },
@@ -40,7 +43,13 @@ export async function GET() {
 
   // Siempre 200 mientras el proceso viva: el cuerpo dice como esta la base.
   return NextResponse.json(
-    { ok: true, baseDeDatos, instalado, fecha: new Date().toISOString() },
+    {
+      ok: true,
+      baseDeDatos,
+      modo: modoPlataforma() ? "plataforma" : "un-colegio",
+      instalado,
+      fecha: new Date().toISOString(),
+    },
     { status: 200 }
   );
 }

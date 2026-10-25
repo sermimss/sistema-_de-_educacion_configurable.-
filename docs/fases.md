@@ -529,3 +529,20 @@ Verificado con las 8 suites, cada una sobre su propia base: humo 26, control
 escolar 28, academico 40, finanzas 40, integridad 27, nomina 41, grupos y
 horario 33 (nueva), asistente 29.
 
+## Plataforma multicolegio
+
+Un solo sistema en internet para muchos colegios (ver `docs/plataforma.md`):
+
+- La entrada pregunta si ya tienes un colegio o vienes a contratar el servicio.
+- El alta se hace con un codigo de un solo uso que genera el dueno; el colegio
+  se configura con el asistente de siempre y recibe su direccion propia.
+- El colegio queda cerrado hasta que el dueno marca el pago; el dueno tambien
+  puede suspenderlo y reactivarlo.
+- Cada colegio vive en su propio esquema de PostgreSQL; la sesion va firmada
+  con su colegio y solo abre ese.
+- Las instalaciones de un solo colegio (paquetes y red local) no cambian.
+
+Verificado: plataforma 37 (nueva, tambien con el arranque de Render), y en modo
+un colegio humo 26, control escolar 28, academico 40, finanzas 40, integridad
+27, nomina 41, grupos y horario 33, asistente 29.
+

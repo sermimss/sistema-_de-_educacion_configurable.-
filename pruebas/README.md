@@ -38,6 +38,20 @@ distinto para las claves.
 npm run prueba:control
 ```
 
+## plataforma.mjs
+
+37 comprobaciones de la plataforma multicolegio sobre una base **recien
+migrada y vacia**, con el servidor en modo plataforma. Recorre la pregunta de
+entrada, la cuenta del dueno con su clave de arranque, los codigos de alta, el
+alta de dos colegios con el asistente, el bloqueo hasta marcar el pago, la
+separacion de datos entre colegios (mismo usuario en los dos, materias que no
+se ven de uno a otro, sesion que solo abre su propio colegio) y la suspension.
+
+```bash
+MODO_PLATAFORMA=1 PLATAFORMA_CLAVE_ARRANQUE=clave-de-arranque-de-prueba npm start
+npm run prueba:plataforma
+```
+
 ## grupos-horario.mjs
 
 33 comprobaciones sobre una base **recien sembrada con los datos de

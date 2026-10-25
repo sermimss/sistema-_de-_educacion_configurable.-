@@ -122,8 +122,12 @@ que no se duerma) y revisa si el consumo de Neon pide su plan de paga.
 
 ### Un segundo colegio
 
-Cada colegio necesita su propio servicio y su propia base. El script genera el
-blueprint con los nombres correspondientes:
+En Render el servicio corre como **plataforma multicolegio** (`MODO_PLATAFORMA=1`
+en `render.yaml`): un colegio nuevo no necesita otro servicio, se da de alta con
+un codigo desde la propia plataforma. Ver `docs/plataforma.md`.
+
+Solo si un colegio quiere un servicio aparte, solo para el, el script genera
+un blueprint propio:
 
 ```bash
 ./scripts/nueva-escuela.sh --render colegio-vanguardia

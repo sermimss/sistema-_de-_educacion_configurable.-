@@ -1,13 +1,18 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
+import { verificarDato } from "@/lib/sesion";
+import { colegioActual, direccionPublica } from "@/lib/colegio";
+import { COOKIE_ALTA, direccionValida, modoPlataforma } from "@/lib/modo";
+import { marcarConfigurado, prepararEsquema, reservarDireccion } from "@/lib/plataforma";
 import { hashPassword } from "@/lib/password";
 import { registrarBitacora } from "@/lib/bitacora";
 import { guardarConfig, sembrarConfiguracion } from "@/lib/configuracion";
 import { esquemaInstalacion, type DatosInstalacion } from "@/lib/esquemas-instalacion";
 
 export type ResultadoInstalacion =
-  | { ok: true; mensaje: string }
+  | { ok: true; mensaje: string; direccion?: string; url?: string }
   | { ok: false; error: string; detalles?: string[] };
 
 /// Ejecuta la instalacion inicial completa. Es idempotente en el sentido
@@ -24,8 +29,44 @@ export async function instalarSistema(datos: DatosInstalacion): Promise<Resultad
   }
   const d = validacion.data;
 
+  // En la plataforma, el colegio sale del codigo de alta canjeado y se instala
+  // en su propio espacio de la base.
+  const colegio = modoPlataforma() ? await colegioActual() : null;
+  if (modoPlataforma()) {
+    // Solo quien canjeo el codigo de este colegio puede instalarlo: la accion
+    // se podria mandar desde otra pagina, asi que no basta con el colegio de
+    // la solicitud.
+    const alta = (await cookies()).get(COOKIE_ALTA)?.value;
+    const datosAlta = alta ? await verificarDato(alta) : null;
+    if (
+      !colegio ||
+      colegio.estado !== "CONFIGURANDO" ||
+      Number(datosAlta?.colegioId) !== colegio.id
+    ) {
+      return { ok: false, error: "Tu codigo de alta ya no es valido. Vuelve a escribirlo." };
+    }
+    const direccion = d.direccionWeb ?? "";
+    if (!direccionValida(direccion)) {
+      return {
+        ok: false,
+        error:
+          "La direccion web debe tener de 3 a 40 letras minusculas, numeros o guiones, sin acentos ni espacios.",
+      };
+    }
+    const reservada = await reservarDireccion(colegio.id, direccion);
+    if (!reservada.ok) return { ok: false, error: reservada.error };
+    try {
+      await prepararEsquema(colegio.esquema);
+    } catch (error) {
+      console.error("[instalacion] no se pudo preparar el espacio del colegio:", error);
+      return { ok: false, error: "No se pudo preparar el espacio de tu colegio. Intenta de nuevo en un momento." };
+    }
+  }
+
   const existente = await db.institucion.findUnique({ where: { id: 1 } });
   if (existente?.instalado) {
+    // Se instalo pero se corto antes de cerrar el alta: solo falta cerrarla.
+    if (colegio && d.direccionWeb) return cerrarAlta(colegio.id, d.institucion.nombre, d.direccionWeb);
     return { ok: false, error: "El sistema ya fue instalado. Ingresa con tu cuenta de administrador." };
   }
 
@@ -183,6 +224,7 @@ export async function instalarSistema(datos: DatosInstalacion): Promise<Resultad
       descripcion: `Instalacion inicial completada para ${d.institucion.nombre}`,
     });
 
+    if (colegio && d.direccionWeb) return cerrarAlta(colegio.id, d.institucion.nombre, d.direccionWeb);
     return { ok: true, mensaje: "Instalacion completada." };
   } catch (error) {
     console.error("[instalacion] error:", error);
@@ -194,4 +236,23 @@ export async function instalarSistema(datos: DatosInstalacion): Promise<Resultad
         : `No se pudo completar la instalacion: ${mensaje}`,
     };
   }
+}
+
+/// El colegio queda configurado y esperando el pago; el codigo de alta ya no
+/// sirve para volver al asistente. La cookie del alta no se borra aqui: tocar
+/// cookies en la accion recarga la pagina y se perderia la pantalla con la
+/// direccion del colegio. Ya no abre nada (el asistente solo acepta colegios
+/// en configuracion) y caduca sola.
+async function cerrarAlta(
+  colegioId: number,
+  nombre: string,
+  direccion: string
+): Promise<ResultadoInstalacion> {
+  await marcarConfigurado(colegioId, nombre);
+  return {
+    ok: true,
+    mensaje: "Colegio configurado.",
+    direccion,
+    url: await direccionPublica(direccion),
+  };
 }

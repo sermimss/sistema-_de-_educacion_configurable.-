@@ -1,10 +1,12 @@
-# Blueprint de Render para UN colegio.
+# Blueprint de Render para la PLATAFORMA multicolegio.
 #
-# La arquitectura del sistema es una instalacion por colegio, asi que este
-# archivo despliega una escuela: un servicio web y su propia base de datos.
-# Para el segundo colegio se genera otro blueprint con nombres distintos:
+# Un solo servicio en internet para todos los colegios. Cada colegio vive en su
+# propio espacio de la base de datos y entra por su propia direccion:
 #
-#   ./scripts/nueva-escuela.sh --render colegio-vanguardia
+#   https://sistema-escolar.onrender.com/<direccion-del-colegio>
+#
+# El dueno de la plataforma administra colegios y codigos de alta en
+# /plataforma. Ver docs/plataforma.md.
 #
 # Los comandos de build y arranque de aqui abajo estan verificados: compilan,
 # copian los estaticos junto al servidor standalone, aplican las migraciones y
@@ -46,6 +48,19 @@ services:
         generateValue: true
       - key: SESSION_HORAS
         value: "12"
+      # Muchos colegios en un solo sistema. Sin esta variable el sistema se
+      # comporta como la instalacion de un solo colegio.
+      - key: MODO_PLATAFORMA
+        value: "1"
+      # Clave para crear la cuenta del dueno la primera vez que se abre
+      # /plataforma. Minimo 12 caracteres. Se escribe a mano en el tablero de
+      # Render y no se comparte con nadie.
+      - key: PLATAFORMA_CLAVE_ARRANQUE
+        sync: false
+      # Opcional: con un dominio propio (ej. miplataforma.com) cada colegio
+      # tambien entra por <direccion>.miplataforma.com. Ver docs/plataforma.md.
+      - key: DOMINIO_PLATAFORMA
+        sync: false
       # No se fija NODE_ENV=production: npm omitiria las devDependencies y el
       # build necesita prisma, tailwindcss, postcss, autoprefixer y typescript,
       # que viven ahi. El servidor standalone ya se compila en modo produccion.

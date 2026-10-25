@@ -26,7 +26,7 @@ fondo.
 ## Decisiones tomadas con el cliente
 
 - **Stack:** Next.js 15 (App Router) + TypeScript + Prisma + PostgreSQL + Tailwind.
-- **Despliegue:** una instalacion por colegio (base de datos propia por escuela).
+- **Despliegue:** en internet, una plataforma multicolegio (cada colegio con su propio espacio en la base y su propia direccion, ver `docs/plataforma.md`); en las computadoras del colegio, una instalacion por colegio.
 - **Pais:** Mexico. Los recibos nacen como comprobante interno con la estructura
   CFDI 4.0 ya modelada, listos para timbrar cuando se conecte un PAC.
 - **Pago en linea:** el modelo de datos guarda la configuracion de la pasarela,
@@ -258,6 +258,7 @@ npm run prueba:academico          # 40 comprobaciones del modulo academico (base
 npm run prueba:finanzas           # 40 comprobaciones de finanzas (base recien sembrada)
 npm run prueba:integridad         # 27 comprobaciones de finanzas contra la base de datos
 npm run prueba:nomina             # 42 comprobaciones de nomina (base recien sembrada)
+npm run prueba:plataforma         # 37 comprobaciones de la plataforma multicolegio (base vacia, MODO_PLATAFORMA=1)
 npm run prueba:grupos             # 33 comprobaciones de grupos con calendario y horario (base recien sembrada)
 npm run prueba:asistente          # 29 comprobaciones del asistente (base vacia)
 ```
@@ -299,7 +300,9 @@ render.yaml               Blueprint de Render para el primer colegio
 
 ## Dar de alta un colegio nuevo
 
-Cada institucion tiene su propia base de datos. El script la prepara completa:
+En la plataforma en internet, con un codigo de alta desde `/plataforma` (ver
+`docs/plataforma.md`). Para una instalacion aparte, de un solo colegio, el
+script prepara su base completa:
 
 ```bash
 ./scripts/nueva-escuela.sh colegio-vanguardia

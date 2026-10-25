@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { z } from "zod";
 import { Alerta, Boton, Campo, Selector, Tarjeta } from "@/components/ui";
 import type { esquemaInstalacion, DatosInstalacion } from "@/lib/esquemas-instalacion";
+import { direccionValida, sugerirDireccion } from "@/lib/modo";
 import { instalarSistema } from "./acciones";
 
 type Estado = z.input<typeof esquemaInstalacion>;
@@ -142,8 +143,16 @@ function Interruptor({
   );
 }
 
-export default function AsistenteInstalacion() {
+export default function AsistenteInstalacion({
+  plataforma,
+}: {
+  /// En la plataforma: el inicio de la direccion web de cada colegio, por
+  /// ejemplo "https://sistema.com/" o "https://*.sistema.com".
+  plataforma?: { prefijo: string; sufijo: string };
+} = {}) {
   const router = useRouter();
+  const [direccionEditada, setDireccionEditada] = useState(false);
+  const [terminado, setTerminado] = useState<{ direccion: string; url: string } | null>(null);
   const [paso, setPaso] = useState(0);
   const [datos, setDatos] = useState<Estado>(ESTADO_INICIAL);
   const [error, setError] = useState<string | null>(null);
@@ -161,6 +170,8 @@ export default function AsistenteInstalacion() {
       case "institucion":
         if (!datos.institucion.nombre || datos.institucion.nombre.trim().length < 3)
           return "Escribe el nombre de la institucion.";
+        if (plataforma && !direccionValida(datos.direccionWeb ?? ""))
+          return "La direccion web debe tener de 3 a 40 letras minusculas, numeros o guiones, sin acentos ni espacios.";
         return null;
       case "planteles":
         if (!datos.planteles.length) return "Registra al menos un plantel.";
@@ -204,13 +215,43 @@ export default function AsistenteInstalacion() {
     setDetalles([]);
     iniciarEnvio(async () => {
       const resultado = await instalarSistema(datos as unknown as DatosInstalacion);
-      if (resultado.ok) {
+      if (resultado.ok && resultado.direccion && resultado.url) {
+        setTerminado({ direccion: resultado.direccion, url: resultado.url });
+      } else if (resultado.ok) {
         router.push("/acceso?instalado=1");
       } else {
         setError(resultado.error);
         setDetalles(resultado.detalles ?? []);
       }
     });
+  }
+
+  if (terminado) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16">
+        <Tarjeta titulo="Tu colegio quedo configurado">
+          <div className="space-y-4 text-sm text-slate-700">
+            <p>Esta es la direccion propia de tu colegio. Compartela con tu personal y tus alumnos:</p>
+            <p
+              className="break-all rounded-lg border border-marca-100 bg-marca-50 px-4 py-3 font-mono text-base font-semibold text-marca-700"
+              data-direccion-colegio
+            >
+              {terminado.url}
+            </p>
+            <Alerta tipo="aviso">
+              Tu colegio se abrira en cuanto se confirme el pago del servicio. Mientras tanto, la
+              direccion ya funciona pero todavia no deja iniciar sesion.
+            </Alerta>
+            <a
+              href={`/${terminado.direccion}`}
+              className="inline-flex rounded-lg bg-marca-600 px-4 py-2 font-medium text-white hover:bg-marca-700"
+            >
+              Ir a mi colegio
+            </a>
+          </div>
+        </Tarjeta>
+      </div>
+    );
   }
 
   return (
@@ -268,15 +309,50 @@ export default function AsistenteInstalacion() {
               etiqueta="Nombre de la institucion"
               required
               value={datos.institucion.nombre}
-              onChange={(e) => actualizar("institucion", { nombre: e.target.value })}
+              onChange={(e) => {
+                actualizar("institucion", { nombre: e.target.value });
+                if (plataforma && !direccionEditada && !datos.institucion.nombreCorto) {
+                  setDatos((p) => ({ ...p, direccionWeb: sugerirDireccion(e.target.value) }));
+                }
+              }}
               placeholder="Colegio ..."
             />
             <Campo
               etiqueta="Nombre corto"
               value={datos.institucion.nombreCorto ?? ""}
-              onChange={(e) => actualizar("institucion", { nombreCorto: e.target.value })}
+              onChange={(e) => {
+                actualizar("institucion", { nombreCorto: e.target.value });
+                if (plataforma && !direccionEditada) {
+                  setDatos((p) => ({
+                    ...p,
+                    direccionWeb: sugerirDireccion(e.target.value || p.institucion.nombre),
+                  }));
+                }
+              }}
               ayuda="Aparece en menus y encabezados"
             />
+            {plataforma && (
+              <div className="sm:col-span-2">
+                <Campo
+                  etiqueta="Direccion web del colegio"
+                  required
+                  value={datos.direccionWeb ?? ""}
+                  onChange={(e) => {
+                    setDireccionEditada(true);
+                    setDatos((p) => ({ ...p, direccionWeb: e.target.value.toLowerCase().trim() }));
+                  }}
+                  placeholder="mi-colegio"
+                  ayuda="Solo minusculas, numeros y guiones. Es la direccion que usara todo tu personal."
+                />
+                {datos.direccionWeb && (
+                  <p className="mt-1 font-mono text-xs text-slate-600">
+                    {plataforma.prefijo}
+                    <span className="font-semibold text-marca-700">{datos.direccionWeb}</span>
+                    {plataforma.sufijo}
+                  </p>
+                )}
+              </div>
+            )}
             <Campo
               etiqueta="Lema"
               className="sm:col-span-2"

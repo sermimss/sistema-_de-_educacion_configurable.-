@@ -82,6 +82,8 @@ export const esquemaConceptoCobro = z.object({
 
 export const esquemaInstalacion = z.object({
   institucion: esquemaInstitucion,
+  /// Solo en la plataforma: la direccion web propia del colegio.
+  direccionWeb: z.string().trim().toLowerCase().optional(),
   planteles: z.array(esquemaPlantel).min(1, "Registra al menos un plantel."),
   turnos: z.array(esquemaTurno).min(1, "Registra al menos un turno."),
   niveles: z.array(esquemaNivel).min(1, "Registra al menos un nivel educativo."),

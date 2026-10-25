@@ -10,7 +10,6 @@ import {
   actualizarBanderaAdeudo,
   aNumero,
   centavos,
-  resumenDeCuenta,
   siguienteFolioCargo,
   siguienteFolioPago,
 } from "@/lib/finanzas";
@@ -545,9 +544,4 @@ export async function crearConvenio(
     ok: true,
     mensaje: `Convenio ${convenio.folio} creado: ${montoTotal} en ${parcialidades} parcialidades de ${porParcialidad}.`,
   };
-}
-
-/// Resumen de caja del dia para la pantalla principal de finanzas.
-export async function resumenDelAlumno(alumnoId: number) {
-  return resumenDeCuenta(alumnoId);
 }
