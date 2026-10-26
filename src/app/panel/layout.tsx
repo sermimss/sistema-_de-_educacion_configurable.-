@@ -12,6 +12,21 @@ import {
   type ItemNavegacion,
 } from "@/lib/navegacion";
 import { accionSalir } from "@/app/acceso/acciones";
+import { urlLogo } from "@/lib/marca";
+
+function LogoColegio({ logo, nombre, chico }: { logo: string | null; nombre: string; chico?: boolean }) {
+  const tamano = chico ? "h-8 w-8" : "h-10 w-10";
+  return logo ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={logo} alt="" className={`${tamano} shrink-0 rounded-lg bg-white object-contain p-0.5`} />
+  ) : (
+    <div
+      className={`flex ${tamano} shrink-0 items-center justify-center rounded-lg bg-marca-600 text-sm font-bold text-marca-contraste`}
+    >
+      {nombre.charAt(0).toUpperCase()}
+    </div>
+  );
+}
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +46,7 @@ export default async function LayoutPanel({ children }: { children: React.ReactN
   }
 
   const institucion = await obtenerInstitucion();
+  const logo = await urlLogo(institucion);
   const items = navegacionPara(sesion.rol);
 
   const grupos = items.reduce<Record<string, ItemNavegacion[]>>((acumulado, item) => {
@@ -40,16 +56,14 @@ export default async function LayoutPanel({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-screen">
-      <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white lg:block">
-        <div className="flex h-16 items-center gap-3 border-b border-slate-200 px-5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-marca-600 text-sm font-bold text-white">
-            {(institucion?.nombreCorto ?? institucion?.nombre ?? "?").charAt(0).toUpperCase()}
-          </div>
+      <aside className="no-imprimir hidden w-64 shrink-0 border-r border-slate-200 bg-white lg:block">
+        <div className="flex min-h-16 items-center gap-3 bg-marca-sec px-5 py-3 text-marca-sec-contraste">
+          <LogoColegio logo={logo} nombre={institucion?.nombreCorto || institucion?.nombre || "?"} />
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-slate-900">
+            <p className="truncate text-sm font-semibold">
               {institucion?.nombreCorto || institucion?.nombre}
             </p>
-            <p className="text-xs text-slate-500">{ETIQUETA_ROL[sesion.rol]}</p>
+            <p className="text-xs opacity-75">{ETIQUETA_ROL[sesion.rol]}</p>
           </div>
         </div>
         <nav className="space-y-4 p-3">
@@ -90,8 +104,9 @@ export default async function LayoutPanel({ children }: { children: React.ReactN
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-5">
-          <div className="lg:hidden">
+        <header className="no-imprimir flex h-16 items-center justify-between border-b-4 border-marca-600 bg-white px-5">
+          <div className="flex items-center gap-2 lg:hidden">
+            <LogoColegio logo={logo} nombre={institucion?.nombreCorto || institucion?.nombre || "?"} chico />
             <p className="text-sm font-semibold text-slate-900">
               {institucion?.nombreCorto || institucion?.nombre}
             </p>
@@ -114,7 +129,7 @@ export default async function LayoutPanel({ children }: { children: React.ReactN
             </form>
           </div>
         </header>
-        <main className="flex-1 p-5 lg:p-8">{children}</main>
+        <main className="flex-1 p-5 print:p-0 lg:p-8">{children}</main>
       </div>
     </div>
   );

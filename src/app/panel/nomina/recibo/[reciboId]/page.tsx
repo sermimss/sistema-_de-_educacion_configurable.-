@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { nombreCompleto } from "@/lib/catalogos";
+import { urlLogo } from "@/lib/marca";
 import { obtenerInstitucion } from "@/lib/institucion";
 import { configTexto } from "@/lib/configuracion";
 import { aNumero } from "@/lib/finanzas";
@@ -36,6 +37,7 @@ export default async function PaginaReciboNomina({
   if (!recibo) notFound();
 
   const institucion = await obtenerInstitucion();
+  const logo = await urlLogo(institucion);
   const moneda = institucion?.moneda ?? "MXN";
   const leyenda = await configTexto(
     "nomina.leyenda_recibo",
@@ -88,11 +90,11 @@ export default async function PaginaReciboNomina({
       <article className="hoja-impresion mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
         <header className="flex items-start justify-between gap-6 border-b border-slate-300 pb-4">
           <div className="flex items-center gap-4">
-            {institucion?.logoUrl ? (
+            {logo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={institucion.logoUrl} alt="" className="h-14 w-auto" />
+              <img src={logo} alt="" className="h-14 w-auto" />
             ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-marca-600 text-lg font-bold text-white">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-marca-600 text-lg font-bold text-marca-contraste">
                 {(institucion?.nombreCorto ?? institucion?.nombre ?? "?").charAt(0).toUpperCase()}
               </div>
             )}

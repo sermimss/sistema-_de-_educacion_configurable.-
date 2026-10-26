@@ -258,7 +258,8 @@ npm run prueba:academico          # 40 comprobaciones del modulo academico (base
 npm run prueba:finanzas           # 40 comprobaciones de finanzas (base recien sembrada)
 npm run prueba:integridad         # 27 comprobaciones de finanzas contra la base de datos
 npm run prueba:nomina             # 42 comprobaciones de nomina (base recien sembrada)
-npm run prueba:plataforma         # 37 comprobaciones de la plataforma multicolegio (base vacia, MODO_PLATAFORMA=1)
+npm run prueba:plataforma         # 42 comprobaciones de la plataforma multicolegio (base vacia, MODO_PLATAFORMA=1)
+npm run prueba:documentos         # 43 comprobaciones de logo, colores y documentos institucionales (base recien sembrada)
 npm run prueba:grupos             # 33 comprobaciones de grupos con calendario y horario (base recien sembrada)
 npm run prueba:asistente          # 29 comprobaciones del asistente (base vacia)
 ```

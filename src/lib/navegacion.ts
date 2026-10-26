@@ -17,6 +17,7 @@ export const NAVEGACION: ItemNavegacion[] = [
   { etiqueta: "Personal y docentes", ruta: "/panel/personal", roles: ["ADMIN"], fase: 2, grupo: "control" },
   { etiqueta: "Materias", ruta: "/panel/materias", roles: ["ADMIN"], fase: 2, grupo: "control" },
   { etiqueta: "Grupos y clases", ruta: "/panel/grupos", roles: ["ADMIN"], fase: 2, grupo: "control" },
+  { etiqueta: "Documentos", ruta: "/panel/documentos", roles: ["ADMIN"], fase: 2, grupo: "control" },
   { etiqueta: "Importar CSV", ruta: "/panel/importar", roles: ["ADMIN"], fase: 2, grupo: "control" },
 
   { etiqueta: "Horarios", ruta: "/panel/horarios", roles: ["ADMIN"], fase: 3, grupo: "academico" },
@@ -30,6 +31,7 @@ export const NAVEGACION: ItemNavegacion[] = [
   { etiqueta: "Mi asistencia", ruta: "/panel/mi-asistencia", roles: ["ALUMNO"], fase: 4, grupo: "academico" },
   { etiqueta: "Mi horario", ruta: "/panel/mi-horario", roles: ["ALUMNO"], fase: 4, grupo: "academico" },
   { etiqueta: "Estado de cuenta", ruta: "/panel/estado-de-cuenta", roles: ["ALUMNO"], fase: 4, grupo: "finanzas" },
+  { etiqueta: "Mis documentos", ruta: "/panel/mis-documentos", roles: ["ALUMNO"], fase: 4, grupo: "academico" },
   { etiqueta: "Nomina", ruta: "/panel/nomina", roles: ["ADMIN"], fase: 5, grupo: "finanzas" },
 
   { etiqueta: "Estructura academica", ruta: "/panel/academico", roles: ["ADMIN"], fase: 1, grupo: "sistema" },

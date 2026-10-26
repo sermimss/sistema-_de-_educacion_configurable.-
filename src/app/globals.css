@@ -4,6 +4,16 @@
 
 :root {
   --marca-base: #1d4ed8;
+  --marca-contraste: #ffffff;
+  --marca-sec: #0f172a;
+  --marca-sec-contraste: #ffffff;
+}
+
+/* Los tonos se calculan tambien en <body>, que es donde el sistema pone los
+   colores del colegio. Si solo se calcularan en :root, se quedarian con el
+   azul predeterminado aunque el colegio eligiera otro color. */
+:root,
+body {
   --marca-50: color-mix(in srgb, var(--marca-base) 8%, white);
   --marca-100: color-mix(in srgb, var(--marca-base) 16%, white);
   --marca-500: color-mix(in srgb, var(--marca-base) 85%, white);
@@ -38,6 +48,17 @@ body {
   }
   body {
     background: white;
+  }
+  /* Bandas de color, encabezados de tabla y sellos salen en el papel. */
+  .hoja-impresion,
+  .hoja-impresion * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* Carta (279 mm) menos los margenes de la pagina: el pie con el folio
+     queda al final de la hoja. */
+  .hoja-carta {
+    min-height: 236mm !important;
   }
   .hoja-impresion {
     box-shadow: none !important;

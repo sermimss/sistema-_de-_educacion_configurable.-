@@ -1,6 +1,7 @@
 import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { obtenerInstitucion } from "@/lib/institucion";
+import { urlLogo } from "@/lib/marca";
 import { ETIQUETAS_CATEGORIA, sembrarConfiguracion } from "@/lib/configuracion";
 import { Alerta, Tarjeta } from "@/components/ui";
 import FormularioCategoria from "./FormularioCategoria";
@@ -47,12 +48,15 @@ export default async function PaginaConfiguracion() {
               nombre: institucion.nombre,
               nombreCorto: institucion.nombreCorto,
               lema: institucion.lema,
-              logoUrl: institucion.logoUrl,
+              logo: await urlLogo(institucion),
               colorPrimario: institucion.colorPrimario,
               colorSecundario: institucion.colorSecundario,
               telefono: institucion.telefono,
               email: institucion.email,
               direccion: institucion.direccion,
+              ciudad: institucion.ciudad,
+              estado: institucion.estado,
+              claveCentroTrabajo: institucion.claveCentroTrabajo,
               razonSocial: institucion.razonSocial,
               rfc: institucion.rfc,
               regimenFiscal: institucion.regimenFiscal,

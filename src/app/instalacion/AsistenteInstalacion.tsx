@@ -244,7 +244,7 @@ export default function AsistenteInstalacion({
             </Alerta>
             <a
               href={`/${terminado.direccion}`}
-              className="inline-flex rounded-lg bg-marca-600 px-4 py-2 font-medium text-white hover:bg-marca-700"
+              className="inline-flex rounded-lg bg-marca-600 px-4 py-2 font-medium text-marca-contraste hover:bg-marca-700"
             >
               Ir a mi colegio
             </a>
@@ -276,7 +276,7 @@ export default function AsistenteInstalacion({
             disabled={indice > paso}
             className={`rounded-full px-3 py-1 text-xs font-medium transition ${
               indice === paso
-                ? "bg-marca-600 text-white"
+                ? "bg-marca-600 text-marca-contraste"
                 : indice < paso
                   ? "bg-marca-100 text-marca-700 hover:bg-marca-100/80"
                   : "bg-slate-100 text-slate-400"

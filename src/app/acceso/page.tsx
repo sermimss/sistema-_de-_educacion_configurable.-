@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { motivoColegioCerrado, sesionActual } from "@/lib/auth";
 import { colegioActual } from "@/lib/colegio";
 import { COOKIE_COLEGIO, modoPlataforma } from "@/lib/modo";
+import { urlLogo } from "@/lib/marca";
 import { obtenerInstitucion, sistemaInstalado } from "@/lib/institucion";
 import { Alerta, Tarjeta } from "@/components/ui";
 import FormularioAcceso from "./FormularioAcceso";
@@ -32,20 +33,21 @@ export default async function PaginaAcceso({
   if (!cerrado && (await sesionActual())) redirect("/panel");
 
   const institucion = await obtenerInstitucion().catch(() => null);
+  const logo = await urlLogo(institucion);
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
-          {institucion?.logoUrl ? (
+          {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={institucion.logoUrl}
-              alt={institucion.nombre}
+              src={logo}
+              alt={institucion?.nombre ?? ""}
               className="mx-auto mb-3 h-16 w-auto"
             />
           ) : (
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-marca-600 text-xl font-bold text-white">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-marca-600 text-xl font-bold text-marca-contraste">
               {(institucion?.nombreCorto ?? institucion?.nombre ?? "?").charAt(0).toUpperCase()}
             </div>
           )}

@@ -6,7 +6,7 @@
 // =====================================================================
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   // Se pide tambien el motor de Windows, no solo el de esta computadora, para
   // poder armar el paquete instalable de Windows sin tener que compilarlo
   // alla. Cada guion de empaquetado se queda solo con el motor que necesita.
@@ -293,6 +293,8 @@ model Institucion {
   nombreCorto        String?
   lema               String?
   logoUrl            String?
+  /// Logo subido al sistema (tiene prioridad sobre logoUrl).
+  logoArchivoId      Int?
   escudoUrl          String?
   // Identidad visual usada en la interfaz y en los PDF (boletas, recibos)
   colorPrimario      String    @default("#1d4ed8")
@@ -681,6 +683,8 @@ model Alumno {
   descuentos              DescuentoAlumno[]
   convenios               ConvenioPago[]
   documentos              DocumentoExpediente[]
+  documentosEmitidos      DocumentoEmitido[]
+  solicitudesDocumento    SolicitudDocumento[]
 
   @@index([estado, planId])
   @@index([apellidoPaterno, nombres])
@@ -736,11 +740,12 @@ model Empleado {
   creadoEn         DateTime       @default(now())
   actualizadoEn    DateTime       @updatedAt
 
-  usuario       Usuario?              @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
-  clases        Clase[]
-  sesiones      SesionAsistencia[]
-  recibosNomina ReciboNomina[]
-  documentos    DocumentoExpediente[]
+  usuario            Usuario?              @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  clases             Clase[]
+  sesiones           SesionAsistencia[]
+  recibosNomina      ReciboNomina[]
+  documentos         DocumentoExpediente[]
+  documentosEmitidos DocumentoEmitido[]
 
   @@index([esDocente, estado])
 }
@@ -1448,4 +1453,140 @@ model ImportacionCsv {
   errores        Json?
   usuarioId      Int?
   fecha          DateTime @default(now())
+}
+
+// =====================================================================
+// DOCUMENTOS INSTITUCIONALES
+// Machotes (constancias, oficios, pases...) con la identidad del colegio.
+// =====================================================================
+
+enum TipoArchivoInstitucional {
+  LOGO
+  FIRMA
+  SELLO
+}
+
+/// Imagenes del colegio guardadas en su propia base: logo, firmas y sellos.
+/// No se borran al reemplazarlas, para que los documentos ya emitidos sigan
+/// mostrando la firma y el sello con los que salieron.
+model ArchivoInstitucional {
+  id       Int                      @id @default(autoincrement())
+  tipo     TipoArchivoInstitucional
+  nombre   String?
+  mime     String
+  tamano   Int
+  datos    Bytes
+  creadoEn DateTime                 @default(now())
+
+  firmasDe Firmante[] @relation("FirmaDelFirmante")
+  sellosDe Firmante[] @relation("SelloDelFirmante")
+}
+
+/// Quien firma los documentos: nombre, cargo y, si se quiere, la imagen de su
+/// firma y del sello.
+model Firmante {
+  id      Int     @id @default(autoincrement())
+  nombre  String
+  cargo   String
+  firmaId Int?
+  selloId Int?
+  activo  Boolean @default(true)
+  orden   Int     @default(0)
+
+  firma      ArchivoInstitucional? @relation("FirmaDelFirmante", fields: [firmaId], references: [id], onDelete: SetNull)
+  sello      ArchivoInstitucional? @relation("SelloDelFirmante", fields: [selloId], references: [id], onDelete: SetNull)
+  plantillas PlantillaDocumento[]
+}
+
+enum CategoriaDocumento {
+  ALUMNO
+  PERSONAL
+  GENERAL
+}
+
+/// Un machote. El cuerpo lleva campos entre llaves dobles, por ejemplo
+/// {{alumno.nombre_completo}}, que se reemplazan con los datos reales al
+/// generar. camposExtra son los datos que se piden al generar porque el
+/// sistema no los tiene (empresa de practicas, hora de salida...).
+model PlantillaDocumento {
+  id                   Int                @id @default(autoincrement())
+  clave                String             @unique
+  nombre               String
+  categoria            CategoriaDocumento
+  descripcion          String?
+  titulo               String
+  cuerpo               String             @db.Text
+  camposExtra          Json               @default("[]")
+  prefijoFolio         String
+  firmanteId           Int?
+  alumnoPuedeSolicitar Boolean            @default(false)
+  activa               Boolean            @default(true)
+  delSistema           Boolean            @default(false)
+  orden                Int                @default(0)
+  creadoEn             DateTime           @default(now())
+  actualizadoEn        DateTime           @updatedAt
+
+  firmante    Firmante?            @relation(fields: [firmanteId], references: [id], onDelete: SetNull)
+  documentos  DocumentoEmitido[]
+  solicitudes SolicitudDocumento[]
+}
+
+/// Un documento ya generado. Guarda el texto final y quien firmo, para que
+/// se reimprima igual aunque despues cambien el machote, el firmante o los
+/// datos de la persona.
+model DocumentoEmitido {
+  id                Int      @id @default(autoincrement())
+  folio             String   @unique
+  plantillaId       Int
+  alumnoId          Int?
+  empleadoId        Int?
+  destinatario      String?
+  titulo            String
+  cuerpo            String   @db.Text
+  /// Datos capturados y tablas congeladas al emitir.
+  datos             Json     @default("{}")
+  firmanteNombre    String?
+  firmanteCargo     String?
+  firmaId           Int?
+  selloId           Int?
+  emitidoPorId      Int
+  emitidoPorNombre  String
+  emitidoEn         DateTime @default(now())
+  solicitudId       Int?     @unique
+  cancelado         Boolean  @default(false)
+  motivoCancelacion String?
+
+  plantilla PlantillaDocumento  @relation(fields: [plantillaId], references: [id], onDelete: Restrict)
+  alumno    Alumno?             @relation(fields: [alumnoId], references: [id], onDelete: SetNull)
+  empleado  Empleado?           @relation(fields: [empleadoId], references: [id], onDelete: SetNull)
+  solicitud SolicitudDocumento? @relation(fields: [solicitudId], references: [id], onDelete: SetNull)
+
+  @@index([alumnoId])
+  @@index([empleadoId])
+  @@index([emitidoEn])
+}
+
+enum EstadoSolicitudDocumento {
+  PENDIENTE
+  ATENDIDA
+  RECHAZADA
+}
+
+/// Lo que un alumno pide desde su portal (una constancia, por ejemplo).
+model SolicitudDocumento {
+  id          Int                      @id @default(autoincrement())
+  plantillaId Int
+  alumnoId    Int
+  motivo      String?
+  estado      EstadoSolicitudDocumento @default(PENDIENTE)
+  respuesta   String?
+  creadaEn    DateTime                 @default(now())
+  atendidaEn  DateTime?
+
+  plantilla PlantillaDocumento @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
+  alumno    Alumno             @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  documento DocumentoEmitido?
+
+  @@index([estado])
+  @@index([alumnoId])
 }

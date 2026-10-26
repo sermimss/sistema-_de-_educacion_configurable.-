@@ -12,6 +12,10 @@ export default {
           600: "var(--marca-600)",
           700: "var(--marca-700)",
           900: "var(--marca-900)",
+          /// Texto legible sobre el color principal.
+          contraste: "var(--marca-contraste)",
+          sec: "var(--marca-sec)",
+          "sec-contraste": "var(--marca-sec-contraste)",
         },
       },
     },

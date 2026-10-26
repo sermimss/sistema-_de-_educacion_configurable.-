@@ -66,6 +66,9 @@ export async function middleware(peticion: NextRequest) {
     const datos = alta ? await verificarDato(alta) : null;
     if (!datos?.colegioId) return NextResponse.redirect(new URL("/alta", peticion.url));
     cabeceras.set(CABECERA_COLEGIO, `id:${Number(datos.colegioId)}`);
+  } else if (pathname === "/api/marca/logo" && /^\d+$/.test(peticion.nextUrl.searchParams.get("c") ?? "")) {
+    // El logo es publico; la direccion dice de que colegio es.
+    cabeceras.set(CABECERA_COLEGIO, `id:${peticion.nextUrl.searchParams.get("c")}`);
   } else if (pathname.startsWith("/plataforma") || pathname.startsWith("/alta")) {
     // El panel del dueno y el alta no pertenecen a ningun colegio.
   } else if (colegioHost) {

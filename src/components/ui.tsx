@@ -6,7 +6,7 @@ import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAt
 type VarianteBoton = "primario" | "secundario" | "peligro" | "fantasma";
 
 const VARIANTES: Record<VarianteBoton, string> = {
-  primario: "bg-marca-600 text-white hover:bg-marca-700 disabled:bg-slate-300",
+  primario: "bg-marca-600 text-marca-contraste hover:bg-marca-700 disabled:bg-slate-300",
   secundario: "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50",
   peligro: "bg-red-600 text-white hover:bg-red-700",
   fantasma: "text-slate-600 hover:bg-slate-100",

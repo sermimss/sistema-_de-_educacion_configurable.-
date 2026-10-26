@@ -156,6 +156,34 @@ await cliente1.getByRole("button", { name: "Agregar materia" }).click();
 await cliente1.waitForTimeout(1500);
 comprobar("Vanguardia registra una materia", (await limpio(cliente1)).includes("Robotica Vanguardia"));
 
+// Vanguardia sube su logo: debe verse en su entrada y en ninguna otra.
+const logoV = await cliente1.evaluate(() => {
+  const c = document.createElement("canvas");
+  c.width = 120;
+  c.height = 120;
+  const g = c.getContext("2d");
+  g.fillStyle = "#b91c1c";
+  g.fillRect(10, 10, 100, 100);
+  return c.toDataURL("image/png").split(",")[1];
+});
+await cliente1.goto(`${BASE}/panel/configuracion`);
+await cliente1.locator("#logo").setInputFiles({ name: "logo.png", mimeType: "image/png", buffer: Buffer.from(logoV, "base64") });
+await cliente1.waitForSelector("text=Tomamos los colores del logo", { timeout: 10000 });
+await cliente1.getByRole("button", { name: "Guardar identidad" }).click();
+await cliente1.waitForSelector("text=Identidad de la institucion actualizada", { timeout: 15000 });
+const anonimoV = await nueva();
+await anonimoV.goto(`${BASE}/vanguardia`);
+const srcV = await anonimoV.locator("main img").first().getAttribute("src").catch(() => null);
+comprobar("El logo de Vanguardia sale en su entrada", Boolean(srcV?.startsWith("/api/marca/logo")), srcV ?? "");
+const imagenV = srcV ? await anonimoV.request.get(`${BASE}${srcV}`) : null;
+comprobar("El logo de Vanguardia se sirve", imagenV?.status() === 200 && imagenV.headers()["content-type"] === "image/png");
+comprobar("Vanguardia toma el color de su logo",
+  (await anonimoV.locator("body").getAttribute("style")).includes("--marca-base:#b91c1c"));
+
+await cliente1.goto(`${BASE}/panel/documentos`);
+comprobar("Cada colegio tiene su catalogo de documentos",
+  (await cliente1.locator('a[href^="/panel/documentos/generar/"]').count()) === 19);
+
 // ---------- Segundo colegio ----------
 const codigoA = await generarCodigo("Colegio Aurora");
 const cliente2 = await nueva();
@@ -190,6 +218,8 @@ const panelAurora = await limpio(cliente2);
 comprobar("El panel de Aurora es de Aurora", panelAurora.includes("Aurora") && !panelAurora.includes("Vanguardia"));
 await cliente2.goto(`${BASE}/panel/materias`);
 comprobar("Aurora no ve las materias de Vanguardia", !(await limpio(cliente2)).includes("Robotica Vanguardia"));
+comprobar("Aurora no tiene el logo ni el color de Vanguardia",
+  (await cliente2.locator("aside img").count()) === 0 && !(await cliente2.locator("body").getAttribute("style")).includes("#b91c1c"));
 
 // Cambiar a mano el colegio recordado no abre el panel de otro colegio.
 await cliente1.context().addCookies([{ name: "colegio_elegido", value: "aurora", url: BASE }]);

@@ -47,7 +47,7 @@ export function Bienvenida({ recordado }: { recordado: { direccion: string; nomb
               </p>
               <Link
                 href="/alta"
-                className="inline-flex w-full items-center justify-center rounded-lg bg-marca-600 px-4 py-2 text-sm font-medium text-white hover:bg-marca-700"
+                className="inline-flex w-full items-center justify-center rounded-lg bg-marca-600 px-4 py-2 text-sm font-medium text-marca-contraste hover:bg-marca-700"
               >
                 Dar de alta mi colegio
               </Link>

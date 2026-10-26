@@ -5,6 +5,7 @@ import { requerirRol } from "@/lib/auth";
 import { guardarConfig } from "@/lib/configuracion";
 import { db } from "@/lib/db";
 import { registrarBitacora } from "@/lib/bitacora";
+import { colorValido, leerImagenSubida } from "@/lib/marca";
 
 export type EstadoGuardado = { ok?: boolean; mensaje?: string; error?: string };
 
@@ -43,32 +44,63 @@ export async function guardarIdentidad(
   const sesion = await requerirRol("ADMIN");
   try {
     const antes = await db.institucion.findUnique({ where: { id: 1 } });
+    const colorPrimario = String(formData.get("colorPrimario") ?? "");
+    const colorSecundario = String(formData.get("colorSecundario") ?? "");
+    if (!colorValido(colorPrimario) || !colorValido(colorSecundario)) {
+      return { error: "Los colores deben tener el formato #RRGGBB." };
+    }
+    const texto = (clave: string) => String(formData.get(clave) ?? "").trim() || null;
     const datos = {
       nombre: String(formData.get("nombre") ?? "").trim(),
-      nombreCorto: String(formData.get("nombreCorto") ?? "").trim() || null,
-      lema: String(formData.get("lema") ?? "").trim() || null,
-      logoUrl: String(formData.get("logoUrl") ?? "").trim() || null,
-      colorPrimario: String(formData.get("colorPrimario") ?? "#1d4ed8"),
-      colorSecundario: String(formData.get("colorSecundario") ?? "#0f172a"),
-      telefono: String(formData.get("telefono") ?? "").trim() || null,
-      email: String(formData.get("email") ?? "").trim() || null,
-      direccion: String(formData.get("direccion") ?? "").trim() || null,
-      razonSocial: String(formData.get("razonSocial") ?? "").trim() || null,
-      rfc: String(formData.get("rfc") ?? "").trim().toUpperCase() || null,
-      regimenFiscal: String(formData.get("regimenFiscal") ?? "").trim() || null,
+      nombreCorto: texto("nombreCorto"),
+      lema: texto("lema"),
+      colorPrimario,
+      colorSecundario,
+      telefono: texto("telefono"),
+      email: texto("email"),
+      direccion: texto("direccion"),
+      ciudad: texto("ciudad"),
+      estado: texto("estado"),
+      claveCentroTrabajo: texto("claveCentroTrabajo"),
+      razonSocial: texto("razonSocial"),
+      rfc: texto("rfc")?.toUpperCase() ?? null,
+      regimenFiscal: texto("regimenFiscal"),
     };
     if (datos.nombre.length < 3) return { error: "El nombre de la institucion es obligatorio." };
 
-    const despues = await db.institucion.update({ where: { id: 1 }, data: datos });
+    const imagen = await leerImagenSubida(formData.get("logo"));
+    if (imagen && !imagen.ok) return { error: imagen.error };
+
+    const despues = await db.$transaction(async (tx) => {
+      let logo: { logoArchivoId: number | null; logoUrl?: null } | Record<string, never> = {};
+      if (imagen?.ok) {
+        const archivo = await tx.archivoInstitucional.create({
+          data: { tipo: "LOGO", nombre: imagen.nombre, mime: imagen.mime, tamano: imagen.datos.length, datos: imagen.datos },
+        });
+        logo = { logoArchivoId: archivo.id, logoUrl: null };
+      } else if (formData.get("quitarLogo") === "on") {
+        logo = { logoArchivoId: null, logoUrl: null };
+      }
+      return tx.institucion.update({ where: { id: 1 }, data: { ...datos, ...logo } });
+    });
+
     await registrarBitacora({
       usuarioId: sesion.usuarioId,
       accion: "ACTUALIZAR",
       entidad: "Institucion",
       entidadId: "1",
-      datosAntes: antes ? { nombre: antes.nombre, colorPrimario: antes.colorPrimario } : undefined,
-      datosDespues: { nombre: despues.nombre, colorPrimario: despues.colorPrimario },
+      datosAntes: antes
+        ? { nombre: antes.nombre, colorPrimario: antes.colorPrimario, colorSecundario: antes.colorSecundario, logoArchivoId: antes.logoArchivoId }
+        : undefined,
+      datosDespues: {
+        nombre: despues.nombre,
+        colorPrimario: despues.colorPrimario,
+        colorSecundario: despues.colorSecundario,
+        logoArchivoId: despues.logoArchivoId,
+      },
+      descripcion: imagen?.ok ? "Logo institucional actualizado" : undefined,
     });
-    revalidatePath("/panel", "layout");
+    revalidatePath("/", "layout");
     return { ok: true, mensaje: "Identidad de la institucion actualizada." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "No se pudo guardar." };

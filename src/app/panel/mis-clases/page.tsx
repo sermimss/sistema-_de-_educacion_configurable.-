@@ -62,7 +62,7 @@ export default async function PaginaMisClases() {
                 <div className="flex flex-wrap gap-2">
                   <Link
                     href={`/panel/asistencia?clase=${clase.id}`}
-                    className="rounded-lg bg-marca-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-marca-700"
+                    className="rounded-lg bg-marca-600 px-3 py-1.5 text-sm font-medium text-marca-contraste hover:bg-marca-700"
                   >
                     Pasar lista
                   </Link>

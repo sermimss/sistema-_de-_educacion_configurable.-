@@ -38,14 +38,31 @@ distinto para las claves.
 npm run prueba:control
 ```
 
+## documentos-marca.mjs
+
+43 comprobaciones sobre una base **recien sembrada con los datos de
+demostracion**. Sube un logo (y rechaza un archivo que finge ser imagen),
+comprueba que se toman sus colores y que todo el colegio los usa (menu, icono
+de la pestana, acceso, texto legible sobre colores claros), da de alta un
+firmante con firma y sello, genera constancias, pases, hojas de descuento y un
+machote propio con los datos reales, edita un machote, cancela un documento,
+y recorre las solicitudes desde el portal del alumno (atendida y rechazada).
+Tambien revisa que un alumno no vea documentos ajenos y que al imprimir solo
+salga la hoja.
+
+```bash
+npm run prueba:documentos
+```
+
 ## plataforma.mjs
 
-37 comprobaciones de la plataforma multicolegio sobre una base **recien
+42 comprobaciones de la plataforma multicolegio sobre una base **recien
 migrada y vacia**, con el servidor en modo plataforma. Recorre la pregunta de
 entrada, la cuenta del dueno con su clave de arranque, los codigos de alta, el
 alta de dos colegios con el asistente, el bloqueo hasta marcar el pago, la
-separacion de datos entre colegios (mismo usuario en los dos, materias que no
-se ven de uno a otro, sesion que solo abre su propio colegio) y la suspension.
+separacion de datos entre colegios (mismo usuario en los dos, materias, logo
+y colores que no se ven de uno a otro, sesion que solo abre su propio
+colegio) y la suspension.
 
 ```bash
 MODO_PLATAFORMA=1 PLATAFORMA_CLAVE_ARRANQUE=clave-de-arranque-de-prueba npm start

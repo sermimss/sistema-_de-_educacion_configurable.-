@@ -546,3 +546,31 @@ Verificado: plataforma 37 (nueva, tambien con el arranque de Render), y en modo
 un colegio humo 26, control escolar 28, academico 40, finanzas 40, integridad
 27, nomina 41, grupos y horario 33, asistente 29.
 
+## Identidad de marca y documentos institucionales
+
+- **Logo subido al sistema** (PNG, JPG o WebP, hasta 2 MB; se revisa el
+  contenido, no el nombre). Al elegirlo, el navegador detecta sus colores y
+  los propone como principal y secundario; el colegio los ajusta con una
+  vista previa antes de guardar.
+- **Todo el colegio toma esa identidad**: menu lateral con el logo y el color
+  secundario, botones y enlaces con el principal, icono de la pestana,
+  pantalla de acceso, boletas, recibos y documentos. Sobre colores claros el
+  texto cambia a oscuro para que se lea. Se corrigio un error previo por el
+  que el color principal nunca llegaba a la interfaz.
+- **Documentos** (Control escolar > Documentos): 19 machotes de alumnos,
+  personal y generales, mas machotes propios. Texto editable con datos que se
+  llenan solos ({{alumno.nombre_completo}}, {{alumno.grupo}}...) y datos que se
+  piden al generar (empresa, hora, motivo...). Al generar se busca al alumno o
+  a la persona del personal y la vista previa se llena con sus datos reales.
+- **Firmantes** con nombre, cargo, imagen de firma y de sello.
+- **Folio** por tipo y ano (CE-2026-0001) e **historial**; un documento se
+  puede reimprimir o cancelar, nunca borrar.
+- **Solicitudes**: el alumno pide desde "Mis documentos" los machotes marcados
+  para eso; administracion los genera o los rechaza con motivo, y el alumno
+  ve e imprime el suyo. Respeta el bloqueo por adeudo de constancias.
+- Hoja tamano carta lista para imprimir o guardar como PDF desde el navegador.
+
+Verificado: documentos y marca 43 (nueva), plataforma 42, humo 26, control
+escolar 28, academico 40, finanzas 40, integridad 27, nomina 41, grupos y
+horario 33, asistente 29.
+

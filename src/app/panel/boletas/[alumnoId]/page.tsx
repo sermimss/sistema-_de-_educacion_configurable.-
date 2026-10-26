@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { nombreCompleto } from "@/lib/catalogos";
+import { urlLogo } from "@/lib/marca";
 import { obtenerInstitucion } from "@/lib/institucion";
 import { configNumero } from "@/lib/configuracion";
 import { faltasEfectivas, porcentajeAsistencia } from "@/lib/asistencia";
@@ -28,6 +29,7 @@ export default async function PaginaBoleta({
   if (!Number.isFinite(id)) notFound();
 
   const institucion = await obtenerInstitucion();
+  const logo = await urlLogo(institucion);
   const alumno = await db.alumno.findUnique({
     where: { id },
     include: { plan: { include: { nivel: true } }, plantel: true, turno: true },
@@ -133,11 +135,11 @@ export default async function PaginaBoleta({
       <article className="hoja-impresion mx-auto max-w-4xl rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
         <header className="flex items-start justify-between gap-6 border-b border-slate-300 pb-4">
           <div className="flex items-center gap-4">
-            {institucion?.logoUrl ? (
+            {logo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={institucion.logoUrl} alt="" className="h-16 w-auto" />
+              <img src={logo} alt="" className="h-16 w-auto" />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-marca-600 text-xl font-bold text-white">
+              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-marca-600 text-xl font-bold text-marca-contraste">
                 {(institucion?.nombreCorto ?? institucion?.nombre ?? "?").charAt(0).toUpperCase()}
               </div>
             )}
