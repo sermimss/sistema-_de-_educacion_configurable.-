@@ -13,6 +13,7 @@ import {
 } from "@/lib/navegacion";
 import { accionSalir } from "@/app/acceso/acciones";
 import { urlLogo } from "@/lib/marca";
+import { ListaMenu, MenuMovil, type GrupoMenu } from "./Navegacion";
 
 function LogoColegio({ logo, nombre, chico }: { logo: string | null; nombre: string; chico?: boolean }) {
   const tamano = chico ? "h-8 w-8" : "h-10 w-10";
@@ -49,72 +50,53 @@ export default async function LayoutPanel({ children }: { children: React.ReactN
   const logo = await urlLogo(institucion);
   const items = navegacionPara(sesion.rol);
 
-  const grupos = items.reduce<Record<string, ItemNavegacion[]>>((acumulado, item) => {
+  const porGrupo = items.reduce<Record<string, ItemNavegacion[]>>((acumulado, item) => {
     (acumulado[item.grupo] ??= []).push(item);
     return acumulado;
   }, {});
+  const grupos: GrupoMenu[] = Object.entries(porGrupo).map(([grupo, lista]) => ({
+    titulo: ETIQUETA_GRUPO[grupo as ItemNavegacion["grupo"]],
+    items: lista.map((item) => ({
+      etiqueta: item.etiqueta,
+      ruta: item.ruta,
+      disponible: estaDisponible(item),
+      fase: item.fase,
+    })),
+  }));
+
+  const nombreColegio = institucion?.nombreCorto || institucion?.nombre || "?";
+  const encabezadoMenu = (
+    <div className="flex min-h-16 items-center gap-3 bg-marca-sec px-5 py-3 pr-12 text-marca-sec-contraste">
+      <LogoColegio logo={logo} nombre={nombreColegio} />
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold">{nombreColegio}</p>
+        <p className="text-xs opacity-75">{ETIQUETA_ROL[sesion.rol]}</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex min-h-screen">
       <aside className="no-imprimir hidden w-64 shrink-0 border-r border-slate-200 bg-white lg:block">
-        <div className="flex min-h-16 items-center gap-3 bg-marca-sec px-5 py-3 text-marca-sec-contraste">
-          <LogoColegio logo={logo} nombre={institucion?.nombreCorto || institucion?.nombre || "?"} />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">
-              {institucion?.nombreCorto || institucion?.nombre}
-            </p>
-            <p className="text-xs opacity-75">{ETIQUETA_ROL[sesion.rol]}</p>
-          </div>
-        </div>
-        <nav className="space-y-4 p-3">
-          {Object.entries(grupos).map(([grupo, lista]) => (
-            <div key={grupo}>
-              {ETIQUETA_GRUPO[grupo as ItemNavegacion["grupo"]] && (
-                <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                  {ETIQUETA_GRUPO[grupo as ItemNavegacion["grupo"]]}
-                </p>
-              )}
-              <div className="space-y-0.5">
-                {lista.map((item) =>
-                  estaDisponible(item) ? (
-                    <Link
-                      key={item.ruta}
-                      href={item.ruta}
-                      className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-                    >
-                      {item.etiqueta}
-                    </Link>
-                  ) : (
-                    <span
-                      key={item.ruta}
-                      className="flex cursor-not-allowed items-center justify-between rounded-lg px-3 py-2 text-sm text-slate-400"
-                      title="Modulo programado para una fase posterior"
-                    >
-                      {item.etiqueta}
-                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
-                        Fase {item.fase}
-                      </span>
-                    </span>
-                  )
-                )}
-              </div>
-            </div>
-          ))}
-        </nav>
+        {encabezadoMenu}
+        <ListaMenu grupos={grupos} />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="no-imprimir flex h-16 items-center justify-between border-b-4 border-marca-600 bg-white px-5">
-          <div className="flex items-center gap-2 lg:hidden">
-            <LogoColegio logo={logo} nombre={institucion?.nombreCorto || institucion?.nombre || "?"} chico />
-            <p className="text-sm font-semibold text-slate-900">
-              {institucion?.nombreCorto || institucion?.nombre}
-            </p>
+        <header className="no-imprimir sticky top-0 z-40 flex h-16 items-center justify-between gap-3 border-b-4 border-marca-600 bg-white px-4 sm:px-5">
+          <div className="flex min-w-0 items-center gap-2 lg:hidden">
+            <MenuMovil
+              grupos={grupos}
+              encabezado={encabezadoMenu}
+              usuario={{ nombre: sesion.nombre, rutaCambio: RUTA_CAMBIO }}
+            />
+            <LogoColegio logo={logo} nombre={nombreColegio} chico />
+            <p className="truncate text-sm font-semibold text-slate-900">{nombreColegio}</p>
           </div>
-          <div className="ml-auto flex items-center gap-4">
+          <div className="ml-auto flex shrink-0 items-center gap-3 sm:gap-4">
             <Link
               href={RUTA_CAMBIO}
-              className="text-sm text-slate-600 hover:text-marca-600"
+              className="hidden text-sm text-slate-600 hover:text-marca-600 sm:inline"
               title="Cambiar mi contrasena"
             >
               {sesion.nombre}
@@ -129,7 +111,7 @@ export default async function LayoutPanel({ children }: { children: React.ReactN
             </form>
           </div>
         </header>
-        <main className="flex-1 p-5 print:p-0 lg:p-8">{children}</main>
+        <main className="min-w-0 flex-1 p-4 print:p-0 sm:p-5 lg:p-8">{children}</main>
       </div>
     </div>
   );

@@ -574,3 +574,16 @@ Verificado: documentos y marca 43 (nueva), plataforma 42, humo 26, control
 escolar 28, academico 40, finanzas 40, integridad 27, nomina 41, grupos y
 horario 33, asistente 29.
 
+## Menu en el celular
+
+En pantallas chicas el menu lateral no se mostraba y no habia forma de
+navegar. Ahora el encabezado trae un boton que abre el mismo menu como panel
+lateral (se cierra al elegir, con la X, con Esc o tocando fuera), con el
+nombre del usuario y el enlace para cambiar la contrasena al pie. En los dos
+menus se marca la pantalla en la que estas. El encabezado se queda fijo al
+desplazarse.
+
+Verificado: menu en celular 39 (nueva), documentos y marca 43, plataforma 42,
+humo 26, control escolar 28, academico 40, finanzas 40, integridad 27, nomina
+41, grupos y horario 33, asistente 29.
+

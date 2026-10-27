@@ -38,6 +38,19 @@ distinto para las claves.
 npm run prueba:control
 ```
 
+## menu-movil.mjs
+
+39 comprobaciones con el navegador en tamano de celular (390 x 844) sobre una
+base con los datos de demostracion. El menu abre y cierra (boton, X, Esc,
+tocar fuera), lleva a cada pantalla, marca en cual estas y trae el enlace
+para cambiar la contrasena; cada rol ve sus opciones; y ninguna de 20
+pantallas se sale a lo ancho. Tambien revisa que en la computadora siga el
+menu lateral. No modifica nada: se puede repetir.
+
+```bash
+npm run prueba:movil
+```
+
 ## documentos-marca.mjs
 
 43 comprobaciones sobre una base **recien sembrada con los datos de
