@@ -261,7 +261,7 @@ npm run prueba:integridad         # 27 comprobaciones de finanzas contra la base
 npm run prueba:nomina             # 42 comprobaciones de nomina (base recien sembrada)
 npm run prueba:plataforma         # 58 comprobaciones de la plataforma multicolegio (base vacia, MODO_PLATAFORMA=1)
 npm run prueba:recuperacion       # 20 comprobaciones de recuperar el acceso (base con demo y DATABASE_URL)
-npm run prueba:portales           # 41 comprobaciones de portales, Meet, avisos y modalidad (base con demo y DATABASE_URL)
+npm run prueba:portales           # 40 comprobaciones de portales, Meet, avisos y modalidad (base con demo y DATABASE_URL)
 npm run prueba:movil              # 39 comprobaciones del sistema en celular (base con demo)
 npm run prueba:documentos         # 43 comprobaciones de logo, colores y documentos institucionales (base recien sembrada)
 npm run prueba:grupos             # 33 comprobaciones de grupos con calendario y horario (base recien sembrada)

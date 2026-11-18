@@ -54,7 +54,7 @@ DATABASE_URL=... npm run prueba:recuperacion
 
 ## portales.mjs
 
-41 comprobaciones sobre una base **recien sembrada con los datos de
+40 comprobaciones sobre una base **recien sembrada con los datos de
 demostracion**, con `DATABASE_URL` apuntando a esa base. Pone un horario de
 hoy alrededor de la hora actual y recorre: el docente pega su sala de Google
 Meet (rechaza enlaces que no son de Meet, completa el codigo, la pone en todas

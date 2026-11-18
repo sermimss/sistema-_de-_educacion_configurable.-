@@ -631,7 +631,7 @@ finanzas 40, integridad 27, nomina 41, grupos y horario 33, asistente 29.
 - Pendiente: la opcion "El docente puede editar su horario" existe en la
   configuracion pero aun no hace nada.
 
-Verificado: portales 41 (nueva), recuperacion de acceso 20, plataforma 58,
+Verificado: portales 40 (nueva), recuperacion de acceso 20, plataforma 58,
 menu en celular 39, documentos y marca 43, humo 26, control escolar 28,
 academico 40, finanzas 40, integridad 27, nomina 41, grupos y horario 33,
 asistente 29.
