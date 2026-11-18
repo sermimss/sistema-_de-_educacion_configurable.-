@@ -125,6 +125,7 @@ export async function instalarSistema(datos: DatosInstalacion): Promise<Resultad
               clave: plan.clave,
               nivelId,
               duracionPeriodos: plan.duracionPeriodos,
+              modalidad: d.niveles.find((n) => n.clave === plan.nivelClave)!.tipoPeriodo,
               creditosTotales: plan.creditosTotales || null,
             },
           });

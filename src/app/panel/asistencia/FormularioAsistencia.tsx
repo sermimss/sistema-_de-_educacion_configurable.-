@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { Alerta, Boton } from "@/components/ui";
 import { ESTADOS_ASISTENCIA } from "@/lib/estadosAsistencia";
+import { MarcaAdeudo } from "@/components/MarcaAdeudo";
 import { guardarAsistencia, type EstadoAsistenciaForm } from "./acciones";
 
 export type AlumnoLista = {
@@ -11,6 +12,7 @@ export type AlumnoLista = {
   nombre: string;
   estado: string;
   observacion: string;
+  adeudo?: boolean;
 };
 
 export default function FormularioAsistencia({
@@ -94,7 +96,10 @@ export default function FormularioAsistencia({
             {alumnos.map((alumno) => (
               <tr key={alumno.id}>
                 <td className="py-2 pr-3 font-mono text-xs text-slate-500">{alumno.matricula}</td>
-                <td className="py-2 pr-3 font-medium text-slate-800">{alumno.nombre}</td>
+                <td className="py-2 pr-3 font-medium text-slate-800">
+                  {alumno.nombre}
+                  <MarcaAdeudo visible={alumno.adeudo} />
+                </td>
                 <td className="py-2 pr-3">
                   <div className="flex flex-wrap gap-1">
                     {ESTADOS_ASISTENCIA.map((opcion) => (

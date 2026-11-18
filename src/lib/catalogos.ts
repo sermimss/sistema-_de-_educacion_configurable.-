@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { aceptaNuevoIngreso } from "./modalidad";
 
 /// Catalogos que alimentan los formularios de control escolar.
 export async function catalogosEscolares() {
@@ -20,6 +21,7 @@ export async function catalogosEscolares() {
       nombre: plan.nombre,
       clave: plan.clave,
       nivel: plan.nivel.nombre,
+      nuevoIngreso: aceptaNuevoIngreso(plan),
     })),
     planteles: planteles.map((p) => ({ id: p.id, nombre: p.nombre })),
     turnos: turnos.map((t) => ({ id: t.id, nombre: t.nombre })),

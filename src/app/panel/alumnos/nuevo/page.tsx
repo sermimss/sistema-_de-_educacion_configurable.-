@@ -9,7 +9,9 @@ export const dynamic = "force-dynamic";
 
 export default async function PaginaNuevoAlumno() {
   await requerirRol("ADMIN");
-  const catalogos = await catalogosEscolares();
+  const todos = await catalogosEscolares();
+  // Un plan reemplazado por una version nueva ya no recibe alumnos nuevos.
+  const catalogos = { ...todos, planes: todos.planes.filter((p) => p.nuevoIngreso) };
   const exigeCurp = await configBool("expediente.exige_curp", false);
   const muestraMedicos = await configBool("expediente.campos_medicos_visibles", true);
 

@@ -610,3 +610,28 @@ Verificado: recuperacion de acceso 20 (nueva), plataforma 58, menu en
 celular 39, documentos y marca 43, humo 26, control escolar 28, academico 40,
 finanzas 40, integridad 27, nomina 41, grupos y horario 33, asistente 29.
 
+## Portales, Google Meet, avisos y modalidad
+
+- **Portales**: explicados en `docs/portales.md` (como se entra, que puede y
+  que no puede cada rol, y que opciones los encienden o apagan).
+- **Google Meet por clase**: el docente pega su sala en *Mis clases* (o una
+  para todas); solo se aceptan enlaces de Meet. El alumno ve el boton en su
+  panel y en *Mi horario*; la clase en curso se resalta desde 10 minutos
+  antes de empezar.
+- **Mi horario del docente**: su semana y sus clases de hoy en el panel.
+- **Avisos**: la administracion publica a todo el colegio o a un grupo; el
+  docente solo a sus clases. Se pueden retirar y poner fecha de vigencia. Se
+  respeta la opcion "Portal del alumno: avisos".
+- **Adeudos para el docente**: con la opcion activada ve una marca "adeudo"
+  (sin montos) en sus listas de asistencia y calificaciones.
+- **Cambio de modalidad del plan**: un plan sin alumnos se convierte tal
+  cual; uno en uso genera un plan nuevo con sus materias y prerrequisitos y
+  el anterior deja de recibir nuevo ingreso. Los planes guardan ahora su
+  modalidad propia (antes la tomaban del nivel).
+- Pendiente: la opcion "El docente puede editar su horario" existe en la
+  configuracion pero aun no hace nada.
+
+Verificado: portales 41 (nueva), recuperacion de acceso 20, plataforma 58,
+menu en celular 39, documentos y marca 43, humo 26, control escolar 28,
+academico 40, finanzas 40, integridad 27, nomina 41, grupos y horario 33,
+asistente 29.

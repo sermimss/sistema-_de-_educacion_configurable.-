@@ -12,6 +12,7 @@ export type ItemNavegacion = {
 
 export const NAVEGACION: ItemNavegacion[] = [
   { etiqueta: "Panel", ruta: "/panel", roles: ["ADMIN", "DOCENTE", "ALUMNO"], fase: 1, grupo: "general" },
+  { etiqueta: "Avisos", ruta: "/panel/avisos", roles: ["ADMIN", "DOCENTE", "ALUMNO"], fase: 1, grupo: "general" },
 
   { etiqueta: "Alumnos", ruta: "/panel/alumnos", roles: ["ADMIN"], fase: 2, grupo: "control" },
   { etiqueta: "Personal y docentes", ruta: "/panel/personal", roles: ["ADMIN"], fase: 2, grupo: "control" },
@@ -29,7 +30,7 @@ export const NAVEGACION: ItemNavegacion[] = [
   { etiqueta: "Finanzas", ruta: "/panel/finanzas", roles: ["ADMIN"], fase: 4, grupo: "finanzas" },
   { etiqueta: "Mis calificaciones", ruta: "/panel/mis-calificaciones", roles: ["ALUMNO"], fase: 4, grupo: "academico" },
   { etiqueta: "Mi asistencia", ruta: "/panel/mi-asistencia", roles: ["ALUMNO"], fase: 4, grupo: "academico" },
-  { etiqueta: "Mi horario", ruta: "/panel/mi-horario", roles: ["ALUMNO"], fase: 4, grupo: "academico" },
+  { etiqueta: "Mi horario", ruta: "/panel/mi-horario", roles: ["ALUMNO", "DOCENTE"], fase: 4, grupo: "academico" },
   { etiqueta: "Estado de cuenta", ruta: "/panel/estado-de-cuenta", roles: ["ALUMNO"], fase: 4, grupo: "finanzas" },
   { etiqueta: "Mis documentos", ruta: "/panel/mis-documentos", roles: ["ALUMNO"], fase: 4, grupo: "academico" },
   { etiqueta: "Nomina", ruta: "/panel/nomina", roles: ["ADMIN"], fase: 5, grupo: "finanzas" },

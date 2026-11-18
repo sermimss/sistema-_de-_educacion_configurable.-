@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { aceptaNuevoIngreso } from "@/lib/modalidad";
 import { registrarBitacora } from "@/lib/bitacora";
 import { hashPassword } from "@/lib/password";
 import { generarMatricula } from "@/lib/matricula";
@@ -124,6 +125,9 @@ export async function importarCsv(
 async function importarAlumno(fila: FilaCsv) {
   const plan = await db.planEstudios.findUnique({ where: { clave: fila.plan_clave.toUpperCase() } });
   if (!plan) throw new Error(`No existe el plan con clave ${fila.plan_clave}.`);
+  if (!aceptaNuevoIngreso(plan)) {
+    throw new Error(`El plan ${plan.clave} ya fue reemplazado por una version nueva y no recibe alumnos nuevos.`);
+  }
   if (!fila.nombres?.trim()) throw new Error("Falta el nombre.");
   if (!fila.apellido_paterno?.trim()) throw new Error("Falta el apellido paterno.");
 

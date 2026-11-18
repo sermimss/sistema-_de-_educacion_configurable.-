@@ -52,6 +52,25 @@ devuelve el acceso al administrador y cierra sus sesiones abiertas.
 DATABASE_URL=... npm run prueba:recuperacion
 ```
 
+## portales.mjs
+
+41 comprobaciones sobre una base **recien sembrada con los datos de
+demostracion**, con `DATABASE_URL` apuntando a esa base. Pone un horario de
+hoy alrededor de la hora actual y recorre: el docente pega su sala de Google
+Meet (rechaza enlaces que no son de Meet, completa el codigo, la pone en todas
+sus clases), ve su horario y su clase en curso; el alumno ve el boton para
+entrar en su panel y en su horario. Avisos del colegio, de un grupo y de una
+clase (el docente solo a sus clases, ni alterando el formulario), retirar un
+aviso y apagar la seccion. La marca de adeudo en las listas del docente
+cuando el colegio la activa. Que cada portal no entre a pantallas ajenas. Y el
+cambio de modalidad: version cuatrimestral de un plan en uso (materias y
+prerrequisitos copiados, el anterior sin nuevo ingreso) y conversion directa
+de un plan sin alumnos.
+
+```bash
+DATABASE_URL=... npm run prueba:portales
+```
+
 ## menu-movil.mjs
 
 39 comprobaciones con el navegador en tamano de celular (390 x 844) sobre una

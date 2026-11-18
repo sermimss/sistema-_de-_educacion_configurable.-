@@ -1,5 +1,6 @@
 "use client";
 
+import { MarcaAdeudo } from "@/components/MarcaAdeudo";
 import { useActionState, useState } from "react";
 import { Alerta, Boton, Campo, Selector } from "@/components/ui";
 import {
@@ -163,7 +164,7 @@ export function TablaPuntos({
   alumnos,
 }: {
   actividad: { id: number; nombre: string; puntosMaximos: number };
-  alumnos: { id: number; matricula: string; nombre: string; puntos: string }[];
+  alumnos: { id: number; matricula: string; nombre: string; puntos: string; adeudo?: boolean }[];
 }) {
   const [estado, accion, pendiente] = useActionState<EstadoCalificaciones, FormData>(
     guardarPuntos,
@@ -186,7 +187,10 @@ export function TablaPuntos({
             {alumnos.map((alumno) => (
               <tr key={alumno.id}>
                 <td className="py-1.5 pr-3 font-mono text-xs text-slate-500">{alumno.matricula}</td>
-                <td className="py-1.5 pr-3 text-slate-800">{alumno.nombre}</td>
+                <td className="py-1.5 pr-3 text-slate-800">
+                  {alumno.nombre}
+                  <MarcaAdeudo visible={alumno.adeudo} />
+                </td>
                 <td className="py-1.5">
                   <input
                     name={`puntos_${alumno.id}`}
@@ -228,6 +232,7 @@ export function TablaPeriodo({
     id: number;
     matricula: string;
     nombre: string;
+    adeudo?: boolean;
     sugerida: number | null;
     oficial: string;
     observacion: string;
@@ -295,7 +300,10 @@ export function TablaPeriodo({
               return (
                 <tr key={alumno.id}>
                   <td className="py-1.5 pr-3 font-mono text-xs text-slate-500">{alumno.matricula}</td>
-                  <td className="py-1.5 pr-3 text-slate-800">{alumno.nombre}</td>
+                  <td className="py-1.5 pr-3 text-slate-800">
+                  {alumno.nombre}
+                  <MarcaAdeudo visible={alumno.adeudo} />
+                </td>
                   <td className="py-1.5 pr-3 text-slate-500">
                     {alumno.sugerida ?? <span className="text-slate-300">sin capturas</span>}
                   </td>

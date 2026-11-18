@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { aceptaNuevoIngreso } from "@/lib/modalidad";
 import { registrarBitacora } from "@/lib/bitacora";
 import { hashPassword } from "@/lib/password";
 import { generarMatricula } from "@/lib/matricula";
@@ -82,6 +83,9 @@ export async function crearAlumno(
       include: { nivel: true },
     });
     if (!plan) return { error: "El plan de estudios seleccionado no existe." };
+    if (!aceptaNuevoIngreso(plan)) {
+      return { error: `El plan ${plan.clave} ya fue reemplazado por una version nueva y no recibe alumnos de nuevo ingreso.` };
+    }
 
     const matricula =
       d.matricula?.trim() || (await generarMatricula({ nivel: plan.nivel.clave, plan: plan.clave }));

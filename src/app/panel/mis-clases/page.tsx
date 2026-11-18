@@ -7,6 +7,8 @@ import { configBool } from "@/lib/configuracion";
 import { DIAS_SEMANA } from "@/lib/formato";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
 import PreferenciasClase from "./PreferenciasClase";
+import { EnlaceMeet } from "./EnlaceMeet";
+import { BotonMeet } from "@/components/CuadroHorario";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +62,7 @@ export default async function PaginaMisClases() {
               }`}
               acciones={
                 <div className="flex flex-wrap gap-2">
+                  {clase.enlaceReunion && <BotonMeet enlace={clase.enlaceReunion} />}
                   <Link
                     href={`/panel/asistencia?clase=${clase.id}`}
                     className="rounded-lg bg-marca-600 px-3 py-1.5 text-sm font-medium text-marca-contraste hover:bg-marca-700"
@@ -88,6 +91,14 @@ export default async function PaginaMisClases() {
                       </Insignia>
                     ))
                   )}
+                </div>
+
+                <div className="border-t border-slate-100 pt-4">
+                  <EnlaceMeet
+                    claseId={clase.id}
+                    actual={clase.enlaceReunion}
+                    materia={clase.planMateria.materia.nombre}
+                  />
                 </div>
 
                 <div className="border-t border-slate-100 pt-4">

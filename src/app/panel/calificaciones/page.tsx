@@ -27,6 +27,8 @@ export default async function PaginaCalificaciones({
   searchParams: Promise<{ clase?: string; periodo?: string; actividad?: string }>;
 }) {
   const sesion = await requerirSesion();
+  // El colegio decide si el docente ve que alumnos deben (sin montos).
+  const verAdeudos = sesion.rol === "ADMIN" || (await configBool("portales.docente_ve_adeudos", false));
   if (sesion.rol === "ALUMNO") {
     return <Alerta tipo="aviso">Tu consulta de calificaciones llega en la Fase 4.</Alerta>;
   }
@@ -331,6 +333,7 @@ export default async function PaginaCalificaciones({
                 id: alumno.id,
                 matricula: alumno.matricula,
                 nombre: nombreCompleto(alumno),
+                adeudo: verAdeudos && alumno.tieneAdeudo,
                 puntos: captura?.puntos != null ? String(Number(captura.puntos)) : "",
               };
             })}
@@ -365,6 +368,7 @@ export default async function PaginaCalificaciones({
                   id: alumno.id,
                   matricula: alumno.matricula,
                   nombre: nombreCompleto(alumno),
+                  adeudo: verAdeudos && alumno.tieneAdeudo,
                   sugerida: sugeridas.get(alumno.id) ?? null,
                   oficial: registro?.calificacion != null ? String(Number(registro.calificacion)) : "",
                   observacion: registro?.observaciones ?? "",

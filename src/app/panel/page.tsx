@@ -2,7 +2,12 @@ import Link from "next/link";
 import { requerirSesion } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { obtenerInstitucion } from "@/lib/institucion";
-import { configNumero, configTexto } from "@/lib/configuracion";
+import { configBool, configNumero, configTexto } from "@/lib/configuracion";
+import { alumnoDeSesion } from "@/lib/alumnoSesion";
+import { bloquesDelAlumno, bloquesDelDocente } from "@/lib/horarioSemanal";
+import { ahoraEnZona } from "@/lib/reuniones";
+import { avisosDelAlumno } from "@/lib/avisos";
+import { ClasesDeHoy, type BloqueHorario } from "@/components/CuadroHorario";
 import { formatearDia } from "@/lib/formato";
 import { estaDisponible, navegacionPara } from "@/lib/navegacion";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
@@ -40,6 +45,22 @@ export default async function PaginaPanel() {
       take: 12,
     }),
   ]);
+
+  // Las clases de hoy del docente o del alumno, con su boton de Meet.
+  const ahora = ahoraEnZona(institucion?.zonaHoraria ?? "America/Mexico_City");
+  let bloquesHoy: BloqueHorario[] | null = null;
+  if (sesion.rol === "DOCENTE") {
+    bloquesHoy = await bloquesDelDocente(sesion.usuarioId);
+  } else if (sesion.rol === "ALUMNO" && (await configBool("portales.alumno_ve_horario", true))) {
+    const alumno = await alumnoDeSesion(sesion.usuarioId);
+    bloquesHoy = alumno ? (await bloquesDelAlumno(alumno.id)).bloques : null;
+  }
+  // Los avisos mas recientes para el alumno.
+  let avisosRecientes: Awaited<ReturnType<typeof avisosDelAlumno>> = [];
+  if (sesion.rol === "ALUMNO" && (await configBool("portales.alumno_ve_avisos", true))) {
+    const alumno = await alumnoDeSesion(sesion.usuarioId);
+    if (alumno) avisosRecientes = await avisosDelAlumno(alumno.id, 3);
+  }
 
   const accesosPendientes =
     sesion.rol === "ADMIN" ? await db.solicitudAcceso.count({ where: { estado: "PENDIENTE" } }) : 0;
@@ -163,8 +184,18 @@ export default async function PaginaPanel() {
         </>
       )}
 
+      {(sesion.rol === "DOCENTE" || sesion.rol === "ALUMNO") && bloquesHoy && (
+        <Tarjeta titulo="Tus clases de hoy" descripcion="Con el boton para entrar a las que son en linea">
+          <ClasesDeHoy bloques={bloquesHoy} ahora={ahora} />
+        </Tarjeta>
+      )}
+
       {sesion.rol === "DOCENTE" && (
         <div className="grid gap-4 sm:grid-cols-2">
+          <Link href="/panel/mi-horario" className="tarjeta px-5 py-4 hover:border-marca-600">
+            <p className="text-sm font-semibold text-slate-900">Mi horario</p>
+            <p className="mt-1 text-sm text-slate-600">Todas tus clases de la semana, de todos tus grupos.</p>
+          </Link>
           <Link href="/panel/mis-clases" className="tarjeta px-5 py-4 hover:border-marca-600">
             <p className="text-sm font-semibold text-slate-900">Mis clases</p>
             <p className="mt-1 text-sm text-slate-600">
@@ -182,6 +213,22 @@ export default async function PaginaPanel() {
             </p>
           </Link>
         </div>
+      )}
+
+      {avisosRecientes.length > 0 && (
+        <Tarjeta
+          titulo="Avisos"
+          acciones={<Link href="/panel/avisos" className="text-sm text-marca-600 hover:underline">Ver todos</Link>}
+        >
+          <ul className="divide-y divide-slate-100" data-avisos-recientes>
+            {avisosRecientes.map((a) => (
+              <li key={a.id} className="py-2">
+                <p className="text-sm font-medium text-slate-800">{a.titulo}</p>
+                <p className="line-clamp-2 text-xs text-slate-600">{a.contenido}</p>
+              </li>
+            ))}
+          </ul>
+        </Tarjeta>
       )}
 
       {sesion.rol === "ALUMNO" && (

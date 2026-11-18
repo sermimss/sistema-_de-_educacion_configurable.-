@@ -416,17 +416,20 @@ model NivelEducativo {
 }
 
 model PlanEstudios {
-  id               Int       @id @default(autoincrement())
+  id               Int                  @id @default(autoincrement())
   nombre           String
-  clave            String    @unique
+  clave            String               @unique
   nivelId          Int
   /// Cuantos periodos (semestres/cuatrimestres) dura el plan.
   /// De aqui sale el numero de colegiaturas a generar.
   duracionPeriodos Int
+  /// Semestral, cuatrimestral... Cada plan tiene la suya: un colegio puede
+  /// cambiar de modalidad con una version nueva del plan.
+  modalidad        TipoPeriodoAcademico @default(SEMESTRE)
   creditosTotales  Int?
   vigenteDesde     DateTime?
   vigenteHasta     DateTime?
-  activo           Boolean   @default(true)
+  activo           Boolean              @default(true)
 
   nivel    NivelEducativo @relation(fields: [nivelId], references: [id], onDelete: Restrict)
   grados   Grado[]
@@ -821,6 +824,8 @@ model Clase {
   /// Cada docente decide si la asistencia afecta la calificacion.
   asistenciaAfectaCalificacion Boolean        @default(false)
   porcentajeAsistencia         Decimal?       @db.Decimal(5, 2)
+  /// Enlace de la reunion de Google Meet de la clase (lo pone el docente).
+  enlaceReunion                String?
   cerrada                      Boolean        @default(false)
   creadaEn                     DateTime       @default(now())
 
@@ -1419,6 +1424,9 @@ model Aviso {
   /// Roles destinatarios: ADMIN, DOCENTE, ALUMNO
   dirigidoA        String[]
   publicadoPor     Int?
+  autorNombre      String?
+  /// Si lo publico un docente para su clase: de que materia es.
+  claseId          Int?
   fechaPublicacion DateTime         @default(now())
   vigenciaHasta    DateTime?
   activo           Boolean          @default(true)

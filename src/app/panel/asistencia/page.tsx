@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requerirSesion } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { configBool } from "@/lib/configuracion";
 import { nombreCompleto } from "@/lib/catalogos";
 import { claseAccesible, clasesDelDocente } from "@/lib/docencia";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
@@ -18,6 +19,8 @@ export default async function PaginaAsistencia({
   searchParams: Promise<{ clase?: string; fecha?: string }>;
 }) {
   const sesion = await requerirSesion();
+  // El colegio decide si el docente ve que alumnos deben (sin montos).
+  const verAdeudos = sesion.rol === "ADMIN" || (await configBool("portales.docente_ve_adeudos", false));
   if (sesion.rol === "ALUMNO") {
     return <Alerta tipo="aviso">Tu consulta de asistencia llega en la Fase 4.</Alerta>;
   }
@@ -99,6 +102,7 @@ export default async function PaginaAsistencia({
           nombre: nombreCompleto(alumno),
           estado: previos.get(alumno.id)?.estado ?? "PRESENTE",
           observacion: previos.get(alumno.id)?.observacion ?? "",
+          adeudo: verAdeudos && alumno.tieneAdeudo,
         }))
     : [];
 

@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { requerirRol } from "@/lib/auth";
+import { aceptaNuevoIngreso, etiquetaModalidad } from "@/lib/modalidad";
 import { db } from "@/lib/db";
 import { formatearMoneda } from "@/lib/formato";
 import { obtenerInstitucion } from "@/lib/institucion";
@@ -34,7 +36,7 @@ export default async function PaginaAcademico() {
       <header>
         <h1 className="text-xl font-semibold text-slate-900">Estructura academica</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Lo que se creo en la instalacion. La edicion completa de cada catalogo llega en la Fase 2.
+          Lo que se creo en la instalacion. Cada plan se puede cambiar de modalidad (semestral, cuatrimestral...).
         </p>
       </header>
 
@@ -57,8 +59,13 @@ export default async function PaginaAcademico() {
                         <span className="text-sm font-medium text-slate-800">
                           {plan.nombre} <span className="text-slate-400">({plan.clave})</span>
                         </span>
-                        <span className="text-xs text-slate-500">
+                        <span className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                          <Insignia>{etiquetaModalidad(plan.modalidad)}</Insignia>
+                          {!aceptaNuevoIngreso(plan) && <Insignia tono="alerta">sin nuevo ingreso</Insignia>}
                           {plan.duracionPeriodos} periodos · {plan._count.materias} materias
+                          <Link href={`/panel/academico/plan/${plan.id}`} className="font-medium text-marca-600 hover:underline">
+                            Cambiar modalidad
+                          </Link>
                         </span>
                       </div>
                       <div className="mt-2 flex flex-wrap gap-1.5">
