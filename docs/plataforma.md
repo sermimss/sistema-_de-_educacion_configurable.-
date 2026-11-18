@@ -43,6 +43,13 @@ clave de arranque. Desde ahi:
 
 El dueno no ve calificaciones, alumnos, pagos ni ningun otro dato de los colegios.
 
+**Si el dueno olvida su usuario o contrasena**: en `/plataforma`, el enlace
+"¿Olvidaste tu usuario o contrasena?" pide la clave de arranque y una
+contrasena nueva; al aceptarla muestra el usuario y entra. La clave de
+arranque se consulta o se cambia en el entorno del hospedaje (en Render: el
+servicio, Environment, `PLATAFORMA_CLAVE_ARRANQUE`). Tras 5 claves
+equivocadas en 15 minutos se dejan de aceptar intentos un rato.
+
 ## Alta de un colegio
 
 1. El dueno genera un codigo y se lo entrega al cliente.

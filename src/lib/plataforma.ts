@@ -83,6 +83,13 @@ const TABLAS = [
      intentos_fallidos INT NOT NULL DEFAULT 0,
      bloqueado_hasta TIMESTAMPTZ
    )`,
+  // Cada vez que alguien escribe la clave de arranque (crear la cuenta del
+  // dueno o recuperarla), para frenar a quien intente adivinarla.
+  `CREATE TABLE IF NOT EXISTS plataforma.intento_clave (
+     id SERIAL PRIMARY KEY,
+     creado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
+     correcto BOOLEAN NOT NULL
+   )`,
 ];
 
 const global = globalThis as unknown as {

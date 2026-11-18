@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { cerrarSesionDueno, crearPrimerDueno, iniciarDueno, requerirDueno } from "@/lib/dueno";
+import { cerrarSesionDueno, crearPrimerDueno, iniciarDueno, recuperarDueno, requerirDueno } from "@/lib/dueno";
 import {
   cambiarEstadoColegio,
   crearCodigoAlta,
@@ -24,6 +24,16 @@ export async function accionPrimerDueno(_p: EstadoDueno, formData: FormData): Pr
   );
   if (!resultado.ok) return { error: resultado.error };
   redirect("/plataforma/panel");
+}
+
+export async function accionRecuperarDueno(_p: EstadoDueno, formData: FormData): Promise<EstadoDueno> {
+  const password = String(formData.get("password") ?? "");
+  if (password !== String(formData.get("confirmacion") ?? "")) {
+    return { error: "Las contrasenas no coinciden." };
+  }
+  const resultado = await recuperarDueno(String(formData.get("claveArranque") ?? ""), password);
+  if (!resultado.ok) return { error: resultado.error };
+  redirect(`/plataforma/panel?recuperado=${encodeURIComponent(resultado.usuario)}`);
 }
 
 export async function accionEntrarDueno(_p: EstadoDueno, formData: FormData): Promise<EstadoDueno> {

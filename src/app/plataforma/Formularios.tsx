@@ -6,6 +6,7 @@ import {
   accionCrearCodigo,
   accionEntrarDueno,
   accionPrimerDueno,
+  accionRecuperarDueno,
   type EstadoDueno,
 } from "./acciones";
 
@@ -41,6 +42,28 @@ export function FormularioEntrarDueno() {
       <Campo etiqueta="Contrasena" name="password" type="password" required autoComplete="current-password" />
       <Boton type="submit" className="w-full" disabled={pendiente}>
         {pendiente ? "Verificando..." : "Entrar"}
+      </Boton>
+    </form>
+  );
+}
+
+export function FormularioRecuperarDueno() {
+  const [estado, accion, pendiente] = useActionState<EstadoDueno, FormData>(accionRecuperarDueno, {});
+  return (
+    <form action={accion} className="space-y-3">
+      {estado.error && <Alerta tipo="error">{estado.error}</Alerta>}
+      <Campo
+        etiqueta="Clave de arranque"
+        name="claveArranque"
+        type="password"
+        required
+        autoComplete="off"
+        ayuda="La variable PLATAFORMA_CLAVE_ARRANQUE del servidor. En Render: tu servicio, Environment."
+      />
+      <Campo etiqueta="Contrasena nueva" name="password" type="password" required autoComplete="new-password" ayuda="Minimo 10 caracteres." />
+      <Campo etiqueta="Confirma la contrasena" name="confirmacion" type="password" required autoComplete="new-password" />
+      <Boton type="submit" className="w-full" disabled={pendiente}>
+        {pendiente ? "Revisando..." : "Poner contrasena nueva y entrar"}
       </Boton>
     </form>
   );

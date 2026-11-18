@@ -69,13 +69,14 @@ npm run prueba:documentos
 
 ## plataforma.mjs
 
-42 comprobaciones de la plataforma multicolegio sobre una base **recien
+47 comprobaciones de la plataforma multicolegio sobre una base **recien
 migrada y vacia**, con el servidor en modo plataforma. Recorre la pregunta de
 entrada, la cuenta del dueno con su clave de arranque, los codigos de alta, el
 alta de dos colegios con el asistente, el bloqueo hasta marcar el pago, la
 separacion de datos entre colegios (mismo usuario en los dos, materias, logo
 y colores que no se ven de uno a otro, sesion que solo abre su propio
-colegio) y la suspension.
+colegio), la suspension y la recuperacion de la cuenta del dueno con la clave
+de arranque (incluido el freno tras 5 claves equivocadas).
 
 ```bash
 MODO_PLATAFORMA=1 PLATAFORMA_CLAVE_ARRANQUE=clave-de-arranque-de-prueba npm start

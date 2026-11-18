@@ -265,6 +265,57 @@ const intruso = await nueva();
 await intruso.goto(`${BASE}/plataforma/panel`);
 comprobar("Sin cuenta de dueno no se ve el panel de la plataforma", !intruso.url().endsWith("/plataforma/panel"));
 
+// ---------- El dueno olvido su usuario y contrasena ----------
+const olvido = await nueva();
+await olvido.goto(`${BASE}/plataforma`);
+await olvido.getByRole("link", { name: "¿Olvidaste tu usuario o contrasena?" }).click();
+await olvido.waitForURL("**/plataforma?recuperar=1");
+async function recuperar(clave, password) {
+  await olvido.getByLabel(/^Clave de arranque\*?$/).fill(clave);
+  await olvido.getByLabel(/^Contrasena nueva\*?$/).fill(password);
+  await olvido.getByLabel(/^Confirma la contrasena\*?$/).fill(password);
+  await olvido.getByRole("button", { name: "Poner contrasena nueva y entrar" }).click();
+  await olvido.waitForTimeout(1500);
+}
+await recuperar("clave-equivocada-xyz", "NuevaClave2026");
+comprobar("Sin la clave de arranque no se recupera la cuenta", (await limpio(olvido)).includes("clave de arranque no es correcta"));
+await recuperar(CLAVE_ARRANQUE, "NuevaClave2026");
+await olvido.waitForURL("**/plataforma/panel**", { timeout: 15000 });
+comprobar("Con la clave de arranque entra y le dice su usuario",
+  (await limpio(olvido)).includes("Tu usuario es dueno"));
+const conNueva = await nueva();
+await conNueva.goto(`${BASE}/plataforma`);
+await conNueva.getByLabel(/^Usuario\*?$/).fill("dueno");
+await conNueva.getByLabel(/^Contrasena\*?$/).fill("NuevaClave2026");
+await conNueva.getByRole("button", { name: "Entrar" }).click();
+await conNueva.waitForURL("**/plataforma/panel", { timeout: 15000 });
+comprobar("La contrasena nueva funciona", conNueva.url().endsWith("/plataforma/panel"));
+const viejo = await nueva();
+await viejo.goto(`${BASE}/plataforma`);
+await viejo.getByLabel(/^Usuario\*?$/).fill("dueno");
+await viejo.getByLabel(/^Contrasena\*?$/).fill("DuenoPrueba2026");
+await viejo.getByRole("button", { name: "Entrar" }).click();
+await viejo.waitForTimeout(1500);
+comprobar("La contrasena anterior ya no sirve", !viejo.url().endsWith("/plataforma/panel"));
+
+// Quien intenta adivinar la clave de arranque queda frenado, aunque luego acierte.
+const adivino = await nueva();
+for (let i = 0; i < 5; i++) {
+  await adivino.goto(`${BASE}/plataforma?recuperar=1`);
+  await adivino.getByLabel(/^Clave de arranque\*?$/).fill(`intento-${i}-equivocado`);
+  await adivino.getByLabel(/^Contrasena nueva\*?$/).fill("Intruso20260");
+  await adivino.getByLabel(/^Confirma la contrasena\*?$/).fill("Intruso20260");
+  await adivino.getByRole("button", { name: "Poner contrasena nueva y entrar" }).click();
+  await adivino.waitForTimeout(800);
+}
+await adivino.goto(`${BASE}/plataforma?recuperar=1`);
+await adivino.getByLabel(/^Clave de arranque\*?$/).fill(CLAVE_ARRANQUE);
+await adivino.getByLabel(/^Contrasena nueva\*?$/).fill("Intruso20260");
+await adivino.getByLabel(/^Confirma la contrasena\*?$/).fill("Intruso20260");
+await adivino.getByRole("button", { name: "Poner contrasena nueva y entrar" }).click();
+await adivino.waitForTimeout(1500);
+comprobar("Tras 5 claves equivocadas se frena la recuperacion", (await limpio(adivino)).includes("Demasiados intentos"));
+
 await navegador.close();
 console.log(`\n${fallos.length === 0 ? "TODAS LAS PRUEBAS DE LA PLATAFORMA PASARON" : `FALLARON ${fallos.length}: ${fallos.join(", ")}`}`);
 process.exit(fallos.length === 0 ? 0 : 1);

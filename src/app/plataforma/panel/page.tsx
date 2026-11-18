@@ -1,4 +1,4 @@
-import { EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
+import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
 import { direccionPublica } from "@/lib/colegio";
 import { requerirDueno } from "@/lib/dueno";
 import { formatearFechaHora } from "@/lib/formato";
@@ -37,8 +37,13 @@ function BotonEstado({ colegioId, estado, texto, peligro }: { colegioId: number;
   );
 }
 
-export default async function PanelDueno() {
+export default async function PanelDueno({
+  searchParams,
+}: {
+  searchParams: Promise<{ recuperado?: string }>;
+}) {
   const dueno = await requerirDueno();
+  const { recuperado } = await searchParams;
   const [colegios, codigos] = await Promise.all([listarColegios(), listarCodigos()]);
   const alumnos = await alumnosPorColegio(colegios);
   const urls = new Map<number, string>();
@@ -63,6 +68,12 @@ export default async function PanelDueno() {
           </button>
         </form>
       </header>
+
+      {recuperado && (
+        <Alerta tipo="exito">
+          Listo, ya tienes contrasena nueva. Tu usuario es <strong>{dueno.usuario}</strong>: anotalo para la proxima vez.
+        </Alerta>
+      )}
 
       <Tarjeta
         titulo="Codigos de alta"

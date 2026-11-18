@@ -31,6 +31,24 @@ function claveArranqueCorrecta(capturada: string): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+const MAX_INTENTOS_CLAVE = 5;
+
+/// Revisa la clave de arranque dejando registro. Tras 5 errores en 15 minutos
+/// deja de aceptar intentos un rato, aunque el siguiente sea correcto: asi
+/// nadie puede probar claves sin fin.
+async function revisarClaveArranque(capturada: string): Promise<string | null> {
+  await asegurarTablasPlataforma();
+  const [{ fallidos }] = await clientePublico.$queryRaw<{ fallidos: bigint }[]>`
+    SELECT count(*) AS fallidos FROM plataforma.intento_clave
+     WHERE NOT correcto AND creado_en > now() - make_interval(mins => ${MINUTOS_BLOQUEO}::int)`;
+  if (Number(fallidos) >= MAX_INTENTOS_CLAVE) {
+    return `Demasiados intentos con una clave equivocada. Espera ${MINUTOS_BLOQUEO} minutos.`;
+  }
+  const correcta = claveArranqueCorrecta(capturada);
+  await clientePublico.$executeRaw`INSERT INTO plataforma.intento_clave (correcto) VALUES (${correcta})`;
+  return correcta ? null : "La clave de arranque no es correcta.";
+}
+
 export function hayClaveArranque(): boolean {
   return (process.env.PLATAFORMA_CLAVE_ARRANQUE ?? "").length >= 12;
 }
@@ -44,7 +62,8 @@ export async function crearPrimerDueno(
   claveArranque: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (await duenoRegistrado()) return { ok: false, error: "La cuenta del dueno ya existe." };
-  if (!claveArranqueCorrecta(claveArranque)) return { ok: false, error: "La clave de arranque no es correcta." };
+  const problema = await revisarClaveArranque(claveArranque);
+  if (problema) return { ok: false, error: problema };
   const limpio = usuario.trim().toLowerCase();
   if (!/^[a-z0-9._-]{3,40}$/.test(limpio)) {
     return { ok: false, error: "El usuario debe tener de 3 a 40 letras, numeros, punto o guion." };
@@ -57,6 +76,32 @@ export async function crearPrimerDueno(
      WHERE NOT EXISTS (SELECT 1 FROM plataforma.dueno)`;
   if (creadas !== 1) return { ok: false, error: "La cuenta del dueno ya existe." };
   return iniciarDueno(limpio, password);
+}
+
+/// Recuperar la cuenta del dueno cuando se olvido el usuario o la contrasena.
+/// Prueba de que es el dueno: la clave de arranque, que solo conoce quien
+/// administra el servidor (se ve y se cambia en el entorno del hospedaje).
+/// Pone la contrasena nueva, quita el bloqueo por intentos y entra.
+export async function recuperarDueno(
+  claveArranque: string,
+  password: string
+): Promise<{ ok: true; usuario: string } | { ok: false; error: string }> {
+  if (!hayClaveArranque()) {
+    return { ok: false, error: "El servidor no tiene definida la clave de arranque (PLATAFORMA_CLAVE_ARRANQUE)." };
+  }
+  if (!(await duenoRegistrado())) return { ok: false, error: "Todavia no existe la cuenta del dueno: creala." };
+  const problema = await revisarClaveArranque(claveArranque);
+  if (problema) return { ok: false, error: problema };
+  if (password.length < 10) return { ok: false, error: "La contrasena debe tener al menos 10 caracteres." };
+
+  const [dueno] = await clientePublico.$queryRaw<{ id: number; usuario: string }[]>`
+    SELECT id, usuario FROM plataforma.dueno ORDER BY id LIMIT 1`;
+  await clientePublico.$executeRaw`
+    UPDATE plataforma.dueno
+       SET password_hash = ${await hashPassword(password)}, intentos_fallidos = 0, bloqueado_hasta = NULL
+     WHERE id = ${dueno.id}`;
+  const entrada = await iniciarDueno(dueno.usuario, password);
+  return entrada.ok ? { ok: true, usuario: dueno.usuario } : entrada;
 }
 
 export async function iniciarDueno(
