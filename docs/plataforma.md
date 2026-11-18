@@ -43,6 +43,14 @@ clave de arranque. Desde ahi:
 
 El dueno no ve calificaciones, alumnos, pagos ni ningun otro dato de los colegios.
 
+**Si el administrador de un colegio olvida su acceso**: en el panel del
+dueno, en la fila del colegio, "Enlace de recuperacion" genera un enlace de
+un solo uso que vence en una hora (generar otro invalida el anterior). Se le
+envia al colegio; al abrirlo ve su usuario, pone una contrasena nueva y se
+cierran las sesiones que tuviera abiertas. Docentes y alumnos piden la suya
+desde "¿Olvidaste tu contrasena?" en el acceso de su colegio, y la
+administracion del colegio se la asigna.
+
 **Si el dueno olvida su usuario o contrasena**: en `/plataforma`, el enlace
 "¿Olvidaste tu usuario o contrasena?" pide la clave de arranque y una
 contrasena nueva; al aceptarla muestra el usuario y entra. La clave de

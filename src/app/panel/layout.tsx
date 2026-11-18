@@ -1,8 +1,5 @@
 import Link from "next/link";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { requerirSesion } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { RUTA_CAMBIO_PASSWORD, requerirSesion } from "@/lib/auth";
 import { obtenerInstitucion } from "@/lib/institucion";
 import {
   ETIQUETA_GRUPO,
@@ -31,20 +28,12 @@ function LogoColegio({ logo, nombre, chico }: { logo: string | null; nombre: str
 
 export const dynamic = "force-dynamic";
 
-const RUTA_CAMBIO = "/panel/cambiar-password";
+const RUTA_CAMBIO = RUTA_CAMBIO_PASSWORD;
 
 export default async function LayoutPanel({ children }: { children: React.ReactNode }) {
-  const sesion = await requerirSesion();
-
-  // Quien trae contrasena temporal no puede usar el resto del sistema.
-  const ruta = (await headers()).get("x-ruta-actual") ?? "";
-  const usuario = await db.usuario.findUnique({
-    where: { id: sesion.usuarioId },
-    select: { debeCambiarPassword: true },
-  });
-  if (usuario?.debeCambiarPassword && ruta !== RUTA_CAMBIO) {
-    redirect(RUTA_CAMBIO);
-  }
+  // La contrasena temporal la revisa cada pagina (requerirSesion); el layout
+  // no redirige, ver la explicacion en lib/auth.
+  const sesion = await requerirSesion({ revisarCambioPendiente: false });
 
   const institucion = await obtenerInstitucion();
   const logo = await urlLogo(institucion);

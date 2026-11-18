@@ -54,7 +54,7 @@ while IFS= read -r modulo; do
   rm -rf "${DESTINO:?}/$modulo"
   cp -r "$modulo" "$DESTINO/$modulo"
   copiados=$((copiados + 1))
-done < <(node scripts/cierre-dependencias.mjs "$raiz" prisma @prisma/engines)
+done < <(node scripts/cierre-dependencias.mjs "$raiz" prisma @prisma/engines bcryptjs)
 echo "    $copiados paquetes"
 
 # --- Cambio de plataforma: fuera lo de Linux, dentro lo de Windows --------
@@ -126,6 +126,9 @@ rm -f "$DESTINO"/.env "$DESTINO"/.env.*
 # Scripts de la red local.
 mkdir -p "$DESTINO/scripts"
 cp scripts/protocolo-red.mjs scripts/red-escolar.mjs scripts/elegir-papel.mjs "$DESTINO/scripts/"
+# Recuperar el acceso del administrador si se olvida la contrasena.
+cp scripts/restablecer-admin.mjs "$DESTINO/scripts/"
+cp scripts/restablecer-admin.cmd "$DESTINO/restablecer-admin.cmd"
 
 cp scripts/instalar-windows.ps1 "$DESTINO/instalar-windows.ps1"
 cp scripts/respaldar-windows.ps1 "$DESTINO/respaldar-windows.ps1"
@@ -161,7 +164,9 @@ for necesario in \
   "instalar-windows.ps1" \
   "respaldar-windows.ps1" \
   "restaurar-windows.ps1" \
-  "scripts/elegir-papel.mjs"
+  "scripts/elegir-papel.mjs" \
+  "scripts/restablecer-admin.mjs" \
+  "restablecer-admin.cmd"
 do
   if [[ ! -e "$DESTINO/$necesario" ]]; then
     echo "ERROR: falta $necesario en el paquete." >&2

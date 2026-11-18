@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { Alerta, Boton, Campo } from "@/components/ui";
 import { accionAcceder, type EstadoAcceso } from "./acciones";
@@ -39,6 +40,11 @@ export default function FormularioAcceso({
       <Boton type="submit" className="w-full" disabled={pendiente}>
         {pendiente ? "Verificando..." : "Entrar"}
       </Boton>
+      <p className="text-center text-sm">
+        <Link href="/acceso/recuperar" className="text-marca-600 hover:underline">
+          ¿Olvidaste tu contrasena?
+        </Link>
+      </p>
     </form>
   );
 }

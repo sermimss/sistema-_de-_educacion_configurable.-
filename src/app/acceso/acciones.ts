@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { iniciarSesion, cerrarSesion } from "@/lib/auth";
+import { RUTA_CAMBIO_PASSWORD, iniciarSesion, cerrarSesion } from "@/lib/auth";
 
 export type EstadoAcceso = { error?: string };
 
@@ -25,6 +25,8 @@ export async function accionAcceder(
   });
 
   if (!resultado.ok) return { error: resultado.error };
+  // Con contrasena temporal se va directo a cambiarla.
+  if (resultado.debeCambiarPassword) redirect(RUTA_CAMBIO_PASSWORD);
   // Solo rutas internas: "//otro-sitio.com" tambien empieza con "/".
   redirect(destino.startsWith("/") && !destino.startsWith("//") ? destino : "/panel");
 }

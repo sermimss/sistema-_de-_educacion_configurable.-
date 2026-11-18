@@ -69,7 +69,7 @@ export async function middleware(peticion: NextRequest) {
   } else if (pathname === "/api/marca/logo" && /^\d+$/.test(peticion.nextUrl.searchParams.get("c") ?? "")) {
     // El logo es publico; la direccion dice de que colegio es.
     cabeceras.set(CABECERA_COLEGIO, `id:${peticion.nextUrl.searchParams.get("c")}`);
-  } else if (pathname.startsWith("/plataforma") || pathname.startsWith("/alta")) {
+  } else if (pathname.startsWith("/plataforma") || pathname.startsWith("/alta") || pathname.startsWith("/recuperar/")) {
     // El panel del dueno y el alta no pertenecen a ningun colegio.
   } else if (colegioHost) {
     cabeceras.set(CABECERA_COLEGIO, `direccion:${colegioHost}`);

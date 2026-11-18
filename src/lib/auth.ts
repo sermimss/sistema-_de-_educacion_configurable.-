@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { RolUsuario } from "@prisma/client";
 import { db } from "./db";
@@ -177,11 +178,32 @@ export async function sesionActual(): Promise<DatosSesion | null> {
   return sesion;
 }
 
-export async function requerirSesion(): Promise<DatosSesion> {
+export const RUTA_CAMBIO_PASSWORD = "/panel/cambiar-password";
+
+/// La sesion de quien entra a una pantalla del panel. Quien trae una
+/// contrasena temporal solo puede estar en la pantalla para cambiarla.
+///
+/// La revision vive aqui, en cada pagina, y no en el layout del panel: al
+/// navegar dentro del panel Next no vuelve a dibujar el layout, asi que una
+/// revision ahi se podia saltar con los enlaces del menu; y una redireccion
+/// desde el layout dejaba la pantalla en blanco pidiendo lo mismo sin fin.
+export async function requerirSesion(
+  opciones: { revisarCambioPendiente?: boolean } = {}
+): Promise<DatosSesion> {
   const sesion = await sesionActual();
   if (!sesion) {
     const colegio = modoPlataforma() ? await colegioActual() : null;
     redirect(colegio && motivoColegioCerrado(colegio.estado) ? `/acceso?aviso=${colegio.estado}` : "/acceso");
+  }
+  if (opciones.revisarCambioPendiente !== false) {
+    const ruta = (await headers()).get("x-ruta-actual") ?? "";
+    if (ruta !== RUTA_CAMBIO_PASSWORD) {
+      const usuario = await db.usuario.findUnique({
+        where: { id: sesion.usuarioId },
+        select: { debeCambiarPassword: true },
+      });
+      if (usuario?.debeCambiarPassword) redirect(RUTA_CAMBIO_PASSWORD);
+    }
   }
   return sesion;
 }

@@ -9,7 +9,7 @@ import {
   accionRevocarCodigo,
   accionSalirDueno,
 } from "../acciones";
-import { FormularioNuevoCodigo } from "../Formularios";
+import { BotonEnlaceRecuperacion, FormularioNuevoCodigo } from "../Formularios";
 
 export const dynamic = "force-dynamic";
 
@@ -189,6 +189,11 @@ export default async function PanelDueno({
                             <BotonEstado colegioId={colegio.id} estado="SUSPENDIDO" texto="Suspender" peligro />
                           )}
                         </div>
+                        {colegio.estado !== "CONFIGURANDO" && (
+                          <div className="mt-1 flex justify-end">
+                            <BotonEnlaceRecuperacion colegioId={colegio.id} nombre={colegio.nombre} />
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );

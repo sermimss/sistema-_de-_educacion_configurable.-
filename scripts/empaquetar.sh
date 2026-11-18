@@ -51,7 +51,7 @@ while IFS= read -r modulo; do
   rm -rf "${DESTINO:?}/$modulo"
   cp -r "$modulo" "$DESTINO/$modulo"
   copiados=$((copiados + 1))
-done < <(node scripts/cierre-dependencias.mjs "$raiz" prisma @prisma/engines)
+done < <(node scripts/cierre-dependencias.mjs "$raiz" prisma @prisma/engines bcryptjs)
 echo "    $copiados paquetes"
 
 # Next copia el .env del desarrollo dentro de standalone. Ese archivo trae la
@@ -75,6 +75,11 @@ rm -f "$DESTINO"/node_modules/@prisma/engines/libquery_engine-*.so.node
 # computadora manda o se suma a otra instalacion del colegio.
 mkdir -p "$DESTINO/scripts"
 cp scripts/protocolo-red.mjs scripts/red-escolar.mjs scripts/elegir-papel.mjs "$DESTINO/scripts/"
+# Recuperar el acceso del administrador si se olvida la contrasena.
+cp scripts/restablecer-admin.mjs "$DESTINO/scripts/"
+cp scripts/restablecer-admin.sh "$DESTINO/restablecer-admin.sh"
+chmod +x "$DESTINO/restablecer-admin.sh"
+cp scripts/restablecer-admin.cmd "$DESTINO/restablecer-admin.cmd"
 chmod +x "$DESTINO/scripts/red-escolar.mjs" "$DESTINO/scripts/elegir-papel.mjs"
 
 cp scripts/arrancar-paquete.sh "$DESTINO/arrancar.sh"

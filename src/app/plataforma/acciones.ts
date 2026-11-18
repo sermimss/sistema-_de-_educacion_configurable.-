@@ -3,14 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cerrarSesionDueno, crearPrimerDueno, iniciarDueno, recuperarDueno, requerirDueno } from "@/lib/dueno";
+import { headers } from "next/headers";
 import {
   cambiarEstadoColegio,
+  colegioPorId,
+  crearEnlaceRecuperacion,
   crearCodigoAlta,
   guardarNotasColegio,
   revocarCodigo,
 } from "@/lib/plataforma";
 
-export type EstadoDueno = { error?: string; ok?: boolean; mensaje?: string; codigo?: string };
+export type EstadoDueno = { error?: string; ok?: boolean; mensaje?: string; codigo?: string; enlace?: string };
 
 export async function accionPrimerDueno(_p: EstadoDueno, formData: FormData): Promise<EstadoDueno> {
   const password = String(formData.get("password") ?? "");
@@ -81,3 +84,19 @@ export async function accionNotasColegio(formData: FormData) {
   );
   revalidatePath("/plataforma/panel");
 }
+
+/// Enlace de un solo uso (una hora) para que el administrador de un colegio
+/// recupere su acceso. Se muestra una sola vez; el dueno se lo envia.
+export async function accionEnlaceRecuperacion(_p: EstadoDueno, formData: FormData): Promise<EstadoDueno> {
+  await requerirDueno();
+  const colegio = await colegioPorId(Number(formData.get("colegioId")) || 0);
+  if (!colegio || colegio.estado === "CONFIGURANDO") {
+    return { error: "Ese colegio aun no termina su configuracion." };
+  }
+  const token = await crearEnlaceRecuperacion(colegio.id);
+  const cabeceras = await headers();
+  const host = cabeceras.get("x-forwarded-host") ?? cabeceras.get("host") ?? "localhost";
+  const protocolo = cabeceras.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return { ok: true, enlace: `${protocolo}://${host}/recuperar/${token}` };
+}
+

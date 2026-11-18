@@ -6,6 +6,7 @@ import {
   accionCrearCodigo,
   accionEntrarDueno,
   accionPrimerDueno,
+  accionEnlaceRecuperacion,
   accionRecuperarDueno,
   type EstadoDueno,
 } from "./acciones";
@@ -95,3 +96,28 @@ export function FormularioNuevoCodigo() {
     </form>
   );
 }
+
+export function BotonEnlaceRecuperacion({ colegioId, nombre }: { colegioId: number; nombre: string }) {
+  const [estado, accion, pendiente] = useActionState<EstadoDueno, FormData>(accionEnlaceRecuperacion, {});
+  return (
+    <form action={accion} className="space-y-1">
+      <input type="hidden" name="colegioId" value={colegioId} />
+      <button
+        type="submit"
+        disabled={pendiente}
+        className="rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
+        title={`Para que el administrador de ${nombre} recupere su acceso`}
+      >
+        {pendiente ? "..." : "Enlace de recuperacion"}
+      </button>
+      {estado.error && <p className="text-xs text-red-600">{estado.error}</p>}
+      {estado.enlace && (
+        <div className="max-w-xs rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-left text-xs text-slate-700">
+          <p className="break-all font-mono select-all" data-enlace-recuperacion>{estado.enlace}</p>
+          <p className="mt-1">Envialo al administrador de {nombre}. Sirve una vez y vence en 1 hora.</p>
+        </div>
+      )}
+    </form>
+  );
+}
+

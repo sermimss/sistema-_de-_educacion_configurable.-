@@ -41,6 +41,8 @@ export default async function PaginaPanel() {
     }),
   ]);
 
+  const accesosPendientes =
+    sesion.rol === "ADMIN" ? await db.solicitudAcceso.count({ where: { estado: "PENDIENTE" } }) : 0;
   const escala = await db.escalaCalificacion.findFirst({ where: { predeterminada: true } });
   const faltasAlerta = await configNumero("asistencia.faltas_consecutivas_alerta", 3);
   const diaVencimiento = await configNumero("finanzas.dia_vencimiento_default", 10);
@@ -60,6 +62,12 @@ export default async function PaginaPanel() {
 
       {sesion.rol === "ADMIN" && (
         <>
+          {accesosPendientes > 0 && (
+            <Alerta tipo="aviso">
+              {accesosPendientes} persona(s) olvidaron su contrasena y piden acceso.{" "}
+              <Link href="/panel/accesos" className="font-medium underline">Atender</Link>
+            </Alerta>
+          )}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Indicador etiqueta="Alumnos activos" valor={alumnos} />
             <Indicador etiqueta="Docentes activos" valor={docentes} />

@@ -36,6 +36,7 @@ export const NAVEGACION: ItemNavegacion[] = [
 
   { etiqueta: "Estructura academica", ruta: "/panel/academico", roles: ["ADMIN"], fase: 1, grupo: "sistema" },
   { etiqueta: "Configuracion", ruta: "/panel/configuracion", roles: ["ADMIN"], fase: 1, grupo: "sistema" },
+  { etiqueta: "Solicitudes de acceso", ruta: "/panel/accesos", roles: ["ADMIN"], fase: 1, grupo: "sistema" },
   { etiqueta: "Bitacora", ruta: "/panel/bitacora", roles: ["ADMIN"], fase: 1, grupo: "sistema" },
 ];
 

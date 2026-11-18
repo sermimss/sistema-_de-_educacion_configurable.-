@@ -599,11 +599,12 @@ model Usuario {
   creadoEn            DateTime   @default(now())
   actualizadoEn       DateTime   @updatedAt
 
-  alumno         Alumno?
-  empleado       Empleado?
-  sesiones       Sesion[]
-  notificaciones Notificacion[]
-  bitacoras      Bitacora[]
+  alumno            Alumno?
+  empleado          Empleado?
+  sesiones          Sesion[]
+  notificaciones    Notificacion[]
+  bitacoras         Bitacora[]
+  solicitudesAcceso SolicitudAcceso[]
 
   @@index([rol, activo])
 }
@@ -1589,4 +1590,32 @@ model SolicitudDocumento {
 
   @@index([estado])
   @@index([alumnoId])
+}
+
+// =====================================================================
+// RECUPERACION DE ACCESO
+// =====================================================================
+
+enum EstadoSolicitudAcceso {
+  PENDIENTE
+  ATENDIDA
+  DESCARTADA
+}
+
+/// Alguien olvido su contrasena y lo pidio desde la pantalla de acceso. La
+/// administracion del colegio le asigna una contrasena temporal.
+model SolicitudAcceso {
+  id            Int                   @id @default(autoincrement())
+  usuarioId     Int
+  mensaje       String?
+  estado        EstadoSolicitudAcceso @default(PENDIENTE)
+  ip            String?
+  creadaEn      DateTime              @default(now())
+  atendidaEn    DateTime?
+  atendidaPorId Int?
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([estado])
+  @@index([usuarioId])
 }

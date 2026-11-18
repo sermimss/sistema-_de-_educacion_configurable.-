@@ -1,4 +1,4 @@
-import { createHash, randomInt } from "crypto";
+import { createHash, randomBytes, randomInt } from "crypto";
 import { execFile } from "child_process";
 import { existsSync } from "fs";
 import path from "path";
@@ -85,6 +85,16 @@ const TABLAS = [
    )`,
   // Cada vez que alguien escribe la clave de arranque (crear la cuenta del
   // dueno o recuperarla), para frenar a quien intente adivinarla.
+  // Enlaces de un solo uso que genera el dueno para que el administrador de
+  // un colegio recupere su acceso. Solo se guarda la huella del enlace.
+  `CREATE TABLE IF NOT EXISTS plataforma.recuperacion_colegio (
+     id SERIAL PRIMARY KEY,
+     colegio_id INT NOT NULL REFERENCES plataforma.colegio(id),
+     token_hash TEXT NOT NULL UNIQUE,
+     creado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
+     vence_en TIMESTAMPTZ NOT NULL,
+     usado_en TIMESTAMPTZ
+   )`,
   `CREATE TABLE IF NOT EXISTS plataforma.intento_clave (
      id SERIAL PRIMARY KEY,
      creado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -385,3 +395,54 @@ export function prepararEsquema(esquema: string): Promise<void> {
   tarea.catch(() => migraciones.delete(esquema));
   return tarea;
 }
+
+// ---------------------------------------------------------------------------
+// Recuperacion del administrador de un colegio
+// ---------------------------------------------------------------------------
+
+const MINUTOS_ENLACE = 60;
+
+function huellaEnlace(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+/// Crea un enlace de un solo uso, valido una hora. Invalida los anteriores
+/// del mismo colegio que no se hayan usado: solo sirve el ultimo que se dio.
+export async function crearEnlaceRecuperacion(colegioId: number): Promise<string> {
+  await asegurarTablasPlataforma();
+  const token = randomBytes(32).toString("base64url");
+  await clientePublico.$transaction([
+    clientePublico.$executeRaw`
+      UPDATE plataforma.recuperacion_colegio SET vence_en = now()
+       WHERE colegio_id = ${colegioId} AND usado_en IS NULL AND vence_en > now()`,
+    clientePublico.$executeRaw`
+      INSERT INTO plataforma.recuperacion_colegio (colegio_id, token_hash, vence_en)
+      VALUES (${colegioId}, ${huellaEnlace(token)}, now() + make_interval(mins => ${MINUTOS_ENLACE}::int))`,
+  ]);
+  return token;
+}
+
+export type EnlaceRecuperacion = { id: number; colegio: ColegioPlataforma };
+
+/// El enlace vigente y su colegio, o null si no existe, ya se uso o vencio.
+export async function buscarEnlaceRecuperacion(token: string): Promise<EnlaceRecuperacion | null> {
+  if (!/^[A-Za-z0-9_-]{30,60}$/.test(token)) return null;
+  await asegurarTablasPlataforma();
+  const [fila] = await clientePublico.$queryRaw<{ id: number; colegio_id: number }[]>`
+    SELECT id, colegio_id FROM plataforma.recuperacion_colegio
+     WHERE token_hash = ${huellaEnlace(token)} AND usado_en IS NULL AND vence_en > now()`;
+  if (!fila) return null;
+  const [colegio] = await clientePublico.$queryRaw<FilaColegio[]>`
+    SELECT * FROM plataforma.colegio WHERE id = ${fila.colegio_id}`;
+  if (!colegio || colegio.estado === "CONFIGURANDO" || !colegio.esquema) return null;
+  return { id: fila.id, colegio: aColegio(colegio) };
+}
+
+/// Gasta el enlace. Devuelve false si otro lo gasto un instante antes.
+export async function gastarEnlaceRecuperacion(id: number): Promise<boolean> {
+  const cambiadas = await clientePublico.$executeRaw`
+    UPDATE plataforma.recuperacion_colegio SET usado_en = now()
+     WHERE id = ${id} AND usado_en IS NULL AND vence_en > now()`;
+  return cambiadas === 1;
+}
+

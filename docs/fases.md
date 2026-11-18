@@ -587,3 +587,26 @@ Verificado: menu en celular 39 (nueva), documentos y marca 43, plataforma 42,
 humo 26, control escolar 28, academico 40, finanzas 40, integridad 27, nomina
 41, grupos y horario 33, asistente 29.
 
+## Recuperar el acceso
+
+- **Dueno de la plataforma**: con la clave de arranque del servidor pone una
+  contrasena nueva y ve su usuario. Tras 5 claves equivocadas en 15 minutos
+  se frenan los intentos.
+- **Administrador de un colegio (plataforma)**: el dueno genera un enlace de
+  un solo uso que vence en una hora.
+- **Docentes y alumnos**: "¿Olvidaste tu contrasena?" en el acceso deja una
+  solicitud; la administracion asigna una contrasena temporal que se muestra
+  una sola vez. La respuesta no revela que cuentas existen.
+- **Administrador en una instalacion local**: `restablecer-admin` en la
+  computadora del servidor (Windows y Linux), incluido en los paquetes.
+- Al restablecer, se quita el bloqueo por intentos y se cierran las sesiones
+  abiertas de esa cuenta.
+- Se corrigio un error previo: tras entrar con una contrasena temporal, la
+  pantalla para cambiarla quedaba en blanco pidiendo lo mismo sin fin, y con
+  los enlaces del menu se podia evitar el cambio. La revision ahora vive en
+  cada pantalla del panel.
+
+Verificado: recuperacion de acceso 20 (nueva), plataforma 58, menu en
+celular 39, documentos y marca 43, humo 26, control escolar 28, academico 40,
+finanzas 40, integridad 27, nomina 41, grupos y horario 33, asistente 29.
+

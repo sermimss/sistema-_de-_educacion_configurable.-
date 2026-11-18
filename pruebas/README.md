@@ -38,6 +38,20 @@ distinto para las claves.
 npm run prueba:control
 ```
 
+## recuperacion-acceso.mjs
+
+20 comprobaciones sobre una base **recien sembrada con los datos de
+demostracion**, con `DATABASE_URL` apuntando a esa base. Un docente pide una
+contrasena nueva desde el acceso (sin revelar que cuentas existen ni duplicar
+solicitudes), la administracion le asigna una temporal, el docente entra,
+no puede saltarse el cambio con el menu y la cambia; una solicitud se
+descarta sin tocar la contrasena; y el comando local `restablecer-admin`
+devuelve el acceso al administrador y cierra sus sesiones abiertas.
+
+```bash
+DATABASE_URL=... npm run prueba:recuperacion
+```
+
 ## menu-movil.mjs
 
 39 comprobaciones con el navegador en tamano de celular (390 x 844) sobre una
@@ -69,14 +83,15 @@ npm run prueba:documentos
 
 ## plataforma.mjs
 
-47 comprobaciones de la plataforma multicolegio sobre una base **recien
+58 comprobaciones de la plataforma multicolegio sobre una base **recien
 migrada y vacia**, con el servidor en modo plataforma. Recorre la pregunta de
 entrada, la cuenta del dueno con su clave de arranque, los codigos de alta, el
 alta de dos colegios con el asistente, el bloqueo hasta marcar el pago, la
 separacion de datos entre colegios (mismo usuario en los dos, materias, logo
 y colores que no se ven de uno a otro, sesion que solo abre su propio
 colegio), la suspension y la recuperacion de la cuenta del dueno con la clave
-de arranque (incluido el freno tras 5 claves equivocadas).
+de arranque (incluido el freno tras 5 claves equivocadas) y el enlace de un
+solo uso con el que el administrador de un colegio recupera su acceso.
 
 ```bash
 MODO_PLATAFORMA=1 PLATAFORMA_CLAVE_ARRANQUE=clave-de-arranque-de-prueba npm start

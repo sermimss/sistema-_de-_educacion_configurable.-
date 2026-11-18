@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export default async function PaginaAcceso({
   searchParams,
 }: {
-  searchParams: Promise<{ destino?: string; instalado?: string; aviso?: string }>;
+  searchParams: Promise<{ destino?: string; instalado?: string; aviso?: string; recuperado?: string }>;
 }) {
   const params = await searchParams;
 
@@ -55,6 +55,13 @@ export default async function PaginaAcceso({
           {institucion?.lema && <p className="mt-1 text-sm text-slate-500">{institucion.lema}</p>}
         </div>
         <Tarjeta>
+          {params.recuperado && !cerrado && (
+            <div className="mb-4">
+              <Alerta tipo="exito">
+                Tu contrasena quedo cambiada. Tu usuario es <strong>{params.recuperado}</strong>.
+              </Alerta>
+            </div>
+          )}
           {cerrado ? (
             <Alerta tipo="aviso">{cerrado}</Alerta>
           ) : (

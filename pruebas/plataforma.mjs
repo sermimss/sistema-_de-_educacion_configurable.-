@@ -316,6 +316,54 @@ await adivino.getByRole("button", { name: "Poner contrasena nueva y entrar" }).c
 await adivino.waitForTimeout(1500);
 comprobar("Tras 5 claves equivocadas se frena la recuperacion", (await limpio(adivino)).includes("Demasiados intentos"));
 
+// ---------- El administrador de un colegio olvido su acceso ----------
+async function generarEnlace(direccion) {
+  await conNueva.goto(`${BASE}/plataforma/panel`);
+  await conNueva.locator(`tr[data-colegio="${direccion}"]`).getByRole("button", { name: "Enlace de recuperacion" }).click();
+  await conNueva.waitForSelector("[data-enlace-recuperacion]", { timeout: 15000 });
+  return (await conNueva.textContent("[data-enlace-recuperacion]")).trim();
+}
+const primerEnlace = await generarEnlace("aurora");
+const enlace = await generarEnlace("aurora");
+comprobar("El dueno genera un enlace de recuperacion", /\/recuperar\/[A-Za-z0-9_-]{30,}$/.test(enlace), enlace);
+
+const perdido = await nueva();
+await perdido.goto(primerEnlace);
+comprobar("Al generar uno nuevo, el anterior deja de servir", (await limpio(perdido)).includes("ya se uso o vencio"));
+await perdido.goto(`${BASE}/recuperar/inventado-inventado-inventado-1234`);
+comprobar("Un enlace inventado no sirve", (await limpio(perdido)).includes("ya se uso o vencio"));
+
+await perdido.goto(enlace);
+comprobar("El enlace muestra el colegio y el usuario del administrador",
+  (await limpio(perdido)).includes("Colegio Aurora") && (await perdido.textContent("[data-usuario-recuperado]")).includes("direccion"));
+await perdido.getByLabel(/^Contrasena nueva\*?$/).fill("corta");
+await perdido.getByLabel(/^Confirma la contrasena\*?$/).fill("corta");
+await perdido.getByRole("button", { name: "Guardar y entrar a mi colegio" }).click();
+await perdido.waitForTimeout(1500);
+comprobar("Pide una contrasena con letras y numeros", (await limpio(perdido)).includes("al menos 8 caracteres"));
+await perdido.getByLabel(/^Contrasena nueva\*?$/).fill("AuroraNueva2026");
+await perdido.getByLabel(/^Confirma la contrasena\*?$/).fill("AuroraNueva2026");
+await perdido.getByRole("button", { name: "Guardar y entrar a mi colegio" }).click();
+await perdido.waitForURL("**/acceso**", { timeout: 15000 });
+comprobar("Lo lleva al acceso de su colegio con su usuario a la vista",
+  (await limpio(perdido)).includes("Colegio Aurora") && (await limpio(perdido)).includes("Tu usuario es direccion"));
+await entrar(perdido, "aurora", "direccion", "AuroraNueva2026");
+comprobar("Entra con la contrasena nueva", perdido.url().endsWith("/panel"));
+await cliente2.goto(`${BASE}/panel`);
+comprobar("Las sesiones abiertas con la contrasena anterior se cierran", !cliente2.url().endsWith("/panel"));
+const reuso2 = await nueva();
+await reuso2.goto(enlace);
+comprobar("El enlace solo sirve una vez", (await limpio(reuso2)).includes("ya se uso o vencio"));
+await conNueva.goto(`${BASE}/plataforma/panel`);
+await conNueva.locator('tr[data-colegio="vanguardia"]').getByRole("button", { name: "Reactivar" }).click();
+await conNueva.waitForTimeout(1500);
+const vang = await nueva();
+await entrar(vang, "vanguardia", "direccion", "Vanguardia2026");
+comprobar("Reactivar devuelve el acceso al colegio suspendido", vang.url().endsWith("/panel"));
+await vang.context().clearCookies();
+await entrar(vang, "vanguardia", "direccion", "AuroraNueva2026");
+comprobar("La contrasena nueva no sirve en otro colegio", !vang.url().endsWith("/panel"));
+
 await navegador.close();
 console.log(`\n${fallos.length === 0 ? "TODAS LAS PRUEBAS DE LA PLATAFORMA PASARON" : `FALLARON ${fallos.length}: ${fallos.join(", ")}`}`);
 process.exit(fallos.length === 0 ? 0 : 1);

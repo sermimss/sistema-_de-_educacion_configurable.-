@@ -170,6 +170,21 @@ el codigo.
 El asistente **solo aparece una vez**. Si el sistema ya tiene una institucion
 registrada, esa ruta redirige al inicio de sesion.
 
+### Si alguien olvida su contrasena
+
+- **Docentes y alumnos**: en la pantalla de acceso, "¿Olvidaste tu
+  contrasena?". La solicitud llega a la administracion (Sistema >
+  Solicitudes de acceso), que les asigna una contrasena temporal.
+- **El administrador**, si no hay otro administrador que lo ayude: en la
+  computadora donde esta la base (la principal, si hay varias en red):
+  - Windows: clic derecho en `restablecer-admin.cmd` > Ejecutar como
+    administrador.
+  - Linux: `sudo ./restablecer-admin.sh` en la carpeta de instalacion.
+
+  Muestra el usuario y una contrasena temporal; al entrar, el sistema pide
+  cambiarla. Solo funciona con acceso a esa computadora y a su archivo
+  `entorno`, que es lo que lo hace seguro.
+
 ## 7. Como entran las demas computadoras
 
 Escriben en su navegador la direccion que imprimio el instalador, por ejemplo
