@@ -22,6 +22,7 @@ export const NAVEGACION: ItemNavegacion[] = [
   { etiqueta: "Importar CSV", ruta: "/panel/importar", roles: ["ADMIN"], fase: 2, grupo: "control" },
 
   { etiqueta: "Horarios", ruta: "/panel/horarios", roles: ["ADMIN"], fase: 3, grupo: "academico" },
+  { etiqueta: "Cambios de horario", ruta: "/panel/cambios-horario", roles: ["ADMIN"], fase: 3, grupo: "academico" },
   { etiqueta: "Asistencia", ruta: "/panel/asistencia", roles: ["ADMIN", "DOCENTE"], fase: 3, grupo: "academico" },
   { etiqueta: "Calificaciones", ruta: "/panel/calificaciones", roles: ["ADMIN", "DOCENTE"], fase: 3, grupo: "academico" },
   { etiqueta: "Mis clases", ruta: "/panel/mis-clases", roles: ["DOCENTE"], fase: 3, grupo: "academico" },

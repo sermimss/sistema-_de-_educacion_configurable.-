@@ -860,11 +860,77 @@ model HorarioClase {
   horaFin    String
   aulaId     Int?
 
-  clase  Clase          @relation(fields: [claseId], references: [id], onDelete: Cascade)
-  modulo ModuloHorario? @relation(fields: [moduloId], references: [id], onDelete: SetNull)
-  aula   Aula?          @relation(fields: [aulaId], references: [id], onDelete: SetNull)
+  clase       Clase                @relation(fields: [claseId], references: [id], onDelete: Cascade)
+  modulo      ModuloHorario?       @relation(fields: [moduloId], references: [id], onDelete: SetNull)
+  aula        Aula?                @relation(fields: [aulaId], references: [id], onDelete: SetNull)
+  solicitudes SolicitudHorario[]
+  cambios     CambioHorarioFecha[]
 
   @@index([diaSemana])
+}
+
+enum TipoCambioHorario {
+  /// Cambia el bloque de ahi en adelante.
+  PERMANENTE
+  /// Solo la clase de una fecha se pasa a otra fecha u hora (reposicion).
+  UNA_FECHA
+}
+
+enum EstadoSolicitudHorario {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+  CANCELADA
+}
+
+/// El docente pide mover un bloque de su horario y la administracion lo
+/// aprueba (tal cual o ajustado) o lo rechaza con un motivo. Solo existe si
+/// el colegio activa "El docente puede editar su horario".
+model SolicitudHorario {
+  id            Int                    @id @default(autoincrement())
+  horarioId     Int
+  tipo          TipoCambioHorario
+  /// UNA_FECHA: la clase que se mueve y a que fecha pasa.
+  fechaOriginal DateTime?              @db.Date
+  nuevaFecha    DateTime?              @db.Date
+  /// PERMANENTE: el dia nuevo (1 lunes ... 7 domingo).
+  nuevoDia      Int?
+  horaInicio    String
+  horaFin       String
+  /// Solo la administracion cambia el aula al ajustar.
+  aulaId        Int?
+  motivo        String
+  estado        EstadoSolicitudHorario @default(PENDIENTE)
+  /// Motivo del rechazo o nota de la administracion.
+  respuesta     String?
+  ajustada      Boolean                @default(false)
+  solicitadoPor Int
+  docenteNombre String?
+  creadaEn      DateTime               @default(now())
+  resueltaPor   Int?
+  resueltaEn    DateTime?
+
+  horario HorarioClase @relation(fields: [horarioId], references: [id], onDelete: Cascade)
+
+  @@index([estado])
+}
+
+/// Un bloque que, solo en una fecha, se da en otro dia u hora.
+model CambioHorarioFecha {
+  id            Int      @id @default(autoincrement())
+  horarioId     Int
+  fechaOriginal DateTime @db.Date
+  fechaNueva    DateTime @db.Date
+  horaInicio    String
+  horaFin       String
+  aulaId        Int?
+  solicitudId   Int?
+  creadoEn      DateTime @default(now())
+
+  horario HorarioClase @relation(fields: [horarioId], references: [id], onDelete: Cascade)
+
+  @@unique([horarioId, fechaOriginal])
+  @@index([fechaNueva])
 }
 
 /// Grabacion de una clase de Google Meet. El video vive en el Drive del

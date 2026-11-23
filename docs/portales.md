@@ -29,7 +29,8 @@ Menu: Panel, Avisos, Asistencia, Calificaciones, Mis clases, Grabaciones, Mi hor
 | Puede | Detalle |
 |---|---|
 | Ver sus clases de hoy | El panel muestra sus clases del dia; la que esta por empezar (10 minutos antes) o en curso aparece marcada **en curso** con su boton de Meet. |
-| Ver su horario semanal | *Mi horario*: cuadricula de la semana con sus clases, salon y grupo. |
+| Ver su horario semanal | *Mi horario*: cuadricula de la semana con sus clases, salon y grupo, incluidas las reposiciones de esa semana. |
+| Pedir cambios de horario | Solo si el colegio lo activa. En *Mi horario* elige uno de sus bloques y pide moverlo **de ahi en adelante** o **solo en una fecha** (reposicion), con el motivo. No puede enviar un cambio que choque con otra clase suya, del grupo o del salon. Su horario no cambia hasta que la administracion lo aprueba; ve si se aprobo, se ajusto o se rechazo (con el motivo) y puede cancelar las pendientes. |
 | Poner la sala de Google Meet | *Mis clases*: pega el enlace de Meet en cada clase, o una sola sala para **todas** sus clases. Solo acepta enlaces de `meet.google.com` (o el codigo `abc-defg-hij`); se borra dejando el campo vacio. |
 | Compartir grabaciones | *Grabaciones* (o el boton en cada clase de *Mis clases*): pega el enlace de Drive de la grabacion de Meet, la fecha de la clase y un titulo opcional. Ve todas las suyas, tambien las vencidas, y que alumnos abrieron cada una y cuantas veces. |
 | Pasar lista | *Asistencia*, solo de sus clases. |
@@ -76,7 +77,25 @@ En *Configuracion → Portales*:
 | Portal del alumno: estado de cuenta | Si | *Estado de cuenta*. |
 | Portal del alumno: avisos | Si | *Avisos* y los avisos recientes en su panel. |
 | El docente puede ver adeudos de sus alumnos | No | Marca "adeudo" en las listas de asistencia y calificaciones del docente, sin montos. |
-| El docente puede editar su horario | No | **Aun no tiene efecto**: el horario lo arma la administracion en *Horarios*. |
+| El docente puede editar su horario | No | El docente puede **pedir** cambios de su horario; la administracion los aprueba en *Cambios de horario*. Apagada, el docente no puede enviar solicitudes, pero conserva su historial. |
+
+## Cambios de horario con aprobacion
+
+1. El docente pide el cambio en *Mi horario* (con la opcion activada).
+2. La administracion ve un aviso en su panel y la solicitud en *Cambios de
+   horario*: horario actual, lo pedido, el motivo y si algo cambio desde
+   entonces y ahora choca.
+3. Puede **aprobar** tal cual o **ajustando** dia, fecha, horas o salon, con
+   una nota para el docente y, si lo marca, **un aviso para los alumnos** de
+   la clase; o **rechazar** escribiendo el motivo. Al aprobar se vuelven a
+   revisar los choques.
+4. Un cambio permanente modifica el bloque. Una reposicion solo cambia esa
+   fecha: esa semana el bloque aparece tachado con a donde se movio, y la
+   clase aparece en su nueva fecha y hora; las demas semanas siguen igual.
+   El lugar que deja libre una clase movida queda disponible ese dia.
+
+Pendiente: la pantalla *Horarios* de la administracion muestra el horario
+semanal fijo, sin las reposiciones de una fecha.
 
 ## Google Meet
 
@@ -132,3 +151,6 @@ En *Estructura academica → Cambiar modalidad* (solo administracion):
 
 En los dos casos conviene revisar despues el mapa curricular: el reparto es
 proporcional, no una equivalencia oficial.
+
+Para que el bloqueo de las grabaciones sea completo (que el sistema quite el
+permiso en Drive), ver `docs/google-workspace.md`.

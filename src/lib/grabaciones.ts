@@ -6,6 +6,10 @@
 /// mismo dia del mes siguiente a la clase (clase del 3 de marzo: hasta el 3 de
 /// abril, inclusive). Despues solo lo ven el docente y la administracion.
 
+import { aFechaDia, textoDeFecha } from "./fechasDia";
+
+export { aFechaDia, hoyEnZona, textoDeFecha } from "./fechasDia";
+
 /// Acepta el enlace que da Drive al compartir el video y lo deja limpio.
 /// Solo Google Drive: los alumnos le dan clic con confianza.
 export function normalizarEnlaceGrabacion(
@@ -35,15 +39,6 @@ export function normalizarEnlaceGrabacion(
   };
 }
 
-/// "YYYY-MM-DD" de hoy en la zona del colegio.
-export function hoyEnZona(zona: string, fecha = new Date()): string {
-  try {
-    return new Intl.DateTimeFormat("en-CA", { timeZone: zona, year: "numeric", month: "2-digit", day: "2-digit" }).format(fecha);
-  } catch {
-    return hoyEnZona("America/Mexico_City", fecha);
-  }
-}
-
 /// El mismo dia del mes siguiente. Si ese mes no tiene ese dia (31 de enero),
 /// el ultimo dia del mes (28 o 29 de febrero).
 export function fechaDeVencimiento(fechaClase: string): string {
@@ -53,15 +48,6 @@ export function fechaDeVencimiento(fechaClase: string): string {
   const diasDelMes = new Date(Date.UTC(siguienteAnio, siguienteMes, 0)).getUTCDate();
   const d = Math.min(dia, diasDelMes);
   return `${siguienteAnio}-${String(siguienteMes).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-}
-
-/// Las fechas se guardan como dia de calendario (medianoche UTC).
-export function aFechaDia(texto: string): Date {
-  return new Date(`${texto}T00:00:00.000Z`);
-}
-
-export function textoDeFecha(fecha: Date): string {
-  return fecha.toISOString().slice(0, 10);
 }
 
 /// Disponible para los alumnos hasta el final del dia de vencimiento.

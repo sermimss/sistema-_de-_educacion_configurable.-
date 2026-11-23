@@ -6,6 +6,7 @@ import { configBool, configNumero, configTexto } from "@/lib/configuracion";
 import { alumnoDeSesion } from "@/lib/alumnoSesion";
 import { bloquesDelAlumno, bloquesDelDocente } from "@/lib/horarioSemanal";
 import { ahoraEnZona } from "@/lib/reuniones";
+import { hoyEnZona } from "@/lib/fechasDia";
 import { avisosDelAlumno } from "@/lib/avisos";
 import { ClasesDeHoy, type BloqueHorario } from "@/components/CuadroHorario";
 import { formatearDia } from "@/lib/formato";
@@ -48,12 +49,13 @@ export default async function PaginaPanel() {
 
   // Las clases de hoy del docente o del alumno, con su boton de Meet.
   const ahora = ahoraEnZona(institucion?.zonaHoraria ?? "America/Mexico_City");
+  const hoyColegio = hoyEnZona(institucion?.zonaHoraria ?? "America/Mexico_City");
   let bloquesHoy: BloqueHorario[] | null = null;
   if (sesion.rol === "DOCENTE") {
-    bloquesHoy = await bloquesDelDocente(sesion.usuarioId);
+    bloquesHoy = await bloquesDelDocente(sesion.usuarioId, hoyColegio);
   } else if (sesion.rol === "ALUMNO" && (await configBool("portales.alumno_ve_horario", true))) {
     const alumno = await alumnoDeSesion(sesion.usuarioId);
-    bloquesHoy = alumno ? (await bloquesDelAlumno(alumno.id)).bloques : null;
+    bloquesHoy = alumno ? (await bloquesDelAlumno(alumno.id, hoyColegio)).bloques : null;
   }
   // Los avisos mas recientes para el alumno.
   let avisosRecientes: Awaited<ReturnType<typeof avisosDelAlumno>> = [];
@@ -64,6 +66,20 @@ export default async function PaginaPanel() {
 
   const accesosPendientes =
     sesion.rol === "ADMIN" ? await db.solicitudAcceso.count({ where: { estado: "PENDIENTE" } }) : 0;
+  // Al docente: lo que le contestaron de sus cambios de horario esta semana.
+  const respuestasHorario =
+    sesion.rol === "DOCENTE"
+      ? await db.solicitudHorario.findMany({
+          where: {
+            solicitadoPor: sesion.usuarioId,
+            estado: { in: ["APROBADA", "RECHAZADA"] },
+            resueltaEn: { gte: new Date(Date.now() - 7 * 86_400_000) },
+          },
+          select: { estado: true },
+        })
+      : [];
+  const cambiosPendientes =
+    sesion.rol === "ADMIN" ? await db.solicitudHorario.count({ where: { estado: "PENDIENTE" } }) : 0;
   const escala = await db.escalaCalificacion.findFirst({ where: { predeterminada: true } });
   const faltasAlerta = await configNumero("asistencia.faltas_consecutivas_alerta", 3);
   const diaVencimiento = await configNumero("finanzas.dia_vencimiento_default", 10);
@@ -87,6 +103,12 @@ export default async function PaginaPanel() {
             <Alerta tipo="aviso">
               {accesosPendientes} persona(s) olvidaron su contrasena y piden acceso.{" "}
               <Link href="/panel/accesos" className="font-medium underline">Atender</Link>
+            </Alerta>
+          )}
+          {cambiosPendientes > 0 && (
+            <Alerta tipo="aviso">
+              {cambiosPendientes} solicitud(es) de cambio de horario esperan tu aprobacion.{" "}
+              <Link href="/panel/cambios-horario" className="font-medium underline">Revisar</Link>
             </Alerta>
           )}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -188,6 +210,15 @@ export default async function PaginaPanel() {
         <Tarjeta titulo="Tus clases de hoy" descripcion="Con el boton para entrar a las que son en linea">
           <ClasesDeHoy bloques={bloquesHoy} ahora={ahora} />
         </Tarjeta>
+      )}
+
+      {respuestasHorario.length > 0 && (
+        <Alerta tipo="info">
+          Te contestaron {respuestasHorario.length} solicitud(es) de cambio de horario (
+          {respuestasHorario.filter((r) => r.estado === "APROBADA").length} aprobada(s),{" "}
+          {respuestasHorario.filter((r) => r.estado === "RECHAZADA").length} rechazada(s)).{" "}
+          <Link href="/panel/mi-horario" className="font-medium underline">Ver</Link>
+        </Alerta>
       )}
 
       {sesion.rol === "DOCENTE" && (

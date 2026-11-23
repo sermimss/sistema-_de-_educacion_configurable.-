@@ -87,6 +87,24 @@ consulta todas.
 DATABASE_URL=... npm run prueba:grabaciones
 ```
 
+## cambios-horario.mjs
+
+40 comprobaciones sobre una base **recien sembrada con los datos de
+demostracion**, con `DATABASE_URL` apuntando a esa base. Con la opcion
+apagada el docente no puede pedir cambios; encendida, pide cambios
+permanentes y reposiciones de una fecha (rechaza los que chocan, los de
+fechas pasadas, la fecha que no cae en el dia del bloque y las solicitudes
+repetidas) y cancela una. La administracion aprueba tal cual con aviso a los
+alumnos, ve que una solicitud ya choca, ajusta la hora y aprueba, y rechaza
+con motivo. El docente ve las respuestas, el alumno el aviso y su horario de
+la semana con la clase movida tachada y la reposicion en su lugar. Revisa
+que una reposicion no caiga sobre otra y que el lugar que deja una clase
+movida quede libre.
+
+```bash
+DATABASE_URL=... npm run prueba:cambios-horario
+```
+
 ## menu-movil.mjs
 
 39 comprobaciones con el navegador en tamano de celular (390 x 844) sobre una

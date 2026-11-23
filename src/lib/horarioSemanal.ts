@@ -3,10 +3,12 @@ import { nombreCompleto } from "./catalogos";
 import { cicloVigenteDeAlumno } from "./calendarioGrupo";
 import { clasesDelDocente } from "./docencia";
 import type { BloqueHorario } from "@/components/CuadroHorario";
+import { aplicarCambiosDeLaSemana } from "./cambiosHorario";
 
 /// Los bloques de la semana de un alumno: las clases del grupo en el que
-/// esta hoy, con su docente, aula y enlace de Meet.
-export async function bloquesDelAlumno(alumnoId: number): Promise<{ bloques: BloqueHorario[]; grupo: string | null; ciclo: string | null }> {
+/// esta hoy, con su docente, aula y enlace de Meet, y los cambios de una sola
+/// fecha de esta semana (`hoy` en la zona del colegio).
+export async function bloquesDelAlumno(alumnoId: number, hoy: string): Promise<{ bloques: BloqueHorario[]; grupo: string | null; ciclo: string | null }> {
   const ciclo = await cicloVigenteDeAlumno(alumnoId);
   if (!ciclo) return { bloques: [], grupo: null, ciclo: null };
   const clases = await db.alumnoClase.findMany({
@@ -34,18 +36,18 @@ export async function bloquesDelAlumno(alumnoId: number): Promise<{ bloques: Blo
       enlace: clase.enlaceReunion,
     }))
   );
-  return { bloques, grupo: clases[0]?.clase.grupo.nombre ?? null, ciclo: ciclo.nombre };
+  return { bloques: await aplicarCambiosDeLaSemana(bloques, hoy), grupo: clases[0]?.clase.grupo.nombre ?? null, ciclo: ciclo.nombre };
 }
 
 /// Los bloques de la semana de un docente: todas sus clases de todos sus grupos.
-export async function bloquesDelDocente(usuarioId: number): Promise<BloqueHorario[]> {
+export async function bloquesDelDocente(usuarioId: number, hoy: string): Promise<BloqueHorario[]> {
   const clases = await clasesDelDocente(usuarioId);
   const horarios = await db.horarioClase.findMany({
     where: { claseId: { in: clases.map((c) => c.id) } },
     include: { aula: true },
     orderBy: { horaInicio: "asc" },
   });
-  return horarios.map((h) => {
+  const bloques = horarios.map((h) => {
     const clase = clases.find((c) => c.id === h.claseId)!;
     return {
       id: h.id,
@@ -57,4 +59,5 @@ export async function bloquesDelDocente(usuarioId: number): Promise<BloqueHorari
       enlace: clase.enlaceReunion,
     };
   });
+  return aplicarCambiosDeLaSemana(bloques, hoy);
 }

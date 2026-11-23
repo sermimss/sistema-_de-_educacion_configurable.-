@@ -628,8 +628,8 @@ finanzas 40, integridad 27, nomina 41, grupos y horario 33, asistente 29.
   cual; uno en uso genera un plan nuevo con sus materias y prerrequisitos y
   el anterior deja de recibir nuevo ingreso. Los planes guardan ahora su
   modalidad propia (antes la tomaban del nivel).
-- Pendiente: la opcion "El docente puede editar su horario" existe en la
-  configuracion pero aun no hace nada.
+- La opcion "El docente puede editar su horario" quedo programada despues
+  (ver "Cambios de horario con aprobacion").
 
 Verificado: portales 40 (nueva), recuperacion de acceso 20, plataforma 58,
 menu en celular 39, documentos y marca 43, humo 26, control escolar 28,
@@ -651,3 +651,21 @@ asistente 29.
   en Drive (ver `docs/portales.md`).
 
 Verificado: grabaciones 35 (nueva) y la regresion completa.
+
+## Cambios de horario con aprobacion
+
+- Con la opcion "El docente puede editar su horario", el docente pide mover
+  uno de sus bloques de ahi en adelante o solo en una fecha (reposicion). Lo
+  que choca con el docente, el grupo o el aula no se puede enviar.
+- La administracion aprueba (tal cual o ajustando dia, fecha, horas o aula),
+  con aviso opcional a los alumnos, o rechaza con motivo. Al aprobar se
+  revisan otra vez los choques. Todo queda en la bitacora.
+- Las reposiciones se ven en el horario de esa semana del docente y de los
+  alumnos (y en "Tus clases de hoy"); el lugar que deja una clase movida
+  queda libre ese dia y una reposicion ocupa su nuevo lugar.
+- Pendiente: la pantalla *Horarios* de la administracion no muestra las
+  reposiciones.
+- `docs/google-workspace.md`: limites de las grabaciones por enlace, como
+  seria la conexion con Google Workspace para el bloqueo completo, y costos.
+
+Verificado: cambios de horario 40 (nueva) y la regresion completa.

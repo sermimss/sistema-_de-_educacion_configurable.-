@@ -9,7 +9,14 @@ export type BloqueHorario = {
   titulo: string;
   detalle: string;
   enlace: string | null;
+  /// Cambio de una sola fecha: "Solo el mie 25 nov..." o a donde se movio.
+  nota?: string | null;
+  /// Esta semana este bloque no se da aqui (se movio a otra fecha u hora).
+  movida?: boolean;
 };
+
+const estadoReal = (b: BloqueHorario, ahora: { dia: number; hora: string }) =>
+  b.movida ? "otro-dia" : estadoDelBloque(b, ahora);
 
 /// Boton para entrar a la clase en Google Meet. Abre en otra pestana y no le
 /// pasa a Meet de que pagina viene.
@@ -78,19 +85,29 @@ export function CuadroHorario({
                       <span className="text-xs text-slate-300">—</span>
                     ) : (
                       enCelda.map((b) => {
-                        const enCurso = estadoDelBloque(b, ahora) === "en-curso";
+                        const enCurso = estadoReal(b, ahora) === "en-curso";
                         return (
                           <div
                             key={b.id}
-                            className={`space-y-0.5 rounded-md px-2 py-1 ${enCurso ? "bg-emerald-50 ring-1 ring-emerald-500" : "bg-marca-50"}`}
+                            data-bloque={b.movida ? "movido" : b.nota ? "cambio" : "normal"}
+                            className={`space-y-0.5 rounded-md px-2 py-1 ${
+                              b.movida
+                                ? "bg-slate-50 opacity-70"
+                                : enCurso
+                                  ? "bg-emerald-50 ring-1 ring-emerald-500"
+                                  : b.nota
+                                    ? "bg-amber-50 ring-1 ring-amber-400"
+                                    : "bg-marca-50"
+                            }`}
                           >
-                            <p className="text-xs font-medium text-marca-900">{b.titulo}</p>
+                            <p className={`text-xs font-medium text-marca-900 ${b.movida ? "line-through" : ""}`}>{b.titulo}</p>
                             <p className="text-[11px] text-slate-500">{b.detalle}</p>
                             <p className="text-[11px] text-slate-400">
                               {b.horaInicio}-{b.horaFin}
                               {enCurso ? " · en curso" : ""}
                             </p>
-                            {b.enlace && <BotonMeet enlace={b.enlace} compacto resaltado={enCurso} />}
+                            {b.nota && <p className="text-[11px] font-medium text-amber-800">{b.nota}</p>}
+                            {b.enlace && !b.movida && <BotonMeet enlace={b.enlace} compacto resaltado={enCurso} />}
                           </div>
                         );
                       })
@@ -115,19 +132,20 @@ export function ClasesDeHoy({ bloques, ahora }: { bloques: BloqueHorario[]; ahor
   return (
     <ul className="divide-y divide-slate-100" data-clases-hoy>
       {hoy.map((b) => {
-        const estado = estadoDelBloque(b, ahora);
+        const estado = estadoReal(b, ahora);
         return (
-          <li key={b.id} className={`flex flex-wrap items-center justify-between gap-2 py-2 ${estado === "pasada" ? "opacity-50" : ""}`}>
+          <li key={b.id} className={`flex flex-wrap items-center justify-between gap-2 py-2 ${estado === "pasada" || b.movida ? "opacity-50" : ""}`}>
             <div>
-              <p className="text-sm font-medium text-slate-800">
+              <p className={`text-sm font-medium text-slate-800 ${b.movida ? "line-through" : ""}`}>
                 {b.horaInicio}-{b.horaFin} · {b.titulo}
                 {estado === "en-curso" && (
                   <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[11px] font-medium text-emerald-800">en curso</span>
                 )}
               </p>
               <p className="text-xs text-slate-500">{b.detalle}</p>
+              {b.nota && <p className="text-xs font-medium text-amber-800">{b.nota}</p>}
             </div>
-            {b.enlace && estado !== "pasada" && <BotonMeet enlace={b.enlace} resaltado={estado === "en-curso"} />}
+            {b.enlace && estado !== "pasada" && !b.movida && <BotonMeet enlace={b.enlace} resaltado={estado === "en-curso"} />}
           </li>
         );
       })}

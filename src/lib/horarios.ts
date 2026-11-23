@@ -12,7 +12,9 @@ export function esHoraValida(valor: string): boolean {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(valor);
 }
 
-export type Choque = { tipo: "DOCENTE" | "AULA" | "GRUPO"; mensaje: string };
+/// horarioId: el bloque con el que choca (para descartar los que, en una
+/// fecha concreta, se movieron a otro lado).
+export type Choque = { tipo: "DOCENTE" | "AULA" | "GRUPO"; mensaje: string; horarioId?: number };
 
 type DatosHorario = {
   claseId: number;
@@ -86,12 +88,14 @@ export async function detectarChoques(
     if (validaDocente && candidato.clase.docenteId === clase.docenteId) {
       choques.push({
         tipo: "DOCENTE",
+        horarioId: candidato.id,
         mensaje: `${clase.docente.nombres} ${clase.docente.apellidoPaterno} ya tiene ${candidato.clase.planMateria.materia.nombre} con ${candidato.clase.grupo.nombre} en ${rango}.`,
       });
     }
     if (validaGrupo && candidato.clase.grupoId === clase.grupoId) {
       choques.push({
         tipo: "GRUPO",
+        horarioId: candidato.id,
         mensaje: `El grupo ${clase.grupo.nombre} ya tiene ${candidato.clase.planMateria.materia.nombre} en ${rango}.`,
       });
     }
@@ -100,6 +104,7 @@ export async function detectarChoques(
     if (validaAula && aulaRevisada && aulaCandidata === aulaRevisada) {
       choques.push({
         tipo: "AULA",
+        horarioId: candidato.id,
         mensaje: `El aula ya esta ocupada por ${candidato.clase.planMateria.materia.nombre} (${candidato.clase.grupo.nombre}) en ${rango}.`,
       });
     }

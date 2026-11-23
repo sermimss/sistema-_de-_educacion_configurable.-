@@ -33,6 +33,7 @@
     "prueba:recuperacion": "node pruebas/recuperacion-acceso.mjs",
     "prueba:portales": "node pruebas/portales.mjs",
     "prueba:grabaciones": "node pruebas/grabaciones.mjs",
+    "prueba:cambios-horario": "node pruebas/cambios-horario.mjs",
     "prueba:red": "node pruebas/red-local.mjs"
   },
   "dependencies": {
