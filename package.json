@@ -32,6 +32,7 @@
     "prueba:movil": "node pruebas/menu-movil.mjs",
     "prueba:recuperacion": "node pruebas/recuperacion-acceso.mjs",
     "prueba:portales": "node pruebas/portales.mjs",
+    "prueba:grabaciones": "node pruebas/grabaciones.mjs",
     "prueba:red": "node pruebas/red-local.mjs"
   },
   "dependencies": {

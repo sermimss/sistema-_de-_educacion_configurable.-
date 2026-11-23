@@ -635,3 +635,19 @@ Verificado: portales 40 (nueva), recuperacion de acceso 20, plataforma 58,
 menu en celular 39, documentos y marca 43, humo 26, control escolar 28,
 academico 40, finanzas 40, integridad 27, nomina 41, grupos y horario 33,
 asistente 29.
+
+## Grabaciones de clases
+
+- El docente pega el enlace de Drive de la grabacion de Meet de una clase,
+  con la fecha y un titulo opcional; se acepta solo un archivo de Drive y se
+  guarda limpio (sin datos de seguimiento, conservando la resourcekey).
+- Los alumnos de la clase la ven hasta el mismo dia del mes siguiente (fin de
+  mes: el ultimo dia del mes), en la zona horaria del colegio. Despues ni la
+  ven ni la pueden abrir con la direccion: cada apertura pasa por el sistema,
+  que revisa que curse la clase y que siga vigente.
+- Docente y administracion siguen viendo las vencidas, y quien abrio cada
+  grabacion, cuantas veces y cuando.
+- Limite: el video vive en el Drive del docente; el sistema no quita permisos
+  en Drive (ver `docs/portales.md`).
+
+Verificado: grabaciones 35 (nueva) y la regresion completa.

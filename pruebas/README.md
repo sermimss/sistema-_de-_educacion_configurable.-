@@ -71,6 +71,22 @@ de un plan sin alumnos.
 DATABASE_URL=... npm run prueba:portales
 ```
 
+## grabaciones.mjs
+
+35 comprobaciones sobre una base **recien sembrada con los datos de
+demostracion**, con `DATABASE_URL` apuntando a esa base. Revisa la regla del
+mes (3 de marzo a 3 de abril, fin de mes, cambio de ano) y la limpieza de
+enlaces de Drive; el docente publica desde *Mis clases* (rechaza enlaces que
+no son de Drive, fechas futuras y clases de hace mas de un mes); el alumno ve
+solo las vigentes, abre la que vence hoy y no puede abrir una vencida ni con
+la direccion; un alumno dado de baja y alguien sin sesion no entran; el
+docente ve las vencidas y quien abrio cada una; la administracion las
+consulta todas.
+
+```bash
+DATABASE_URL=... npm run prueba:grabaciones
+```
+
 ## menu-movil.mjs
 
 39 comprobaciones con el navegador en tamano de celular (390 x 844) sobre una

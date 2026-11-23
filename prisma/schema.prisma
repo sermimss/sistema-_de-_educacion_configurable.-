@@ -676,6 +676,7 @@ model Alumno {
   tutores                 Tutor[]
   inscripciones           Inscripcion[]
   clases                  AlumnoClase[]
+  vistasGrabaciones       VistaGrabacion[]
   calificacionesActividad CalificacionActividad[]
   calificacionesPeriodo   CalificacionPeriodo[]
   extraordinarios         EvaluacionExtraordinaria[]
@@ -843,6 +844,7 @@ model Clase {
   extraordinarios EvaluacionExtraordinaria[]
   sesiones        SesionAsistencia[]
   alertas         AlertaAsistencia[]
+  grabaciones     Grabacion[]
 
   @@unique([cicloId, grupoId, planMateriaId])
   @@index([docenteId])
@@ -863,6 +865,42 @@ model HorarioClase {
   aula   Aula?          @relation(fields: [aulaId], references: [id], onDelete: SetNull)
 
   @@index([diaSemana])
+}
+
+/// Grabacion de una clase de Google Meet. El video vive en el Drive del
+/// docente; aqui se guarda el enlace y hasta cuando lo ven los alumnos: el
+/// mismo dia del mes siguiente a la clase. Despues solo lo ven el docente y la
+/// administracion.
+model Grabacion {
+  id              Int      @id @default(autoincrement())
+  claseId         Int
+  fechaClase      DateTime @db.Date
+  disponibleHasta DateTime @db.Date
+  titulo          String?
+  enlace          String
+  publicadoPor    Int?
+  autorNombre     String?
+  creadaEn        DateTime @default(now())
+
+  clase  Clase            @relation(fields: [claseId], references: [id], onDelete: Cascade)
+  vistas VistaGrabacion[]
+
+  @@index([claseId, disponibleHasta])
+}
+
+/// Que alumnos abrieron cada grabacion, cuantas veces y cuando.
+model VistaGrabacion {
+  id          Int      @id @default(autoincrement())
+  grabacionId Int
+  alumnoId    Int
+  veces       Int      @default(1)
+  primeraVez  DateTime @default(now())
+  ultimaVez   DateTime @default(now())
+
+  grabacion Grabacion @relation(fields: [grabacionId], references: [id], onDelete: Cascade)
+  alumno    Alumno    @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+
+  @@unique([grabacionId, alumnoId])
 }
 
 /// Inscripcion del alumno a una clase (soporta optativas y recursamiento).

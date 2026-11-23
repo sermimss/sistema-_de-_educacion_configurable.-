@@ -24,13 +24,14 @@ contrasena?" en el acceso y la administracion les da una temporal desde
 
 ## Portal del docente
 
-Menu: Panel, Avisos, Asistencia, Calificaciones, Mis clases, Mi horario.
+Menu: Panel, Avisos, Asistencia, Calificaciones, Mis clases, Grabaciones, Mi horario.
 
 | Puede | Detalle |
 |---|---|
 | Ver sus clases de hoy | El panel muestra sus clases del dia; la que esta por empezar (10 minutos antes) o en curso aparece marcada **en curso** con su boton de Meet. |
 | Ver su horario semanal | *Mi horario*: cuadricula de la semana con sus clases, salon y grupo. |
 | Poner la sala de Google Meet | *Mis clases*: pega el enlace de Meet en cada clase, o una sola sala para **todas** sus clases. Solo acepta enlaces de `meet.google.com` (o el codigo `abc-defg-hij`); se borra dejando el campo vacio. |
+| Compartir grabaciones | *Grabaciones* (o el boton en cada clase de *Mis clases*): pega el enlace de Drive de la grabacion de Meet, la fecha de la clase y un titulo opcional. Ve todas las suyas, tambien las vencidas, y que alumnos abrieron cada una y cuantas veces. |
 | Pasar lista | *Asistencia*, solo de sus clases. |
 | Capturar calificaciones | *Calificaciones*: actividades, puntos y la calificacion oficial de cada periodo; puede cerrar el periodo cuando todos tienen calificacion. |
 | Publicar avisos | *Avisos*, solo a los alumnos de **sus clases**. Puede retirar los que el publico. |
@@ -44,13 +45,14 @@ pagina); reabrir un periodo cerrado.
 
 ## Portal del alumno
 
-Menu: Panel, Avisos, Mis calificaciones, Mi asistencia, Mi horario, Estado de
-cuenta, Mis documentos.
+Menu: Panel, Avisos, Grabaciones, Mis calificaciones, Mi asistencia, Mi horario,
+Estado de cuenta, Mis documentos.
 
 | Puede | Detalle |
 |---|---|
 | Ver sus clases de hoy | En el panel, con el boton **Entrar a la clase en linea** cuando el docente puso su Meet; la clase en curso aparece resaltada. |
 | Ver su horario semanal | *Mi horario*, con el boton de Meet en cada clase que lo tenga. |
+| Ver las grabaciones de sus clases | *Grabaciones*: solo las que aun no cumplen su mes, con la fecha en que dejan de verse. |
 | Ver sus calificaciones y su asistencia | De su grupo vigente. |
 | Ver su estado de cuenta | Sus cargos y sus pagos. No paga en linea: paga en el colegio. |
 | Pedir documentos | *Mis documentos*: pide constancias y otros documentos que el colegio habilite, y ve los emitidos a su nombre. |
@@ -84,6 +86,37 @@ pega el enlace una vez. Desde ese momento el alumno ve el boton en su panel y
 en su horario, y la clase en curso se resalta segun el horario del grupo y la
 zona horaria del colegio. El boton abre Meet en otra pestana sin enviar datos
 del sistema.
+
+## Grabaciones de las clases
+
+1. El docente graba su clase en Meet. Google guarda el video en su Google
+   Drive (carpeta *Meet Recordings*).
+2. Al terminar, el docente abre el video en Drive, usa *Compartir* y pega ese
+   enlace en *Grabaciones*, con la fecha de la clase. Solo se aceptan enlaces
+   de archivos de Google Drive.
+3. Los alumnos que cursan la clase la ven en *Grabaciones* **hasta el mismo
+   dia del mes siguiente** a la clase: la del 3 de marzo, hasta el 3 de abril
+   inclusive. Si ese mes no tiene ese dia (31 de enero), hasta el ultimo dia
+   del mes (28 o 29 de febrero). Se cuenta con la zona horaria del colegio.
+4. Al dia siguiente la grabacion desaparece de la lista del alumno y el
+   sistema ya no lo deja entrar, aunque guarde la direccion. Las que aun no
+   cumplen su mes se siguen viendo.
+5. El docente y la administracion la siguen viendo, marcada **Vencida**, y ven
+   que alumnos la abrieron, cuantas veces y cuando.
+
+No se puede publicar la grabacion de una clase futura ni de una clase de hace
+mas de un mes (los alumnos ya no la podrian ver). Un alumno dado de baja de la
+clase deja de ver sus grabaciones.
+
+**Permisos en Drive.** El video sigue siendo un archivo del Drive del
+docente, asi que el alumno necesita permiso para verlo alla: lo mas sencillo
+es compartirlo con los alumnos (o con el dominio del colegio, si usan Google
+Workspace). El sistema controla quien llega al video desde aqui y hasta
+cuando, pero no puede quitar permisos en Drive: un alumno que copio la
+direccion del video en Drive podria seguir abriendolo alla mientras el
+docente no le quite el permiso o borre el archivo. Para que el bloqueo sea
+total, el docente debe dejar de compartir o borrar el video en Drive al
+vencer.
 
 ## Cambio de modalidad del plan
 
