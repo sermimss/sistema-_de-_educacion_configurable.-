@@ -109,6 +109,13 @@ calificacion del periodo; el docente la sigue capturando en *Calificaciones*.
   del cierre si no se aceptan tardios). Si el alumno cierra el navegador, al
   vencer se envia solo con lo que tenia guardado.
 - Varias correctas: todo o nada (hay que marcar exactamente las correctas).
+- **Cargar un examen ya escrito**: en el editor del examen, el docente pega
+  el texto o sube un `.txt` o `.docx` de Word escrito con un formato sencillo
+  (cada pregunta con su numero, opciones con letra, la correcta con `*` o con
+  "Respuesta: b", verdadero/falso con "Respuesta: Verdadero", abiertas sin
+  opciones, puntos como "(2 puntos)"). Ve una vista previa con cada pregunta
+  y los errores por renglon; al confirmar se agregan todas (o ninguna, si hay
+  errores). Acepta la numeracion automatica de Word.
 - El alumno ve sus respuestas correctas nunca, al terminar o cuando cierre el
   examen, segun elija el docente. La pagina para contestar no incluye cuales
   son las correctas.

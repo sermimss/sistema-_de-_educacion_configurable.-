@@ -10,6 +10,8 @@ import { claseAccesible } from "@/lib/docencia";
 import { alumnoDeSesion } from "@/lib/alumnoSesion";
 import { fechaHoraAInstante } from "@/lib/fechasDia";
 import { alumnoCursa, zonaDelColegio } from "@/lib/tareas";
+import { leerExamenTexto, type ErrorLectura, type PreguntaLeida } from "@/lib/importarExamen";
+import { textoDeArchivo } from "@/lib/textoDeArchivo";
 import { estadoParaAlumno, finalizarIntento, GRACIA_MS, ordenParaAlumno, recalcularIntento, vencimientoAlEmpezar } from "@/lib/examenes";
 
 export type EstadoExamen = { error?: string; ok?: boolean; mensaje?: string };
@@ -255,4 +257,74 @@ export async function accionEnviarExamen(formData: FormData) {
   }
   revalidatePath("/panel/examenes");
   redirect(`/panel/examenes/${intento.examenId}?enviado=1`);
+}
+
+// ---------------- Cargar un examen ya escrito ----------------
+
+export type VistaImportacion = {
+  error?: string;
+  texto?: string;
+  preguntas?: PreguntaLeida[];
+  errores?: ErrorLectura[];
+  agregadas?: number;
+};
+
+async function textoParaImportar(formData: FormData): Promise<{ texto: string } | { error: string }> {
+  const archivo = formData.get("archivo");
+  if (archivo instanceof File && archivo.size > 0) {
+    const leido = await textoDeArchivo(archivo);
+    return leido.ok ? { texto: leido.texto } : { error: leido.error };
+  }
+  const texto = String(formData.get("texto") ?? "");
+  if (!texto.trim()) return { error: "Pega el texto del examen o sube un archivo .txt o .docx." };
+  if (texto.length > 200_000) return { error: "El texto es demasiado largo." };
+  return { texto };
+}
+
+/// Paso 1: leer el texto o archivo y mostrar como se entendio cada pregunta.
+export async function accionVistaImportacion(_p: VistaImportacion, formData: FormData): Promise<VistaImportacion> {
+  const { examen } = await examenDelDocente(Number(formData.get("examenId")));
+  if (!examen) return { error: "Ese examen no es tuyo." };
+  if (examen._count.intentos > 0) return { error: "Ya hay alumnos que empezaron el examen: las preguntas no se pueden cambiar." };
+  const fuente = await textoParaImportar(formData);
+  if ("error" in fuente) return { error: fuente.error };
+  const { preguntas, errores } = leerExamenTexto(fuente.texto);
+  return { texto: fuente.texto, preguntas, errores };
+}
+
+/// Paso 2: el docente confirma. Se vuelve a leer el texto (no se confia en
+/// lo que mande el navegador) y se agregan todas o ninguna.
+export async function accionConfirmarImportacion(_p: VistaImportacion, formData: FormData): Promise<VistaImportacion> {
+  const { sesion, examen } = await examenDelDocente(Number(formData.get("examenId")));
+  if (!examen) return { error: "Ese examen no es tuyo." };
+  if (examen._count.intentos > 0) return { error: "Ya hay alumnos que empezaron el examen: las preguntas no se pueden cambiar." };
+  const texto = String(formData.get("texto") ?? "");
+  const { preguntas, errores } = leerExamenTexto(texto);
+  if (errores.length > 0 || preguntas.length === 0) return { error: "El texto tiene errores; corrigelo y vuelve a ver la vista previa.", texto, preguntas, errores };
+  await db.$transaction(async (tx) => {
+    const ultima = await tx.preguntaExamen.aggregate({ where: { examenId: examen.id }, _max: { orden: true } });
+    let orden = ultima._max.orden ?? 0;
+    for (const p of preguntas) {
+      orden += 1;
+      await tx.preguntaExamen.create({
+        data: {
+          examenId: examen.id,
+          orden,
+          tipo: p.tipo,
+          enunciado: p.enunciado,
+          puntos: p.puntos,
+          opciones: { create: p.opciones.map((o, i) => ({ texto: o.texto, correcta: o.correcta, orden: i + 1 })) },
+        },
+      });
+    }
+  });
+  await registrarBitacora({
+    usuarioId: sesion.usuarioId,
+    accion: "IMPORTAR",
+    entidad: "Examen",
+    entidadId: examen.id,
+    descripcion: `Cargo ${preguntas.length} pregunta(s) a "${examen.titulo}" desde un texto`,
+  });
+  revalidatePath(`/panel/examenes/${examen.id}`);
+  return { agregadas: preguntas.length };
 }

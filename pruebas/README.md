@@ -154,6 +154,20 @@ respuestas al cerrar y alcance.
 DATABASE_URL=... npm run prueba:examenes
 ```
 
+## importar-examen.mjs
+
+18 comprobaciones sobre una base **recien sembrada con los datos de
+demostracion**, con `DATABASE_URL` apuntando a esa base. Carga un texto con
+errores (los senala por renglon y no agrega nada), el ejemplo con los cinco
+casos (opcion multiple, varias correctas, verdadero/falso, respuesta por
+letra y abierta), un `.docx` generado con la numeracion automatica de Word y
+un `.txt` en ANSI con acentos; rechaza otros archivos; y el examen cargado se
+publica y se contesta como cualquier otro.
+
+```bash
+DATABASE_URL=... npm run prueba:importar-examen
+```
+
 ## menu-movil.mjs
 
 39 comprobaciones con el navegador en tamano de celular (390 x 844) sobre una

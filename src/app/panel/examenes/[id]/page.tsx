@@ -10,6 +10,7 @@ import { alumnoCursa, alumnosDeLaClase, zonaDelColegio } from "@/lib/tareas";
 import { enviarVencidos, ETIQUETA_ESTADO_EXAMEN, estadoParaAlumno, puedeVerRespuestas, puntosTotales, type OrdenIntento } from "@/lib/examenes";
 import { Alerta, Insignia, Tarjeta } from "@/components/ui";
 import { FormularioExamen, FormularioPregunta } from "../Formularios";
+import { ImportarExamen } from "../ImportarExamen";
 import { VistaRespuestas } from "../VistaRespuestas";
 import { accionComenzarExamen, accionEliminarExamen, accionPublicarExamen, accionQuitarPregunta } from "../acciones";
 
@@ -208,6 +209,12 @@ export default async function PaginaExamen({
           )}
         </div>
       </Tarjeta>
+
+      {editable && (
+        <Tarjeta titulo="Cargar un examen ya escrito" descripcion="Pega el texto o sube un .txt o .docx; revisas la vista previa y confirmas">
+          <ImportarExamen examenId={examen.id} />
+        </Tarjeta>
+      )}
 
       {examen.publicado && (
         <Tarjeta titulo="Resultados" descripcion={`${intentos.filter((i) => i.enviadoEn).length} de ${alumnos.length} lo presentaron`}>

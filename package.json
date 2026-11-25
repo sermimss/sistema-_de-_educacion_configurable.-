@@ -37,6 +37,7 @@
     "prueba:carreras": "node pruebas/carreras.mjs",
     "prueba:tareas": "node pruebas/tareas.mjs",
     "prueba:examenes": "node pruebas/examenes.mjs",
+    "prueba:importar-examen": "node pruebas/importar-examen.mjs",
     "prueba:red": "node pruebas/red-local.mjs"
   },
   "dependencies": {

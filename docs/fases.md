@@ -703,3 +703,16 @@ Verificado: carreras 31 (nueva) y la regresion completa.
 - Fechas y horas siempre en la zona horaria del colegio.
 
 Verificado: tareas 37 y examenes 40 (nuevas) y la regresion completa.
+
+## Cargar examenes ya escritos
+
+- En el editor de cada examen, "Cargar un examen ya escrito": texto pegado o
+  archivo `.txt`/`.docx`. Formato: pregunta con numero, opciones con letra,
+  correcta con `*` o "Respuesta: b", verdadero/falso con "Respuesta:
+  Verdadero/Falso", abiertas sin opciones, "(N puntos)". El tipo se deduce
+  solo (una correcta, varias correctas, verdadero/falso o abierta).
+- Vista previa con los errores por renglon; se agregan todas o ninguna, al
+  final de las que ya tenga. El `.docx` se lee sin librerias externas
+  (incluida la numeracion automatica de Word) y el `.txt` en UTF-8 o ANSI.
+
+Verificado: carga de examenes 18 (nueva) y la regresion completa.
