@@ -669,3 +669,20 @@ Verificado: grabaciones 35 (nueva) y la regresion completa.
   seria la conexion con Google Workspace para el bloqueo completo, y costos.
 
 Verificado: cambios de horario 40 (nueva) y la regresion completa.
+
+## Carreras, certificaciones y niveles
+
+- En *Estructura academica*, "Agregar carrera o certificacion": tipo
+  (carrera = programa completo; certificacion = programa corto, como un
+  diplomado o curso), nivel, nombre, clave, titulo que otorga (opcional),
+  modalidad, numero de periodos y nombre de cada periodo. Se crea con sus
+  periodos y sin materias; las materias se cargan despues en *Materias*.
+- Cada carrera tiene su pagina (*Administrar*): editar datos (el nivel solo
+  sin alumnos ni grupos), cambiar modalidad, y darla de baja (deja de
+  ofrecerse a nuevo ingreso; quienes la cursan terminan; nunca se borra) o
+  volver a ofrecerla.
+- "Agregar un nivel": nombre, clave y modalidad habitual (por ejemplo
+  Posgrado o Educacion continua).
+- Campo nuevo para documentos: `alumno.titulo_otorga`.
+
+Verificado: carreras 31 (nueva) y la regresion completa.

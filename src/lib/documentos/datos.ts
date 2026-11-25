@@ -156,6 +156,7 @@ export async function datosDeAlumno(alumnoId: number): Promise<DatosPersona | nu
     "alumno.curp": alumno.curp ?? "",
     "alumno.nivel": alumno.plan.nivel.nombre,
     "alumno.plan": alumno.plan.nombre,
+    "alumno.titulo_otorga": alumno.plan.tituloOtorga ?? "",
     "alumno.grado": inscripcion?.grado.nombre ?? "",
     "alumno.grupo": inscripcion?.grupo.nombre ?? "",
     "alumno.turno": inscripcion?.grupo.turno?.nombre ?? alumno.turno?.nombre ?? "",

@@ -139,7 +139,7 @@ vencer.
 
 ## Cambio de modalidad del plan
 
-En *Estructura academica → Cambiar modalidad* (solo administracion):
+En *Estructura academica*, con *Administrar* en cada carrera (solo administracion):
 
 - **Plan sin grupos ni alumnos**: se convierte tal cual (por ejemplo, de 6
   semestres a 9 cuatrimestres). Las materias se reparten en los periodos

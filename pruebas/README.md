@@ -105,6 +105,22 @@ movida quede libre.
 DATABASE_URL=... npm run prueba:cambios-horario
 ```
 
+## carreras.mjs
+
+31 comprobaciones sobre una base **recien sembrada con los datos de
+demostracion**, con `DATABASE_URL` apuntando a esa base. Desde Estructura
+academica crea un nivel (sin repetir nombre), una certificacion modular de 3
+modulos y una carrera de 6 semestres (rechaza claves repetidas o invalidas y
+nombres de periodo sin {N}); revisa que aparezcan al dar de alta alumnos y
+al abrir grupos; edita nombre y titulo (con antes y despues en la
+bitacora), cambia de nivel solo sin alumnos ni grupos; da de baja una
+carrera con alumnos (deja de aparecer para nuevo ingreso sin borrar nada) y
+la reactiva; y confirma el campo del titulo en los machotes.
+
+```bash
+DATABASE_URL=... npm run prueba:carreras
+```
+
 ## menu-movil.mjs
 
 39 comprobaciones con el navegador en tamano de celular (390 x 844) sobre una

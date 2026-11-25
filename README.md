@@ -264,6 +264,7 @@ npm run prueba:recuperacion       # 20 comprobaciones de recuperar el acceso (ba
 npm run prueba:portales           # 40 comprobaciones de portales, Meet, avisos y modalidad (base con demo y DATABASE_URL)
 npm run prueba:grabaciones        # 35 comprobaciones de grabaciones de clases (base con demo y DATABASE_URL)
 npm run prueba:cambios-horario    # 40 comprobaciones de cambios de horario con aprobacion (base con demo y DATABASE_URL)
+npm run prueba:carreras           # 31 comprobaciones de carreras, certificaciones y niveles (base con demo y DATABASE_URL)
 npm run prueba:movil              # 39 comprobaciones del sistema en celular (base con demo)
 npm run prueba:documentos         # 43 comprobaciones de logo, colores y documentos institucionales (base recien sembrada)
 npm run prueba:grupos             # 33 comprobaciones de grupos con calendario y horario (base recien sembrada)

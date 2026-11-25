@@ -415,10 +415,21 @@ model NivelEducativo {
   planes PlanEstudios[]
 }
 
+/// Una carrera (programa completo) o una certificacion (programa corto,
+/// como un diplomado o curso). Las dos tienen periodos, materias, grupos,
+/// calificaciones y cobros.
+enum TipoPrograma {
+  CARRERA
+  CERTIFICACION
+}
+
 model PlanEstudios {
   id               Int                  @id @default(autoincrement())
   nombre           String
   clave            String               @unique
+  tipo             TipoPrograma         @default(CARRERA)
+  /// Ej. "Licenciado en Derecho", "Certificado en Excel avanzado".
+  tituloOtorga     String?
   nivelId          Int
   /// Cuantos periodos (semestres/cuatrimestres) dura el plan.
   /// De aqui sale el numero de colegiaturas a generar.

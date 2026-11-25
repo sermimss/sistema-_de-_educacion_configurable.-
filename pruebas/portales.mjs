@@ -164,8 +164,8 @@ comprobar("El docente no puede publicar a todo el colegio", (await db.aviso.coun
 // ---------------- Cambio de modalidad ----------------
 await admin.goto(`${BASE}/panel/academico`);
 const estructura = await limpio(admin);
-comprobar("Estructura academica muestra la modalidad de cada plan", estructura.includes("Semestral") && estructura.includes("Cambiar modalidad"));
-await admin.getByRole("link", { name: "Cambiar modalidad" }).first().click();
+comprobar("Estructura academica muestra la modalidad de cada plan", estructura.includes("Semestral") && estructura.includes("Administrar"));
+await admin.getByRole("link", { name: "Administrar" }).first().click();
 await admin.waitForURL(/\/panel\/academico\/plan\/\d+/);
 await admin.getByLabel(/^Nueva modalidad\*?$/).selectOption("CUATRIMESTRE");
 comprobar("Propone la misma duracion: 6 semestres son 9 cuatrimestres",

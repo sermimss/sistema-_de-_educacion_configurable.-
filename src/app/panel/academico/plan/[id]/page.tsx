@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { aceptaNuevoIngreso, etiquetaModalidad } from "@/lib/modalidad";
 import { Alerta, Insignia, Tarjeta } from "@/components/ui";
 import { FormularioModalidad } from "./FormularioModalidad";
+import { FormularioEditarPrograma } from "../../FormulariosPrograma";
+import { accionOfertaPrograma } from "../../programas";
 
 export const dynamic = "force-dynamic";
 
@@ -13,11 +15,11 @@ export default async function PaginaModalidadPlan({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ cambiado?: string; anterior?: string }>;
+  searchParams: Promise<{ cambiado?: string; anterior?: string; creado?: string; oferta?: string }>;
 }) {
   await requerirRol("ADMIN");
   const { id } = await params;
-  const { cambiado, anterior } = await searchParams;
+  const { cambiado, anterior, creado, oferta } = await searchParams;
   const plan = await db.planEstudios.findUnique({
     where: { id: Number(id) || 0 },
     include: {
@@ -29,6 +31,12 @@ export default async function PaginaModalidadPlan({
   if (!plan) notFound();
   const planAnterior = anterior ? await db.planEstudios.findUnique({ where: { id: Number(anterior) || 0 } }) : null;
   const enUso = plan._count.grupos + plan._count.alumnos > 0;
+  const niveles = await db.nivelEducativo.findMany({
+    where: { OR: [{ activo: true }, { id: plan.nivelId }] },
+    orderBy: { orden: "asc" },
+    select: { id: true, nombre: true, tipoPeriodo: true },
+  });
+  const tipo = plan.tipo === "CARRERA" ? "carrera" : "certificacion";
 
   return (
     <div className="space-y-6">
@@ -38,11 +46,32 @@ export default async function PaginaModalidadPlan({
           {plan.nombre} <span className="text-slate-400">({plan.clave})</span>
         </h1>
         <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+          <Insignia tono={plan.tipo === "CARRERA" ? "neutro" : "exito"}>{plan.tipo === "CARRERA" ? "Carrera" : "Certificacion"}</Insignia>
           {plan.nivel.nombre} · <Insignia>{etiquetaModalidad(plan.modalidad)}</Insignia> {plan.duracionPeriodos} periodos ·{" "}
           {plan._count.materias} materias · {plan._count.alumnos} alumno(s) · {plan._count.grupos} grupo(s)
           {!aceptaNuevoIngreso(plan) && <Insignia tono="alerta">sin nuevo ingreso</Insignia>}
         </p>
       </header>
+
+      {creado && (
+        <Alerta tipo="exito">
+          {plan.tipo === "CARRERA" ? "Carrera creada" : "Certificacion creada"} con sus {plan.duracionPeriodos} periodo(s). Ahora{" "}
+          <Link href={`/panel/materias/plan/${plan.id}`} className="font-medium underline">agrega sus materias en el mapa curricular</Link>; ya
+          aparece al dar de alta alumnos y al abrir grupos.
+        </Alerta>
+      )}
+      {oferta === "baja" && (
+        <Alerta tipo="aviso">Dada de baja: ya no aparece para alumnos de nuevo ingreso. Quienes ya la cursan terminan.</Alerta>
+      )}
+      {oferta === "reactivada" && <Alerta tipo="exito">Se vuelve a ofrecer a alumnos de nuevo ingreso.</Alerta>}
+
+      <Tarjeta titulo="Datos">
+        <FormularioEditarPrograma
+          plan={{ id: plan.id, nombre: plan.nombre, clave: plan.clave, tipo: plan.tipo, tituloOtorga: plan.tituloOtorga, nivelId: plan.nivelId }}
+          niveles={niveles}
+          puedeCambiarNivel={!enUso}
+        />
+      </Tarjeta>
 
       {cambiado === "convertido" && (
         <Alerta tipo="exito">
@@ -85,9 +114,33 @@ export default async function PaginaModalidadPlan({
         </Tarjeta>
       ) : (
         <Alerta tipo="info">
-          Este plan ya fue reemplazado por una version nueva: solo sigue para los alumnos que lo cursan.
+          Esta {tipo} no recibe alumnos de nuevo ingreso: solo sigue para quienes ya la cursan. Para cambiarle la
+          modalidad, primero vuelve a ofrecerla.
         </Alerta>
       )}
+
+      <Tarjeta
+        titulo="Oferta"
+        descripcion={aceptaNuevoIngreso(plan) ? "Se ofrece a alumnos de nuevo ingreso" : "No se ofrece a alumnos de nuevo ingreso"}
+      >
+        <form action={accionOfertaPrograma} className="flex flex-wrap items-center justify-between gap-3" data-oferta>
+          <input type="hidden" name="planId" value={plan.id} />
+          <p className="text-sm text-slate-600">
+            {aceptaNuevoIngreso(plan)
+              ? `Al darla de baja deja de aparecer al inscribir alumnos nuevos. Los ${plan._count.alumnos} alumno(s) que la cursan la terminan; no se borra nada.`
+              : "Al reactivarla vuelve a aparecer al inscribir alumnos nuevos."}
+          </p>
+          {aceptaNuevoIngreso(plan) ? (
+            <button name="accion" value="baja" className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50">
+              Dar de baja
+            </button>
+          ) : (
+            <button name="accion" value="reactivar" className="rounded-lg bg-marca-600 px-3 py-1.5 text-sm font-medium text-marca-contraste hover:bg-marca-700">
+              Volver a ofrecer
+            </button>
+          )}
+        </form>
+      </Tarjeta>
     </div>
   );
 }

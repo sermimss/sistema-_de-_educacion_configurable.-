@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { formatearMoneda } from "@/lib/formato";
 import { obtenerInstitucion } from "@/lib/institucion";
 import { EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
+import { FormularioNivel } from "./FormulariosPrograma";
 
 export const dynamic = "force-dynamic";
 
@@ -36,38 +37,59 @@ export default async function PaginaAcademico() {
       <header>
         <h1 className="text-xl font-semibold text-slate-900">Estructura academica</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Lo que se creo en la instalacion. Cada plan se puede cambiar de modalidad (semestral, cuatrimestral...).
+          Niveles, carreras y certificaciones del colegio. Puedes agregar mas, editarlas, darlas de baja o cambiarles la
+          modalidad (semestral, cuatrimestral...).
         </p>
       </header>
 
-      <Tarjeta titulo="Niveles, planes y grados">
+      <Tarjeta
+        titulo="Niveles, carreras y certificaciones"
+        acciones={
+          <Link
+            href="/panel/academico/nuevo"
+            className="rounded-lg bg-marca-600 px-3 py-1.5 text-sm font-medium text-marca-contraste hover:bg-marca-700"
+          >
+            Agregar carrera o certificacion
+          </Link>
+        }
+      >
         {niveles.length === 0 ? (
           <EstadoVacio titulo="Sin niveles registrados" />
         ) : (
           <div className="space-y-5">
             {niveles.map((nivel) => (
               <div key={nivel.id}>
-                <div className="mb-2 flex items-center gap-2">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
                   <h3 className="text-sm font-semibold text-slate-900">{nivel.nombre}</h3>
                   <Insignia>{nivel.clave}</Insignia>
-                  <Insignia tono="neutro">{nivel.tipoPeriodo}</Insignia>
+                  <Insignia tono="neutro">{etiquetaModalidad(nivel.tipoPeriodo)}</Insignia>
+                  <Link href={`/panel/academico/nuevo?nivel=${nivel.id}`} className="ml-auto text-xs font-medium text-marca-600 hover:underline">
+                    + Agregar a este nivel
+                  </Link>
                 </div>
                 <div className="space-y-2">
+                  {nivel.planes.length === 0 && <p className="text-xs text-slate-500">Aun sin carreras ni certificaciones.</p>}
                   {nivel.planes.map((plan) => (
-                    <div key={plan.id} className="rounded-lg border border-slate-200 p-3">
+                    <div key={plan.id} className="rounded-lg border border-slate-200 p-3" data-programa={plan.clave}>
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-sm font-medium text-slate-800">
-                          {plan.nombre} <span className="text-slate-400">({plan.clave})</span>
+                        <span className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-800">
+                          <Insignia tono={plan.tipo === "CARRERA" ? "neutro" : "exito"}>
+                            {plan.tipo === "CARRERA" ? "Carrera" : "Certificacion"}
+                          </Insignia>
+                          <span>
+                            {plan.nombre} <span className="text-slate-400">({plan.clave})</span>
+                          </span>
                         </span>
                         <span className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                           <Insignia>{etiquetaModalidad(plan.modalidad)}</Insignia>
                           {!aceptaNuevoIngreso(plan) && <Insignia tono="alerta">sin nuevo ingreso</Insignia>}
                           {plan.duracionPeriodos} periodos · {plan._count.materias} materias
                           <Link href={`/panel/academico/plan/${plan.id}`} className="font-medium text-marca-600 hover:underline">
-                            Cambiar modalidad
+                            Administrar
                           </Link>
                         </span>
                       </div>
+                      {plan.tituloOtorga && <p className="mt-1 text-xs text-slate-500">Otorga: {plan.tituloOtorga}</p>}
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {plan.grados.map((grado) => (
                           <span
@@ -85,6 +107,10 @@ export default async function PaginaAcademico() {
             ))}
           </div>
         )}
+      </Tarjeta>
+
+      <Tarjeta titulo="Agregar un nivel" descripcion="Por ejemplo: Posgrado o Educacion continua, si no se creo en la instalacion">
+        <FormularioNivel />
       </Tarjeta>
 
       <div className="grid gap-4 lg:grid-cols-2">
