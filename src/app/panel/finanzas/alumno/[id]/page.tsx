@@ -5,7 +5,10 @@ import { db } from "@/lib/db";
 import { nombreCompleto } from "@/lib/catalogos";
 import { obtenerInstitucion } from "@/lib/institucion";
 import { configBool } from "@/lib/configuracion";
+import { randomUUID } from "node:crypto";
 import { aNumero, resumenDeCuenta } from "@/lib/finanzas";
+import { estadoVisible, prepararCuenta, saldoAFavor } from "@/lib/cobranza";
+import { hoyEnZona } from "@/lib/fechasDia";
 import { formatearFecha, formatearFechaHora, formatearMoneda } from "@/lib/formato";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
 import {
@@ -45,6 +48,9 @@ export default async function PaginaEstadoCuenta({ params }: { params: Promise<{
 
   const institucion = await obtenerInstitucion();
   const moneda = institucion?.moneda ?? "MXN";
+  // Recargos de hoy, estados por fecha y saldo a favor aplicado.
+  await prepararCuenta(alumnoId);
+  const aFavor = await saldoAFavor(alumnoId);
 
   const [cargos, pagos, convenios, conceptos, resumen, permiteParciales, permiteConvenios] =
     await Promise.all([
@@ -101,7 +107,7 @@ export default async function PaginaEstadoCuenta({ params }: { params: Promise<{
         </Link>
       </header>
 
-      {alumno.tieneAdeudo && (
+      {resumen.vencido > 0 && (
         <Alerta tipo="aviso">
           Este alumno tiene adeudo vencido por {formatearMoneda(resumen.vencido, moneda)}.
         </Alerta>
@@ -124,6 +130,7 @@ export default async function PaginaEstadoCuenta({ params }: { params: Promise<{
           ["Pagado", resumen.totalPagado],
           ["Saldo", resumen.saldo],
           ["Vencido", resumen.vencido],
+          ...(aFavor > 0 ? [["A favor", aFavor]] : []),
         ].map(([etiqueta, valor]) => (
           <div key={etiqueta as string} className="tarjeta px-5 py-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">{etiqueta as string}</p>
@@ -191,8 +198,8 @@ export default async function PaginaEstadoCuenta({ params }: { params: Promise<{
                       {formatearMoneda(aNumero(cargo.saldo), moneda)}
                     </td>
                     <td className="py-2 pr-3">
-                      <Insignia tono={TONO_CARGO[cargo.estado] ?? "neutro"}>
-                        {cargo.estado.toLowerCase()}
+                      <Insignia tono={TONO_CARGO[estadoVisible(cargo, hoy)] ?? "neutro"}>
+                        {estadoVisible(cargo, hoy).toLowerCase()}
                       </Insignia>
                     </td>
                     <td className="py-2 text-right">
@@ -209,16 +216,15 @@ export default async function PaginaEstadoCuenta({ params }: { params: Promise<{
       </Tarjeta>
 
       <Tarjeta titulo="Registrar pago">
-        {pendientes.length === 0 ? (
-          <EstadoVacio titulo="Este alumno no tiene saldo pendiente" />
-        ) : (
-          <FormularioPago
-            alumnoId={alumno.id}
-            cargos={pendientes}
-            permiteParciales={permiteParciales}
-            moneda={moneda}
-          />
-        )}
+        <FormularioPago
+          alumnoId={alumno.id}
+          cargos={pendientes}
+          permiteParciales={permiteParciales}
+          moneda={moneda}
+          claveCaptura={randomUUID()}
+          hoy={hoyEnZona(institucion?.zonaHoraria ?? "America/Mexico_City")}
+          saldoFavor={aFavor}
+        />
       </Tarjeta>
 
       <Tarjeta titulo="Pagos registrados" descripcion={`${pagos.length} pago(s)`}>
@@ -243,6 +249,13 @@ export default async function PaginaEstadoCuenta({ params }: { params: Promise<{
                       {formatearFechaHora(pago.fecha)} · {pago.metodoPago.replace(/_/g, " ").toLowerCase()}
                       {pago.referencia ? ` · ref ${pago.referencia}` : ""} ·{" "}
                       {pago.aplicaciones.length} cargo(s)
+                      {pago.efectivoRecibido != null &&
+                        ` · recibido ${formatearMoneda(aNumero(pago.efectivoRecibido), moneda)}, cambio ${formatearMoneda(aNumero(pago.efectivoRecibido) - aNumero(pago.montoTotal), moneda)}`}
+                      {pago.estado !== "CANCELADO" &&
+                        (() => {
+                          const libre = aNumero(pago.montoTotal) - pago.aplicaciones.reduce((s, a) => s + aNumero(a.monto), 0);
+                          return libre > 0.004 ? ` · ${formatearMoneda(libre, moneda)} a favor` : "";
+                        })()}
                     </p>
                     {pago.motivoCancelacion && (
                       <p className="text-xs text-red-600">Motivo: {pago.motivoCancelacion}</p>

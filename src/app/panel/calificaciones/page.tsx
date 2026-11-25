@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requerirSesion } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { alumnosConAdeudoVencido } from "@/lib/cobranza";
 import { nombreCompleto } from "@/lib/catalogos";
 import { claseAccesible, clasesDelDocente } from "@/lib/docencia";
 import { configBool, configNumero } from "@/lib/configuracion";
@@ -123,6 +124,8 @@ export default async function PaginaCalificaciones({
   const alumnos = clase.alumnos
     .map((inscripcion) => inscripcion.alumno)
     .sort((a, b) => a.apellidoPaterno.localeCompare(b.apellidoPaterno));
+  // Adeudo por fecha (sin montos): un cargo que vencio hoy ya cuenta.
+  const conAdeudo = verAdeudos ? await alumnosConAdeudoVencido(alumnos.map((a) => a.id)) : new Set<number>();
 
   const porAlumno = new Map(calificacionesPeriodo.map((c) => [c.alumnoId, c]));
   const pesoAsignado = rubros.reduce((suma, rubro) => suma + Number(rubro.peso), 0);
@@ -333,7 +336,7 @@ export default async function PaginaCalificaciones({
                 id: alumno.id,
                 matricula: alumno.matricula,
                 nombre: nombreCompleto(alumno),
-                adeudo: verAdeudos && alumno.tieneAdeudo,
+                adeudo: conAdeudo.has(alumno.id),
                 puntos: captura?.puntos != null ? String(Number(captura.puntos)) : "",
               };
             })}
@@ -368,7 +371,7 @@ export default async function PaginaCalificaciones({
                   id: alumno.id,
                   matricula: alumno.matricula,
                   nombre: nombreCompleto(alumno),
-                  adeudo: verAdeudos && alumno.tieneAdeudo,
+                  adeudo: conAdeudo.has(alumno.id),
                   sugerida: sugeridas.get(alumno.id) ?? null,
                   oficial: registro?.calificacion != null ? String(Number(registro.calificacion)) : "",
                   observacion: registro?.observaciones ?? "",

@@ -48,6 +48,14 @@ export default async function PaginaRecibo({ params }: { params: Promise<{ pagoI
     "Este comprobante no tiene validez fiscal."
   );
 
+  // El recibo muestra lo que se aplico al emitirlo; lo que despues cubrio el
+  // saldo a favor no cambia un recibo ya entregado.
+  const emision = pago.recibo?.fechaEmision ?? pago.fecha;
+  const aplicacionesDelRecibo = pago.aplicaciones.filter((a) => a.aplicadaEn <= emision);
+  const aplicadoAlEmitir = aplicacionesDelRecibo.reduce((s, a) => s + aNumero(a.monto), 0);
+  const aFavorAlEmitir = Math.round((aNumero(pago.montoTotal) - aplicadoAlEmitir) * 100) / 100;
+  const cambio = pago.efectivoRecibido != null ? Math.round((aNumero(pago.efectivoRecibido) - aNumero(pago.montoTotal)) * 100) / 100 : 0;
+
   const regreso =
     sesion.rol === "ALUMNO" ? "/panel/estado-de-cuenta" : `/panel/finanzas/alumno/${pago.alumnoId}`;
 
@@ -136,7 +144,7 @@ export default async function PaginaRecibo({ params }: { params: Promise<{ pagoI
               </tr>
             </thead>
             <tbody>
-              {pago.aplicaciones.map((aplicacion) => (
+              {aplicacionesDelRecibo.map((aplicacion) => (
                 <tr key={aplicacion.id} className="border-b border-slate-100">
                   <td className="py-1.5 pr-3 text-slate-800">
                     {aplicacion.cargo.descripcion}
@@ -154,6 +162,14 @@ export default async function PaginaRecibo({ params }: { params: Promise<{ pagoI
               ))}
             </tbody>
             <tfoot>
+              {aFavorAlEmitir > 0 && (
+                <tr className="border-b border-slate-100" data-recibo-a-favor>
+                  <td colSpan={2} className="py-1.5 pr-3 text-slate-800">
+                    Saldo a favor (se aplica a los siguientes cargos)
+                  </td>
+                  <td className="py-1.5 pl-2 text-right text-slate-900">{formatearMoneda(aFavorAlEmitir, moneda)}</td>
+                </tr>
+              )}
               <tr>
                 <td colSpan={2} className="py-2 text-right text-sm font-semibold text-slate-700">
                   Total pagado
@@ -162,6 +178,14 @@ export default async function PaginaRecibo({ params }: { params: Promise<{ pagoI
                   {formatearMoneda(aNumero(pago.montoTotal), moneda)}
                 </td>
               </tr>
+              {cambio > 0 && (
+                <tr data-recibo-cambio>
+                  <td colSpan={3} className="pt-1 text-right text-xs text-slate-500">
+                    Efectivo recibido {formatearMoneda(aNumero(pago.efectivoRecibido), moneda)} · cambio entregado{" "}
+                    {formatearMoneda(cambio, moneda)}
+                  </td>
+                </tr>
+              )}
             </tfoot>
           </table>
         </section>

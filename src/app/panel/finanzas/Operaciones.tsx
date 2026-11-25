@@ -13,7 +13,9 @@ import {
   crearConvenio,
   registrarPago,
   type EstadoGeneracion,
+  type EstadoPago,
 } from "./operaciones";
+import { requiereReferencia } from "@/lib/referenciasPago";
 
 export function FormularioGeneracion({
   grupos,
@@ -167,39 +169,83 @@ export function FormularioCargoManual({
   );
 }
 
+const METODOS_PAGO: { valor: string; texto: string }[] = [
+  { valor: "EFECTIVO", texto: "Efectivo" },
+  { valor: "TRANSFERENCIA", texto: "Transferencia" },
+  { valor: "TARJETA_CREDITO", texto: "Tarjeta de credito" },
+  { valor: "TARJETA_DEBITO", texto: "Tarjeta de debito" },
+  { valor: "CHEQUE", texto: "Cheque" },
+  { valor: "DEPOSITO", texto: "Deposito" },
+  { valor: "PAGO_EN_LINEA", texto: "Pago en linea" },
+  { valor: "OTRO", texto: "Otro" },
+];
+
 export function FormularioPago({
   alumnoId,
   cargos,
   permiteParciales,
   moneda,
+  claveCaptura,
+  hoy,
+  saldoFavor,
 }: {
   alumnoId: number;
   cargos: { id: number; descripcion: string; saldo: number; vence: string; vencido: boolean }[];
   permiteParciales: boolean;
   moneda: string;
+  /// Nueva en cada carga de la pagina: si el formulario llega dos veces, el
+  /// servidor no crea otro pago.
+  claveCaptura: string;
+  hoy: string;
+  saldoFavor: number;
 }) {
-  const [estado, accion, pendiente] = useActionState<EstadoFinanzas, FormData>(registrarPago, {});
+  const [estado, accion, pendiente] = useActionState<EstadoPago, FormData>(registrarPago, {});
   const [reparto, setReparto] = useState<Record<number, string>>({});
   const [monto, setMonto] = useState("");
+  const [metodo, setMetodo] = useState("EFECTIVO");
+  // Controlados: si el servidor responde con un aviso (por ejemplo, referencia
+  // repetida) no se pierde lo capturado.
+  const [fecha, setFecha] = useState(hoy);
+  const [referencia, setReferencia] = useState("");
+  const [banco, setBanco] = useState("");
 
-  const sumaReparto = Object.values(reparto).reduce(
-    (total, valor) => total + (Number(valor) || 0),
-    0
-  );
+  const sumaReparto = Object.values(reparto).reduce((total, valor) => total + (Number(valor) || 0), 0);
+  const deuda = Math.round(cargos.reduce((t, c) => t + c.saldo, 0) * 100) / 100;
+  const sobrante = Math.round(((Number(monto) || 0) - deuda) * 100) / 100;
+  const conReferencia = requiereReferencia(metodo);
+  const formatear = (n: number) => new Intl.NumberFormat("es-MX", { style: "currency", currency: moneda }).format(n);
 
   function cubrirTodo() {
     const nuevo: Record<number, string> = {};
     for (const cargo of cargos) nuevo[cargo.id] = String(cargo.saldo);
     setReparto(nuevo);
-    setMonto(String(Math.round(cargos.reduce((t, c) => t + c.saldo, 0) * 100) / 100));
+    setMonto(String(deuda));
   }
 
   return (
-    <form action={accion} className="space-y-4">
+    <form action={accion} className="space-y-4" data-formulario-pago>
       <input type="hidden" name="alumnoId" value={alumnoId} />
+      <input type="hidden" name="claveCaptura" value={claveCaptura} />
       <Avisos estado={estado} />
+      {estado.duplicado && (
+        <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" data-aviso-duplicado>
+          <p>
+            Pago anterior con esa referencia: <strong>{estado.duplicado.folio}</strong> · {estado.duplicado.alumno} ·{" "}
+            {estado.duplicado.fecha} · {estado.duplicado.monto}
+          </p>
+          <button
+            type="submit"
+            name="confirmarDuplicado"
+            value="1"
+            disabled={pendiente}
+            className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700"
+          >
+            Es otro pago distinto: registrarlo
+          </button>
+        </div>
+      )}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Campo
           etiqueta="Monto recibido"
           name="monto"
@@ -210,24 +256,48 @@ export function FormularioPago({
           value={monto}
           onChange={(e) => setMonto(e.target.value)}
         />
-        <Selector etiqueta="Metodo de pago" name="metodoPago" defaultValue="EFECTIVO">
-          <option value="EFECTIVO">Efectivo</option>
-          <option value="TRANSFERENCIA">Transferencia</option>
-          <option value="TARJETA_CREDITO">Tarjeta de credito</option>
-          <option value="TARJETA_DEBITO">Tarjeta de debito</option>
-          <option value="CHEQUE">Cheque</option>
-          <option value="DEPOSITO">Deposito</option>
-          <option value="PAGO_EN_LINEA">Pago en linea</option>
-          <option value="OTRO">Otro</option>
+        <Selector etiqueta="Metodo de pago" name="metodoPago" value={metodo} onChange={(e) => setMetodo(e.target.value)}>
+          {METODOS_PAGO.map((m) => (
+            <option key={m.valor} value={m.valor}>{m.texto}</option>
+          ))}
         </Selector>
-        <Campo etiqueta="Referencia" name="referencia" />
-        <Campo etiqueta="Banco" name="banco" />
+        <Campo
+          etiqueta="Fecha en que se recibio"
+          name="fechaRecibido"
+          type="date"
+          required
+          max={hoy}
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
+        />
+        <Campo
+          etiqueta={metodo === "CHEQUE" ? "Numero de cheque" : "Referencia"}
+          name="referencia"
+          value={referencia}
+          onChange={(e) => setReferencia(e.target.value)}
+          required={conReferencia}
+          ayuda={conReferencia ? "Obligatoria para conciliar" : "Opcional"}
+        />
+        <Campo etiqueta="Banco" name="banco" value={banco} onChange={(e) => setBanco(e.target.value)} />
       </div>
+
+      {saldoFavor > 0 && (
+        <p className="text-xs text-emerald-700">
+          El alumno tiene {formatear(saldoFavor)} a favor que no alcanzo a cubrir otro cargo; se usara solo cuando haya cargos nuevos.
+        </p>
+      )}
+      {sobrante > 0 && (
+        <p className="text-sm font-medium text-slate-800" data-aviso-sobrante>
+          {metodo === "EFECTIVO"
+            ? `Sobran ${formatear(sobrante)}: entregalo como cambio.`
+            : `Sobran ${formatear(sobrante)}: quedaran como saldo a favor del alumno.`}
+        </p>
+      )}
 
       <div className="rounded-lg border border-slate-200">
         <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
           <p className="text-xs text-slate-600">
-            Deja el reparto vacio y el pago se aplica del cargo mas viejo al mas nuevo.
+            Deja el reparto vacio y el pago se aplica del cargo mas viejo al mas nuevo. Los saldos ya incluyen los recargos de hoy.
             {!permiteParciales && " El colegio exige cubrir el saldo completo de cada cargo."}
           </p>
           <button
@@ -245,9 +315,7 @@ export function FormularioPago({
                 <tr key={cargo.id}>
                   <td className="px-3 py-1.5 text-slate-700">
                     {cargo.descripcion}
-                    <span className={`ml-2 text-xs ${cargo.vencido ? "text-red-600" : "text-slate-400"}`}>
-                      vence {cargo.vence}
-                    </span>
+                    <span className={`ml-2 text-xs ${cargo.vencido ? "text-red-600" : "text-slate-400"}`}>vence {cargo.vence}</span>
                   </td>
                   <td className="px-3 py-1.5 text-right text-slate-600">
                     saldo {cargo.saldo} {moneda}
@@ -260,9 +328,7 @@ export function FormularioPago({
                       min={0}
                       max={cargo.saldo}
                       value={reparto[cargo.id] ?? ""}
-                      onChange={(e) =>
-                        setReparto((previo) => ({ ...previo, [cargo.id]: e.target.value }))
-                      }
+                      onChange={(e) => setReparto((previo) => ({ ...previo, [cargo.id]: e.target.value }))}
                       placeholder="0.00"
                       className="campo w-28 py-1 text-right"
                       aria-label={`Aplicar a ${cargo.descripcion}`}
@@ -270,6 +336,13 @@ export function FormularioPago({
                   </td>
                 </tr>
               ))}
+              {cargos.length === 0 && (
+                <tr>
+                  <td className="px-3 py-2 text-xs text-slate-500">
+                    Sin cargos pendientes. Un pago que no sea en efectivo queda como saldo a favor (anticipo).
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -279,7 +352,7 @@ export function FormularioPago({
         <p className="text-xs text-slate-500">
           Reparto capturado: {Math.round(sumaReparto * 100) / 100} {moneda}
         </p>
-        <Boton type="submit" disabled={pendiente || cargos.length === 0}>
+        <Boton type="submit" disabled={pendiente}>
           {pendiente ? "Registrando..." : "Registrar pago"}
         </Boton>
       </div>

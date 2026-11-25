@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { alumnosConAdeudoVencido } from "@/lib/cobranza";
 import { requerirSesion } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { configBool } from "@/lib/configuracion";
@@ -88,6 +89,11 @@ export default async function PaginaAsistencia({
     (sesionExistente?.registros ?? []).map((registro) => [registro.alumnoId, registro])
   );
 
+  const conAdeudo = verAdeudos
+    ? await alumnosConAdeudoVencido(
+        clase ? (porDia ? inscritosGrupo.map((i) => i.alumno.id) : clase.alumnos.map((i) => i.alumno.id)) : []
+      )
+    : new Set<number>();
   const lista = clase
     ? (porDia
         ? inscritosGrupo.map((inscripcion) => inscripcion.alumno)
@@ -102,7 +108,7 @@ export default async function PaginaAsistencia({
           nombre: nombreCompleto(alumno),
           estado: previos.get(alumno.id)?.estado ?? "PRESENTE",
           observacion: previos.get(alumno.id)?.observacion ?? "",
-          adeudo: verAdeudos && alumno.tieneAdeudo,
+          adeudo: conAdeudo.has(alumno.id),
         }))
     : [];
 

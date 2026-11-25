@@ -6,6 +6,8 @@ import { obtenerInstitucion } from "@/lib/institucion";
 import { aNumero, centavos } from "@/lib/finanzas";
 import { formatearDia, formatearMoneda } from "@/lib/formato";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
+import { conCandado, condicionAdeudoVencido } from "@/lib/cobranza";
+import { actualizarRecargos } from "@/lib/generacionCargos";
 import { FormularioGeneracion, BotonRecargos } from "./Operaciones";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +23,8 @@ export default async function PaginaFinanzas({
 
   const institucion = await obtenerInstitucion();
   const moneda = institucion?.moneda ?? "MXN";
+  // Los recargos se ponen al dia solos cada vez que se abre Finanzas.
+  await conCandado((tx) => actualizarRecargos({}, tx));
 
   const [grupos, cargos, pagos, conceptosActivos] = await Promise.all([
     db.grupo.findMany({
@@ -57,7 +61,7 @@ export default async function PaginaFinanzas({
         include: { cargos: { where: { estado: { notIn: ["CANCELADO", "CONDONADO"] } } } },
       })
     : await db.alumno.findMany({
-        where: { tieneAdeudo: true },
+        where: { cargos: { some: condicionAdeudoVencido() } },
         orderBy: { apellidoPaterno: "asc" },
         take: 30,
         include: { cargos: { where: { estado: { notIn: ["CANCELADO", "CONDONADO"] } } } },
@@ -131,7 +135,7 @@ export default async function PaginaFinanzas({
         </Alerta>
       )}
 
-      <Tarjeta titulo="Recargos" descripcion="Recalcula los recargos de los cargos vencidos">
+      <Tarjeta titulo="Recargos" descripcion="Se calculan solos al abrir Finanzas, cada estado de cuenta y antes de cada cobro; aqui puedes revisarlos a mano">
         <BotonRecargos />
       </Tarjeta>
 
@@ -184,7 +188,7 @@ export default async function PaginaFinanzas({
                         {formatearMoneda(saldoAlumno, moneda)}
                       </td>
                       <td className="py-2 pr-3">
-                        {alumno.tieneAdeudo ? (
+                        {alumno.cargos.some((c) => aNumero(c.saldo) > 0 && c.fechaVencimiento < hoy) ? (
                           <Insignia tono="peligro">adeudo vencido</Insignia>
                         ) : saldoAlumno > 0 ? (
                           <Insignia tono="alerta">con saldo</Insignia>

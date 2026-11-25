@@ -5,6 +5,7 @@ import { obtenerInstitucion } from "@/lib/institucion";
 import { alumnoDeSesion } from "@/lib/alumnoSesion";
 import { configBool } from "@/lib/configuracion";
 import { aNumero, resumenDeCuenta } from "@/lib/finanzas";
+import { estadoVisible, prepararCuenta, saldoAFavor } from "@/lib/cobranza";
 import { formatearFecha, formatearFechaHora, formatearMoneda } from "@/lib/formato";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
 
@@ -21,6 +22,9 @@ export default async function PaginaMiEstadoCuenta() {
 
   const institucion = await obtenerInstitucion();
   const moneda = institucion?.moneda ?? "MXN";
+  // Recargos de hoy y saldo a favor aplicado antes de mostrar.
+  await prepararCuenta(alumno.id);
+  const aFavor = await saldoAFavor(alumno.id);
 
   const [cargos, pagos, resumen] = await Promise.all([
     db.cargo.findMany({
@@ -58,6 +62,7 @@ export default async function PaginaMiEstadoCuenta() {
           ["Cargado", resumen.totalCargado],
           ["Pagado", resumen.totalPagado],
           ["Saldo", resumen.saldo],
+          ...(aFavor > 0 ? [["A favor", aFavor]] : []),
         ].map(([etiqueta, valor]) => (
           <div key={etiqueta as string} className="tarjeta px-5 py-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">{etiqueta as string}</p>
@@ -105,14 +110,14 @@ export default async function PaginaMiEstadoCuenta() {
                     <td className="py-2">
                       <Insignia
                         tono={
-                          cargo.estado === "PAGADO"
+                          estadoVisible(cargo, hoy) === "PAGADO"
                             ? "exito"
-                            : cargo.estado === "VENCIDO"
+                            : estadoVisible(cargo, hoy) === "VENCIDO"
                               ? "peligro"
                               : "neutro"
                         }
                       >
-                        {cargo.estado.toLowerCase()}
+                        {estadoVisible(cargo, hoy).toLowerCase()}
                       </Insignia>
                     </td>
                   </tr>

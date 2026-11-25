@@ -1349,6 +1349,12 @@ model Pago {
   canceladoEn          DateTime?
   canceladoPor         Int?
   motivoCancelacion    String?
+  /// Identifica cada captura: si el mismo formulario llega dos veces (doble
+  /// clic, red lenta), el segundo no crea otro pago.
+  claveCaptura         String?            @unique
+  /// En efectivo: lo que entrego la persona (el cambio es la diferencia con
+  /// montoTotal). En los demas metodos el sobrante queda como saldo a favor.
+  efectivoRecibido     Decimal?           @db.Decimal(12, 2)
 
   alumno       Alumno           @relation(fields: [alumnoId], references: [id], onDelete: Restrict)
   aplicaciones AplicacionPago[]
@@ -1358,11 +1364,14 @@ model Pago {
 }
 
 /// Permite pagos parciales y pagos que cubren varios cargos.
+/// Lo que un pago no alcanza a aplicar (montoTotal - aplicaciones) es saldo a
+/// favor del alumno; se aplica despues a sus cargos con nuevas filas aqui.
 model AplicacionPago {
-  id      Int     @id @default(autoincrement())
-  pagoId  Int
-  cargoId Int
-  monto   Decimal @db.Decimal(12, 2)
+  id         Int      @id @default(autoincrement())
+  pagoId     Int
+  cargoId    Int
+  monto      Decimal  @db.Decimal(12, 2)
+  aplicadaEn DateTime @default(now())
 
   pago  Pago  @relation(fields: [pagoId], references: [id], onDelete: Cascade)
   cargo Cargo @relation(fields: [cargoId], references: [id], onDelete: Restrict)

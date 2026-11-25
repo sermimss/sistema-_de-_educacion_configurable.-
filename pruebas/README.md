@@ -168,6 +168,23 @@ publica y se contesta como cualquier otro.
 DATABASE_URL=... npm run prueba:importar-examen
 ```
 
+## pagos-fiables.mjs
+
+34 comprobaciones sobre una base **recien sembrada con los datos de
+demostracion**, con `DATABASE_URL` apuntando a esa base. Recargos calculados
+solos al abrir el estado de cuenta y quitados si el pago llego a tiempo
+(fecha anterior); referencia obligatoria segun el metodo; saldo a favor que
+cubre solo un cargo nuevo sin cambiar el recibo; cambio en efectivo; fechas
+futuras rechazadas y pasadas aceptadas; referencia repetida con
+confirmacion; el mismo formulario enviado tres veces registra un pago; dos
+cajas cobrando a la vez (no se cobra dos veces ni se repiten folios); adeudo
+por fecha para el docente y la lista de Finanzas; y cancelar un pago con
+saldo a favor revierte todo.
+
+```bash
+DATABASE_URL=... npm run prueba:pagos
+```
+
 ## menu-movil.mjs
 
 39 comprobaciones con el navegador en tamano de celular (390 x 844) sobre una

@@ -212,8 +212,13 @@ await admin.getByRole("button", { name: "Aplicar recargos a los cargos vencidos"
 await admin.waitForTimeout(4000);
 const trasRecargos = await limpio(admin);
 comprobar("Aplica recargos a lo vencido", trasRecargos.includes("Se revisaron"));
-comprobar("Los recargos suman algo", /Diferencia en recargos: [1-9]/.test(trasRecargos),
+// Al abrir Finanzas los recargos ya se calcularon solos: revisarlos a mano
+// no encuentra nada pendiente.
+comprobar("Los recargos ya estaban al dia al abrir Finanzas", /Diferencia en recargos: 0/.test(trasRecargos),
   trasRecargos.slice(trasRecargos.indexOf("Diferencia"), trasRecargos.indexOf("Diferencia") + 45));
+await admin.goto(urlCuenta);
+comprobar("El estado de cuenta muestra los recargos ya aplicados", /\+\$[1-9]/.test(await limpio(admin)));
+await admin.goto(`${BASE}/panel/finanzas`);
 
 await admin.getByRole("button", { name: "Aplicar recargos a los cargos vencidos" }).click();
 await admin.waitForTimeout(4000);

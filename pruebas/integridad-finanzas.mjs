@@ -19,6 +19,11 @@ function comprobar(nombre, ok, detalle = "") {
 const numero = (valor) => (valor == null ? 0 : Number(valor.toString()));
 const limpio = async (p) => (await p.textContent("body")).replace(/\s+/g, " ");
 
+// Esta suite revisa pagos y cancelaciones, no recargos: los cargos de prueba
+// vencen en fechas ya pasadas y los recargos ahora se calculan solos, asi
+// que se apaga la regla para que los montos sean exactos.
+await db.reglaRecargo.updateMany({ data: { activa: false } });
+
 const navegador = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
 const p = await navegador.newPage();
 p.on("pageerror", (e) => console.log("ERROR DE PAGINA:", e.message));

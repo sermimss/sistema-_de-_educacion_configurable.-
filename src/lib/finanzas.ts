@@ -1,4 +1,4 @@
-import type { Periodicidad, TipoCalculo } from "@prisma/client";
+import type { Periodicidad, Prisma, TipoCalculo } from "@prisma/client";
 import { db } from "./db";
 import { configTexto } from "./configuracion";
 import { resolverPlantilla } from "./formato";
@@ -175,19 +175,23 @@ export function calcularRecargo(
 }
 
 /// Folio consecutivo con la plantilla que la escuela configuro.
-export async function siguienteFolioCargo(): Promise<string> {
+export type ClienteFinanzas = Prisma.TransactionClient | typeof db;
+
+export async function siguienteFolioCargo(cliente: ClienteFinanzas = db): Promise<string> {
   const plantilla = await configTexto("finanzas.plantilla_folio_cargo", "C-{ANIO}-{CONSECUTIVO:6}");
-  const total = await db.cargo.count();
+  const total = await cliente.cargo.count();
   return unicoFolio(plantilla, total, async (folio) =>
-    Boolean(await db.cargo.findUnique({ where: { folio } }))
+    Boolean(await cliente.cargo.findUnique({ where: { folio } }))
   );
 }
 
-export async function siguienteFolioPago(): Promise<string> {
+/// Dentro de conCandado (ver cobranza.ts) dos cajas no pueden sacar el mismo
+/// folio: el conteo y la creacion ocurren con la caja bloqueada.
+export async function siguienteFolioPago(cliente: ClienteFinanzas = db): Promise<string> {
   const plantilla = await configTexto("finanzas.plantilla_folio_pago", "P-{ANIO}-{CONSECUTIVO:6}");
-  const total = await db.pago.count();
+  const total = await cliente.pago.count();
   return unicoFolio(plantilla, total, async (folio) =>
-    Boolean(await db.pago.findUnique({ where: { folio } }))
+    Boolean(await cliente.pago.findUnique({ where: { folio } }))
   );
 }
 
@@ -213,8 +217,8 @@ export type ResumenCuenta = {
 };
 
 /// Resumen del estado de cuenta de un alumno.
-export async function resumenDeCuenta(alumnoId: number): Promise<ResumenCuenta> {
-  const cargos = await db.cargo.findMany({
+export async function resumenDeCuenta(alumnoId: number, cliente: ClienteFinanzas = db): Promise<ResumenCuenta> {
+  const cargos = await cliente.cargo.findMany({
     where: { alumnoId, estado: { notIn: ["CANCELADO", "CONDONADO"] } },
   });
   const hoy = new Date();
@@ -250,9 +254,11 @@ export async function resumenDeCuenta(alumnoId: number): Promise<ResumenCuenta> 
 }
 
 /// Marca en el alumno si trae adeudo vencido, para el bloqueo configurable.
-export async function actualizarBanderaAdeudo(alumnoId: number): Promise<boolean> {
-  const resumen = await resumenDeCuenta(alumnoId);
+/// La marca se guarda para consultas rapidas, pero las pantallas que deben
+/// ser exactas calculan el adeudo por fecha (ver alumnosConAdeudoVencido).
+export async function actualizarBanderaAdeudo(alumnoId: number, cliente: ClienteFinanzas = db): Promise<boolean> {
+  const resumen = await resumenDeCuenta(alumnoId, cliente);
   const tieneAdeudo = resumen.vencido > 0;
-  await db.alumno.update({ where: { id: alumnoId }, data: { tieneAdeudo } });
+  await cliente.alumno.update({ where: { id: alumnoId }, data: { tieneAdeudo } });
   return tieneAdeudo;
 }

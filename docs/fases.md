@@ -716,3 +716,36 @@ Verificado: tareas 37 y examenes 40 (nuevas) y la regresion completa.
   (incluida la numeracion automatica de Word) y el `.txt` en UTF-8 o ANSI.
 
 Verificado: carga de examenes 18 (nueva) y la regresion completa.
+
+## Captura de pagos confiable
+
+1. **Recargos al dia**: se calculan solos al abrir Finanzas, cada estado de
+   cuenta (tambien en el portal del alumno) y antes de cada cobro. Si el pago
+   se registra con una fecha anterior, el recargo se calcula a esa fecha:
+   quien pago a tiempo no debe recargo aunque se capture despues. El boton
+   manual queda solo para revisarlos.
+2. **Saldo a favor**: si una transferencia, deposito, tarjeta, cheque o pago
+   en linea es mayor a la deuda, se registra completo y el sobrante queda a
+   favor del alumno; se aplica solo a sus cargos nuevos o pendientes (del mas
+   viejo al mas nuevo, respetando "pagos parciales"). En **efectivo** el
+   sobrante es **cambio**: se registra lo aplicado y el sistema dice cuanto
+   devolver (y queda en el recibo). El recibo muestra lo aplicado al
+   emitirlo y el saldo a favor de ese momento; no cambia despues.
+3. **Fecha en que se recibio**: hoy o cualquier fecha pasada, nunca futura.
+4. **Doble envio**: cada captura lleva una clave; si el mismo formulario
+   llega dos o mas veces, se registra un solo pago. Una **referencia ya usada**
+   con el mismo metodo muestra el pago anterior y solo se registra si se
+   confirma que es otro pago.
+5. **Dos cajas a la vez**: cobro, cancelacion y recargos corren con la caja
+   del colegio bloqueada (candado de PostgreSQL por colegio): no se repiten
+   folios ni se cobra dos veces el mismo saldo.
+6. **Adeudo por fecha**: la lista de adeudos de Finanzas, el estado de cuenta
+   y la marca que ven los docentes se calculan por la fecha de vencimiento,
+   no por una marca guardada.
+7. **Referencia obligatoria** en transferencia, deposito, tarjetas, cheque y
+   pago en linea (en efectivo y "otro" es opcional).
+
+Cancelar un pago tambien revierte lo que su saldo a favor habia cubierto.
+
+Verificado: pagos fiables 34 (nueva) y la regresion completa (finanzas e
+integridad ajustadas a los recargos automaticos).

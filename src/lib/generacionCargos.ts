@@ -9,6 +9,7 @@ import {
   centavos,
   fechasDeVencimiento,
   siguienteFolioCargo,
+  type ClienteFinanzas,
 } from "./finanzas";
 
 export type LineaPrevia = {
@@ -230,8 +231,8 @@ export async function generarCargos(
 
 /// Recalcula montos, saldo y estado de un cargo a partir de lo que ya se le
 /// aplico en pagos. Se usa tras cobrar, cancelar un pago o mover recargos.
-export async function recalcularCargo(cargoId: number): Promise<void> {
-  const cargo = await db.cargo.findUnique({
+export async function recalcularCargo(cargoId: number, cliente: ClienteFinanzas = db): Promise<void> {
+  const cargo = await cliente.cargo.findUnique({
     where: { id: cargoId },
     include: { aplicaciones: { include: { pago: true } } },
   });
@@ -253,7 +254,7 @@ export async function recalcularCargo(cargoId: number): Promise<void> {
   const estado =
     saldo <= 0 ? "PAGADO" : pagado > 0 ? "PARCIAL" : vencido ? "VENCIDO" : "PENDIENTE";
 
-  await db.cargo.update({
+  await cliente.cargo.update({
     where: { id: cargoId },
     data: { montoTotal: total, saldo, estado },
   });
@@ -266,23 +267,31 @@ export type ResumenRecargos = {
 };
 
 /// Aplica las reglas de recargo a los cargos vencidos. Recalcula desde cero,
-/// asi que correrlo dos veces no cobra el recargo dos veces.
-export async function actualizarRecargos(cicloId?: number | null): Promise<ResumenRecargos> {
-  const reglas = await db.reglaRecargo.findMany({
+/// asi que correrlo dos veces no cobra el recargo dos veces. Se corre solo al
+/// abrir Finanzas o un estado de cuenta y antes de cada cobro, para que nunca
+/// se cobre un cargo vencido sin su recargo.
+export async function actualizarRecargos(
+  filtro: { cicloId?: number | null; alumnoId?: number | null; alFecha?: Date } = {},
+  cliente: ClienteFinanzas = db
+): Promise<ResumenRecargos> {
+  const reglas = await cliente.reglaRecargo.findMany({
     where: { activa: true },
     include: { conceptos: { select: { id: true } } },
   });
   if (reglas.length === 0) return { revisados: 0, actualizados: 0, montoAgregado: 0 };
 
-  const cargos = await db.cargo.findMany({
+  const cargos = await cliente.cargo.findMany({
     where: {
       estado: { in: ["PENDIENTE", "PARCIAL", "VENCIDO"] },
-      ...(cicloId ? { cicloId } : {}),
+      ...(filtro.cicloId ? { cicloId: filtro.cicloId } : {}),
+      ...(filtro.alumnoId ? { alumnoId: filtro.alumnoId } : {}),
     },
     include: { concepto: true, aplicaciones: { include: { pago: true } } },
   });
 
-  const hoy = new Date();
+  // Normalmente hoy; al registrar un pago con fecha anterior, a esa fecha
+  // (quien pago a tiempo no debe recargo aunque se capture despues).
+  const hoy = filtro.alFecha ?? new Date();
   let actualizados = 0;
   let montoAgregado = 0;
 
@@ -326,13 +335,13 @@ export async function actualizarRecargos(cicloId?: number | null): Promise<Resum
     if (centavos(recargo) === anterior) continue;
 
     montoAgregado += centavos(recargo) - anterior;
-    await db.cargo.update({ where: { id: cargo.id }, data: { montoRecargo: centavos(recargo) } });
-    await recalcularCargo(cargo.id);
+    await cliente.cargo.update({ where: { id: cargo.id }, data: { montoRecargo: centavos(recargo) } });
+    await recalcularCargo(cargo.id, cliente);
     actualizados++;
   }
 
-  const alumnos = [...new Set(cargos.map((cargo) => cargo.alumnoId))];
-  for (const alumnoId of alumnos) await actualizarBanderaAdeudo(alumnoId);
+  // Todos los revisados: un cargo pudo vencer hoy aunque su recargo no cambie.
+  for (const alumnoId of new Set(cargos.map((cargo) => cargo.alumnoId))) await actualizarBanderaAdeudo(alumnoId, cliente);
 
   return { revisados: cargos.length, actualizados, montoAgregado: centavos(montoAgregado) };
 }
