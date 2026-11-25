@@ -202,7 +202,7 @@ DATABASE_URL=... npm run prueba:caja
 
 ## cobranza.mjs
 
-COBRANZA_OK comprobaciones sobre una base **recien sembrada con los datos de
+49 comprobaciones sobre una base **recien sembrada con los datos de
 demostracion**, con `DATABASE_URL` apuntando a esa base. Referencia de pago
 con digito verificador y datos bancarios en el estado de cuenta del alumno;
 el alumno sube comprobantes (rechaza archivos falsos, conserva lo capturado

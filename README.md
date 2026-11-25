@@ -274,7 +274,7 @@ npm run prueba:examenes           # 40 comprobaciones de examenes en linea (base
 npm run prueba:importar-examen    # 18 comprobaciones de cargar examenes ya escritos (base con demo y DATABASE_URL)
 npm run prueba:pagos              # 34 comprobaciones de captura de pagos confiable (base con demo y DATABASE_URL)
 npm run prueba:caja               # 25 comprobaciones de caja por cajero y corte de caja (base con demo y DATABASE_URL)
-npm run prueba:cobranza           # COBRANZA_OK comprobaciones de referencia, comprobantes y acceso de Caja (base con demo y DATABASE_URL)
+npm run prueba:cobranza           # 49 comprobaciones de referencia, comprobantes y acceso de Caja (base con demo y DATABASE_URL)
 npm run prueba:movil              # 39 comprobaciones del sistema en celular (base con demo)
 npm run prueba:documentos         # 43 comprobaciones de logo, colores y documentos institucionales (base recien sembrada)
 npm run prueba:grupos             # 33 comprobaciones de grupos con calendario y horario (base recien sembrada)

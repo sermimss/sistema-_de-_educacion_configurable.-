@@ -801,4 +801,4 @@ antes de cobrar; regresion completa.
   Nadie puede cambiar su propio acceso.
 - **Generar cargos de un solo alumno** se hace con su matricula.
 
-Verificado: cobranza COBRANZA_OK (nueva) y la regresion completa.
+Verificado: cobranza 49 (nueva) y la regresion completa.
