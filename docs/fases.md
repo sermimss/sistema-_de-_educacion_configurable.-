@@ -772,3 +772,33 @@ integridad ajustadas a los recargos automaticos).
 
 Verificado: caja 25 (nueva); finanzas, integridad y pagos fiables abren caja
 antes de cobrar; regresion completa.
+
+## Cobranza: referencia, comprobantes y acceso de Caja
+
+- **Referencia de pago por alumno**: un numero de 9 digitos (su numero
+  interno a 8 digitos mas un digito verificador, asi un error al teclearlo se
+  detecta). El alumno la ve en *Estado de cuenta* junto con los datos para
+  transferir o depositar (banco, titular, cuenta, CLABE e instrucciones, en
+  *Configuracion > Finanzas*). La administracion la ve en el estado de cuenta
+  del alumno y en caja se puede buscar al alumno escribiendola.
+- **Comprobantes que sube el alumno**: en *Estado de cuenta > Ya pague* sube
+  la foto o el PDF (hasta 10 MB, revisado por su contenido) con monto, fecha,
+  numero de operacion y banco. Queda *Por verificar*. No se acepta otro
+  comprobante con la misma referencia salvo que el anterior se haya rechazado.
+- **Verificar** (menu *Comprobantes de pago*, administracion y caja): se ve el
+  archivo, la referencia del alumno y lo que debe. *Confirmar* registra el
+  pago (el monto y la referencia se pueden corregir) en la caja de quien
+  confirma, con la fecha del comprobante; por eso pide la caja abierta. Si la
+  referencia ya existe en otro pago avisa y pide confirmar. Confirmar dos
+  veces no duplica el pago. *Rechazar* pide el motivo, que el alumno ve; al
+  confirmarse el alumno ve su recibo. El panel avisa cuantos hay por verificar.
+- **Acceso de Caja (cajero)**: se da en *Personal* al elegir el *Acceso al
+  sistema*: Docente, Administracion o Caja; se puede cambiar despues (la
+  persona tiene que volver a entrar). Caja cobra en su propia caja y hace su
+  corte, consulta estados de cuenta y verifica comprobantes. No cancela
+  pagos, no crea cargos ni convenios, no condona, no ve expedientes, ni
+  calificaciones, asistencia, personal o configuracion, y solo ve sus cortes.
+  Nadie puede cambiar su propio acceso.
+- **Generar cargos de un solo alumno** se hace con su matricula.
+
+Verificado: cobranza COBRANZA_OK (nueva) y la regresion completa.

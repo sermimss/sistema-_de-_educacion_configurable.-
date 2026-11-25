@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { nombreCompleto } from "@/lib/catalogos";
+import { ETIQUETA_ROL } from "@/lib/navegacion";
 import { configBool } from "@/lib/configuracion";
 import { formatearFecha } from "@/lib/formato";
 import { Alerta, Boton, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
@@ -87,6 +88,10 @@ export default async function PaginaEmpleado({
           clabe: empleado.clabe,
           estado: empleado.estado,
           tieneUsuario: Boolean(empleado.usuarioId),
+          rolAcceso:
+            empleado.usuario && ["DOCENTE", "ADMIN", "CAJERO"].includes(empleado.usuario.rol)
+              ? empleado.usuario.rol
+              : null,
         }}
       />
 
@@ -120,7 +125,7 @@ export default async function PaginaEmpleado({
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-600">Rol</span>
-                <span className="text-slate-900">{empleado.usuario.rol}</span>
+                <span className="text-slate-900" data-acceso-empleado>{ETIQUETA_ROL[empleado.usuario.rol]}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-600">Ultimo acceso</span>

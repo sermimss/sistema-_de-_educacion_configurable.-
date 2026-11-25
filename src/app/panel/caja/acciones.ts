@@ -18,7 +18,7 @@ function dinero(formData: FormData, campo: string): number | null {
 }
 
 export async function accionAbrirCaja(_p: EstadoCaja, formData: FormData): Promise<EstadoCaja> {
-  const sesion = await requerirRol("ADMIN");
+  const sesion = await requerirRol("ADMIN", "CAJERO");
   const fondo = dinero(formData, "fondoInicial") ?? (String(formData.get("fondoInicial") ?? "").trim() ? null : 0);
   if (fondo == null) return { error: "El fondo inicial debe ser 0 o mas." };
   if (fondo > 1_000_000) return { error: "El fondo inicial es demasiado alto." };
@@ -32,7 +32,7 @@ export async function accionAbrirCaja(_p: EstadoCaja, formData: FormData): Promi
 
 /// Cierra el turno: se cuenta el efectivo y se compara con lo esperado.
 export async function accionCerrarCaja(_p: EstadoCaja, formData: FormData): Promise<EstadoCaja> {
-  const sesion = await requerirRol("ADMIN");
+  const sesion = await requerirRol("ADMIN", "CAJERO");
   const contado = dinero(formData, "efectivoContado");
   if (contado == null) return { error: "Escribe cuanto efectivo contaste en la caja (0 si no hay)." };
   const notas = String(formData.get("notasCierre") ?? "").trim().slice(0, 1000) || null;

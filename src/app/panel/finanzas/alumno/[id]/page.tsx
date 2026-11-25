@@ -10,6 +10,7 @@ import { aNumero, resumenDeCuenta } from "@/lib/finanzas";
 import { estadoVisible, prepararCuenta, saldoAFavor } from "@/lib/cobranza";
 import { hoyEnZona } from "@/lib/fechasDia";
 import { turnoAbierto } from "@/lib/caja";
+import { referenciaDeAlumno } from "@/lib/referenciaAlumno";
 import { formatearFecha, formatearFechaHora, formatearMoneda } from "@/lib/formato";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
 import {
@@ -32,7 +33,8 @@ const TONO_CARGO: Record<string, "exito" | "alerta" | "peligro" | "neutro"> = {
 };
 
 export default async function PaginaEstadoCuenta({ params }: { params: Promise<{ id: string }> }) {
-  const sesion = await requerirRol("ADMIN");
+  const sesion = await requerirRol("ADMIN", "CAJERO");
+  const esAdmin = sesion.rol === "ADMIN";
   const { id } = await params;
   const alumnoId = Number(id);
   if (!Number.isFinite(alumnoId)) notFound();
@@ -92,21 +94,24 @@ export default async function PaginaEstadoCuenta({ params }: { params: Promise<{
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <Link href="/panel/finanzas" className="text-sm text-marca-600 hover:underline">
-            ← Finanzas
+          <Link href={esAdmin ? "/panel/finanzas" : "/panel/caja"} className="text-sm text-marca-600 hover:underline">
+            ← {esAdmin ? "Finanzas" : "Caja"}
           </Link>
           <h1 className="mt-1 text-xl font-semibold text-slate-900">{nombreCompleto(alumno)}</h1>
           <p className="mt-1 text-sm text-slate-500">
-            <span className="font-mono">{alumno.matricula}</span> · {alumno.plan.nombre}
+            <span className="font-mono">{alumno.matricula}</span> · referencia de pago{" "}
+            <span className="font-mono" data-referencia-alumno>{referenciaDeAlumno(alumno.id)}</span> · {alumno.plan.nombre}
             {alumno.tutores[0] && ` · paga: ${alumno.tutores[0].nombre}`}
           </p>
         </div>
-        <Link
-          href={`/panel/alumnos/${alumno.id}`}
-          className="text-sm font-medium text-marca-600 hover:underline"
-        >
-          Ver expediente
-        </Link>
+        {esAdmin && (
+          <Link
+            href={`/panel/alumnos/${alumno.id}`}
+            className="text-sm font-medium text-marca-600 hover:underline"
+          >
+            Ver expediente
+          </Link>
+        )}
       </header>
 
       {resumen.vencido > 0 && (
@@ -205,7 +210,7 @@ export default async function PaginaEstadoCuenta({ params }: { params: Promise<{
                       </Insignia>
                     </td>
                     <td className="py-2 text-right">
-                      {["PENDIENTE", "VENCIDO"].includes(cargo.estado) && (
+                      {esAdmin && ["PENDIENTE", "VENCIDO"].includes(cargo.estado) && (
                         <BotonEstadoCargo cargoId={cargo.id} />
                       )}
                     </td>
@@ -279,7 +284,7 @@ export default async function PaginaEstadoCuenta({ params }: { params: Promise<{
                         Ver recibo {pago.recibo.serie}-{pago.recibo.folio}
                       </Link>
                     )}
-                    {pago.estado !== "CANCELADO" && pago.turno?.estado !== "CERRADO" && <BotonCancelarPago pagoId={pago.id} />}
+                    {esAdmin && pago.estado !== "CANCELADO" && pago.turno?.estado !== "CERRADO" && <BotonCancelarPago pagoId={pago.id} />}
                     {pago.estado !== "CANCELADO" && pago.turno?.estado === "CERRADO" && (
                       <span className="text-xs text-slate-400" data-corte-cerrado>En el corte #{pago.turno.id} (cerrado)</span>
                     )}
@@ -291,7 +296,7 @@ export default async function PaginaEstadoCuenta({ params }: { params: Promise<{
         )}
       </Tarjeta>
 
-      {permiteConvenios && (
+      {esAdmin && permiteConvenios && (
         <Tarjeta titulo="Convenios de pago" descripcion={`${convenios.length} convenio(s)`}>
           <div className="space-y-4">
             {convenios.map((convenio) => (
@@ -332,12 +337,14 @@ export default async function PaginaEstadoCuenta({ params }: { params: Promise<{
         </Tarjeta>
       )}
 
+      {esAdmin && (
       <Tarjeta titulo="Cargo manual" descripcion="Motivo, monto y fecha libres">
         <FormularioCargoManual
           alumnoId={alumno.id}
           conceptos={conceptos.map((concepto) => ({ id: concepto.id, etiqueta: concepto.nombre }))}
         />
       </Tarjeta>
+      )}
     </div>
   );
 }

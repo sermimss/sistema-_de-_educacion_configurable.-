@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { alumnosConAdeudoVencido } from "@/lib/cobranza";
 import { requerirSesion } from "@/lib/auth";
@@ -25,6 +26,8 @@ export default async function PaginaAsistencia({
   if (sesion.rol === "ALUMNO") {
     return <Alerta tipo="aviso">Tu consulta de asistencia llega en la Fase 4.</Alerta>;
   }
+  // Solo administracion y docentes (caja no captura).
+  if (sesion.rol !== "ADMIN" && sesion.rol !== "DOCENTE") redirect("/panel?error=sin-permiso");
 
   const params = await searchParams;
   const fecha = /^\d{4}-\d{2}-\d{2}$/.test(params.fecha ?? "") ? params.fecha! : hoyEnTexto();

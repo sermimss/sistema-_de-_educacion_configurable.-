@@ -67,6 +67,11 @@ export const CATALOGO_CONFIGURACION: DefinicionConfig[] = [
   { clave: "finanzas.iva_default", valor: "0", tipo: "NUMERO", categoria: "finanzas", etiqueta: "IVA predeterminado (%)", descripcion: "La ensenanza suele estar exenta; se deja configurable.", orden: 13 },
   { clave: "finanzas.cfdi_activo", valor: "false", tipo: "BOOLEANO", categoria: "finanzas", etiqueta: "Timbrado CFDI activo", descripcion: "Requiere conectar un PAC. Mientras este apagado se emite recibo interno.", editable: false, orden: 14 },
   { clave: "finanzas.leyenda_recibo", valor: "Este comprobante no tiene validez fiscal.", tipo: "TEXTO", categoria: "finanzas", etiqueta: "Leyenda al pie del recibo", orden: 15 },
+  { clave: "finanzas.pago_banco", valor: "", tipo: "TEXTO", categoria: "finanzas", etiqueta: "Banco para transferencias", descripcion: "Se muestra al alumno en Como pagar.", orden: 16 },
+  { clave: "finanzas.pago_titular", valor: "", tipo: "TEXTO", categoria: "finanzas", etiqueta: "Titular de la cuenta", orden: 17 },
+  { clave: "finanzas.pago_cuenta", valor: "", tipo: "TEXTO", categoria: "finanzas", etiqueta: "Numero de cuenta", orden: 18 },
+  { clave: "finanzas.pago_clabe", valor: "", tipo: "TEXTO", categoria: "finanzas", etiqueta: "CLABE interbancaria", orden: 19 },
+  { clave: "finanzas.pago_instrucciones", valor: "Escribe tu referencia de pago en el concepto de la transferencia y sube tu comprobante en Estado de cuenta.", tipo: "TEXTO", categoria: "finanzas", etiqueta: "Instrucciones de pago para el alumno", orden: 20 },
 
   // ---------------- Portales ----------------
   { clave: "portales.alumno_ve_calificaciones", valor: "true", tipo: "BOOLEANO", categoria: "portales", etiqueta: "Portal del alumno: calificaciones", orden: 1 },

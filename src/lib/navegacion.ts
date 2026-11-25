@@ -11,7 +11,7 @@ export type ItemNavegacion = {
 };
 
 export const NAVEGACION: ItemNavegacion[] = [
-  { etiqueta: "Panel", ruta: "/panel", roles: ["ADMIN", "DOCENTE", "ALUMNO"], fase: 1, grupo: "general" },
+  { etiqueta: "Panel", ruta: "/panel", roles: ["ADMIN", "DOCENTE", "ALUMNO", "CAJERO"], fase: 1, grupo: "general" },
   { etiqueta: "Avisos", ruta: "/panel/avisos", roles: ["ADMIN", "DOCENTE", "ALUMNO"], fase: 1, grupo: "general" },
 
   { etiqueta: "Alumnos", ruta: "/panel/alumnos", roles: ["ADMIN"], fase: 2, grupo: "control" },
@@ -31,7 +31,8 @@ export const NAVEGACION: ItemNavegacion[] = [
   { etiqueta: "Examenes", ruta: "/panel/examenes", roles: ["DOCENTE", "ALUMNO"], fase: 3, grupo: "academico" },
   { etiqueta: "Boletas y promedios", ruta: "/panel/boletas", roles: ["ADMIN"], fase: 3, grupo: "academico" },
 
-  { etiqueta: "Caja", ruta: "/panel/caja", roles: ["ADMIN"], fase: 4, grupo: "finanzas" },
+  { etiqueta: "Caja", ruta: "/panel/caja", roles: ["ADMIN", "CAJERO"], fase: 4, grupo: "finanzas" },
+  { etiqueta: "Comprobantes de pago", ruta: "/panel/caja/comprobantes", roles: ["ADMIN", "CAJERO"], fase: 4, grupo: "finanzas" },
   { etiqueta: "Finanzas", ruta: "/panel/finanzas", roles: ["ADMIN"], fase: 4, grupo: "finanzas" },
   { etiqueta: "Mis calificaciones", ruta: "/panel/mis-calificaciones", roles: ["ALUMNO"], fase: 4, grupo: "academico" },
   { etiqueta: "Mi asistencia", ruta: "/panel/mi-asistencia", roles: ["ALUMNO"], fase: 4, grupo: "academico" },
@@ -61,6 +62,7 @@ export const ETIQUETA_ROL: Record<RolUsuario, string> = {
   ADMIN: "Administracion",
   DOCENTE: "Docente",
   ALUMNO: "Alumno",
+  CAJERO: "Caja",
 };
 
 export const ETIQUETA_GRUPO: Record<ItemNavegacion["grupo"], string> = {

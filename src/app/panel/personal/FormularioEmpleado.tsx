@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Alerta, Boton, Campo, Selector, Tarjeta } from "@/components/ui";
 import { actualizarEmpleado, crearEmpleado, type EstadoFormulario } from "./acciones";
 
@@ -25,7 +25,25 @@ export type EmpleadoEditable = {
   clabe: string | null;
   estado: string;
   tieneUsuario: boolean;
+  /// Rol de su cuenta (DOCENTE, ADMIN o CAJERO); null si no tiene cuenta.
+  rolAcceso: string | null;
 };
+
+function SelectorAcceso({ valor, onCambio }: { valor: string; onCambio: (valor: string) => void }) {
+  return (
+    <Selector
+      etiqueta="Acceso al sistema"
+      name="acceso"
+      value={valor}
+      onChange={(e) => onCambio(e.target.value)}
+      ayuda="Docente: sus clases. Administracion: todo el sistema. Caja: cobra, hace su corte, consulta estados de cuenta y verifica comprobantes."
+    >
+      <option value="DOCENTE">Docente</option>
+      <option value="ADMIN">Administracion</option>
+      <option value="CAJERO">Caja</option>
+    </Selector>
+  );
+}
 
 export default function FormularioEmpleado({
   empleado,
@@ -35,6 +53,10 @@ export default function FormularioEmpleado({
   nominaActiva: boolean;
 }) {
   const esEdicion = Boolean(empleado);
+  const [esDocente, setEsDocente] = useState(empleado?.esDocente ?? true);
+  const [acceso, setAcceso] = useState(empleado?.rolAcceso ?? (esDocente ? "DOCENTE" : "ADMIN"));
+  // En el alta, el acceso sigue a "Imparte clases" hasta que se elija a mano.
+  const [accesoElegido, setAccesoElegido] = useState(esEdicion);
   const [estado, accion, pendiente] = useActionState<EstadoFormulario, FormData>(
     esEdicion ? actualizarEmpleado : crearEmpleado,
     {}
@@ -95,7 +117,12 @@ export default function FormularioEmpleado({
             <input
               type="checkbox"
               name="esDocente"
-              defaultChecked={empleado?.esDocente ?? true}
+              checked={esDocente}
+              onChange={(e) => {
+                setEsDocente(e.target.checked);
+                if (!accesoElegido) setAcceso(e.target.checked ? "DOCENTE" : "ADMIN");
+                else if (!e.target.checked && acceso === "DOCENTE") setAcceso("ADMIN");
+              }}
               className="mt-0.5 h-4 w-4 rounded border-slate-300 text-marca-600"
             />
             <span>
@@ -160,11 +187,21 @@ export default function FormularioEmpleado({
             <span>
               <span className="block text-sm font-medium text-slate-800">Crear cuenta de acceso</span>
               <span className="mt-0.5 block text-xs text-slate-500">
-                Usuario y contrasena temporal = el numero de empleado. Requiere correo. El rol es
-                Docente si imparte clases, Administrador si no.
+                Usuario y contrasena temporal = el numero de empleado. Requiere correo.
               </span>
             </span>
           </label>
+          <div className="mt-4 max-w-sm">
+            <SelectorAcceso valor={acceso} onCambio={(v) => { setAcceso(v); setAccesoElegido(true); }} />
+          </div>
+        </Tarjeta>
+      )}
+
+      {esEdicion && empleado?.rolAcceso && (
+        <Tarjeta titulo="Acceso al sistema" descripcion="Si lo cambias, tendra que volver a iniciar sesion">
+          <div className="max-w-sm">
+            <SelectorAcceso valor={acceso} onCambio={setAcceso} />
+          </div>
         </Tarjeta>
       )}
 

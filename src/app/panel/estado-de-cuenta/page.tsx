@@ -6,6 +6,10 @@ import { alumnoDeSesion } from "@/lib/alumnoSesion";
 import { configBool } from "@/lib/configuracion";
 import { aNumero, resumenDeCuenta } from "@/lib/finanzas";
 import { estadoVisible, prepararCuenta, saldoAFavor } from "@/lib/cobranza";
+import { configTexto } from "@/lib/configuracion";
+import { referenciaDeAlumno } from "@/lib/referenciaAlumno";
+import { hoyEnZona } from "@/lib/fechasDia";
+import { FormularioComprobante } from "./FormularioComprobante";
 import { formatearFecha, formatearFechaHora, formatearMoneda } from "@/lib/formato";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
 
@@ -40,6 +44,26 @@ export default async function PaginaMiEstadoCuenta() {
   ]);
 
   const hoy = new Date();
+  const [banco, titular, cuenta, clabe, instrucciones, comprobantes] = await Promise.all([
+    configTexto("finanzas.pago_banco", ""),
+    configTexto("finanzas.pago_titular", ""),
+    configTexto("finanzas.pago_cuenta", ""),
+    configTexto("finanzas.pago_clabe", ""),
+    configTexto("finanzas.pago_instrucciones", ""),
+    db.comprobantePago.findMany({
+      where: { alumnoId: alumno.id },
+      orderBy: { creadoEn: "desc" },
+      take: 20,
+      select: { id: true, monto: true, fechaPago: true, referencia: true, estado: true, motivoRechazo: true, pagoId: true },
+    }),
+  ]);
+  const referencia = referenciaDeAlumno(alumno.id);
+  const datosBanco = [
+    ["Banco", banco],
+    ["Titular", titular],
+    ["Cuenta", cuenta],
+    ["CLABE", clabe],
+  ].filter(([, v]) => v);
 
   return (
     <div className="space-y-6">
@@ -52,8 +76,8 @@ export default async function PaginaMiEstadoCuenta() {
 
       {resumen.vencido > 0 && (
         <Alerta tipo="aviso">
-          Tienes {formatearMoneda(resumen.vencido, moneda)} vencidos. Acude a la administracion del
-          colegio.
+          Tienes {formatearMoneda(resumen.vencido, moneda)} vencidos. Puedes pagar en el colegio o por transferencia (abajo
+          estan los datos).
         </Alerta>
       )}
 
@@ -126,6 +150,55 @@ export default async function PaginaMiEstadoCuenta() {
             </table>
           </div>
         )}
+      </Tarjeta>
+
+      <Tarjeta titulo="Como pagar" descripcion="En el colegio, o por transferencia o deposito">
+        <div className="space-y-3 text-sm" data-como-pagar>
+          <p>
+            Tu referencia de pago: <strong className="font-mono text-base tracking-wider" data-referencia-alumno>{referencia}</strong>
+          </p>
+          {datosBanco.length > 0 ? (
+            <dl className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
+              {datosBanco.map(([etiqueta, valor]) => (
+                <div key={etiqueta} className="flex gap-2">
+                  <dt className="text-slate-500">{etiqueta}:</dt>
+                  <dd className="font-medium text-slate-900">{valor}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <p className="text-slate-500">El colegio aun no publica sus datos bancarios; pregunta en la administracion.</p>
+          )}
+          {instrucciones && <p className="text-slate-600">{instrucciones}</p>}
+        </div>
+      </Tarjeta>
+
+      <Tarjeta titulo="Ya pague: enviar comprobante" descripcion="El colegio lo verifica y registra tu pago">
+        <div className="space-y-4">
+          <FormularioComprobante hoy={hoyEnZona(institucion?.zonaHoraria ?? "America/Mexico_City")} />
+          {comprobantes.length > 0 && (
+            <ul className="divide-y divide-slate-100 border-t border-slate-100 pt-2">
+              {comprobantes.map((c) => (
+                <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm" data-mi-comprobante={c.estado}>
+                  <span>
+                    {formatearMoneda(aNumero(c.monto), moneda)} · {formatearFecha(c.fechaPago)} · ref {c.referencia}
+                    {c.estado === "RECHAZADO" && c.motivoRechazo && (
+                      <span className="block text-xs text-red-700">Motivo: {c.motivoRechazo}</span>
+                    )}
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <Insignia tono={c.estado === "CONFIRMADO" ? "exito" : c.estado === "RECHAZADO" ? "peligro" : "alerta"}>
+                      {c.estado === "CONFIRMADO" ? "Confirmado" : c.estado === "RECHAZADO" ? "Rechazado" : "Por verificar"}
+                    </Insignia>
+                    {c.pagoId && (
+                      <Link href={`/panel/finanzas/recibo/${c.pagoId}`} className="text-xs text-marca-600 hover:underline">Recibo</Link>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </Tarjeta>
 
       <Tarjeta titulo="Mis pagos">

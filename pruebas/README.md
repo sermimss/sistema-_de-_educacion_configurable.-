@@ -200,6 +200,23 @@ integridad y pagos abren caja antes de cobrar.
 DATABASE_URL=... npm run prueba:caja
 ```
 
+## cobranza.mjs
+
+COBRANZA_OK comprobaciones sobre una base **recien sembrada con los datos de
+demostracion**, con `DATABASE_URL` apuntando a esa base. Referencia de pago
+con digito verificador y datos bancarios en el estado de cuenta del alumno;
+el alumno sube comprobantes (rechaza archivos falsos, conserva lo capturado
+si hay error, no repite referencias); alta de una cajera desde Personal con
+acceso de Caja; lo que la cajera ve y no ve; confirmar pide la caja abierta,
+registra el pago en su turno, salda el cargo y no duplica; rechazar pide
+motivo; el alumno ve el resultado y su recibo; buscar por referencia en caja;
+cobro de la cajera; solo ve sus cortes y hace su corte; cambiar el acceso
+despues cierra sus sesiones; generar cargos por matricula.
+
+```bash
+DATABASE_URL=... npm run prueba:cobranza
+```
+
 ## menu-movil.mjs
 
 39 comprobaciones con el navegador en tamano de celular (390 x 844) sobre una

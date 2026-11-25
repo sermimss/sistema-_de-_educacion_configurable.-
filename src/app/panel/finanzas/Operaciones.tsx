@@ -50,7 +50,7 @@ export function FormularioGeneracion({
             </option>
           ))}
         </Selector>
-        <Campo etiqueta="Solo un alumno (id)" name="alumnoId" type="number" min={1} ayuda="Opcional" />
+        <Campo etiqueta="Solo un alumno (matricula)" name="matricula" placeholder="2026-0001" ayuda="Opcional" />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

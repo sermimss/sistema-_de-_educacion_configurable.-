@@ -13,11 +13,12 @@ import { formatearMoneda } from "@/lib/formato";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
 import { FormularioPago } from "../finanzas/Operaciones";
 import { FormularioAbrirCaja, FormularioCerrarCaja } from "./Formularios";
+import { alumnoDeReferencia, referenciaDeAlumno } from "@/lib/referenciaAlumno";
 
 export const dynamic = "force-dynamic";
 
 export default async function PaginaCaja({ searchParams }: { searchParams: Promise<{ q?: string; alumno?: string }> }) {
-  const sesion = await requerirRol("ADMIN");
+  const sesion = await requerirRol("ADMIN", "CAJERO");
   const params = await searchParams;
   const institucion = await obtenerInstitucion();
   const moneda = institucion?.moneda ?? "MXN";
@@ -25,6 +26,7 @@ export default async function PaginaCaja({ searchParams }: { searchParams: Promi
   const dinero = (n: number) => formatearMoneda(n, moneda);
   const turno = await turnoAbierto(sesion.usuarioId);
 
+  const porVerificar = await db.comprobantePago.count({ where: { estado: "POR_VERIFICAR" } });
   const misCortes = await db.turnoCaja.findMany({ where: { usuarioId: sesion.usuarioId, estado: "CERRADO" }, orderBy: { id: "desc" }, take: 5 });
   const encabezado = (
     <header className="flex flex-wrap items-start justify-between gap-3">
@@ -32,9 +34,14 @@ export default async function PaginaCaja({ searchParams }: { searchParams: Promi
         <h1 className="text-xl font-semibold text-slate-900">Caja</h1>
         <p className="mt-1 text-sm text-slate-600">Busca al alumno, cobra e imprime el recibo. Al terminar tu turno haces el corte.</p>
       </div>
-      <Link href="/panel/caja/cortes" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
-        Cortes de caja
-      </Link>
+      <div className="flex flex-wrap gap-2">
+        <Link href="/panel/caja/comprobantes" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+          Comprobantes por verificar{porVerificar > 0 ? ` (${porVerificar})` : ""}
+        </Link>
+        <Link href="/panel/caja/cortes" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+          {sesion.rol === "CAJERO" ? "Mis cortes" : "Cortes de caja"}
+        </Link>
+      </div>
     </header>
   );
 
@@ -68,10 +75,13 @@ export default async function PaginaCaja({ searchParams }: { searchParams: Promi
 
   const resumen = await resumenTurno(turno.id);
   const busqueda = (params.q ?? "").trim();
+  // Tambien por la referencia de pago del alumno (la que trae la transferencia).
+  const porReferencia = busqueda ? alumnoDeReferencia(busqueda) : null;
   const encontrados = busqueda
     ? await db.alumno.findMany({
         where: {
           OR: [
+            ...(porReferencia ? [{ id: porReferencia }] : []),
             { matricula: { contains: busqueda, mode: "insensitive" } },
             { nombres: { contains: busqueda, mode: "insensitive" } },
             { apellidoPaterno: { contains: busqueda, mode: "insensitive" } },
@@ -103,7 +113,7 @@ export default async function PaginaCaja({ searchParams }: { searchParams: Promi
     cuenta = (
       <Tarjeta
         titulo={`${nombreCompleto(alumno)} · ${alumno.matricula}`}
-        descripcion={alumno.plan.nombre}
+        descripcion={`${alumno.plan.nombre} · referencia de pago ${referenciaDeAlumno(alumno.id)}`}
         acciones={<Link href={`/panel/finanzas/alumno/${alumno.id}`} className="text-sm text-marca-600 hover:underline">Estado de cuenta completo</Link>}
       >
         <div className="space-y-4" data-cuenta-caja>
@@ -158,7 +168,7 @@ export default async function PaginaCaja({ searchParams }: { searchParams: Promi
 
       <Tarjeta titulo="Cobrar">
         <form method="get" className="flex flex-wrap gap-2" data-buscar-alumno>
-          <input name="q" defaultValue={busqueda} placeholder="Matricula, nombre o apellido" className="campo max-w-sm" aria-label="Buscar alumno" autoFocus={!alumno} />
+          <input name="q" defaultValue={busqueda} placeholder="Matricula, nombre, apellido o referencia" className="campo max-w-sm" aria-label="Buscar alumno" autoFocus={!alumno} />
           <button type="submit" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
             Buscar
           </button>

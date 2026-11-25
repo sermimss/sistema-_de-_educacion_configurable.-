@@ -34,7 +34,9 @@ fondo.
   pero la integracion con el proveedor todavia no esta hecha. Hoy el cobro se
   registra en caja (efectivo, transferencia, tarjeta, deposito o cheque), con
   recargos al dia, saldo a favor, cambio en efectivo, proteccion contra
-  dobles registros, caja por cajero y corte de caja (ver `docs/fases.md`).
+  dobles registros, caja por cajero y corte de caja. El alumno tiene una
+  referencia de pago y puede subir su comprobante de transferencia para que
+  caja lo verifique; existe el acceso de Caja para cajeros (ver `docs/fases.md`).
 - **Niveles:** de preparatoria en adelante (bachillerato, licenciatura, posgrado,
   cursos), multiplantel y multiturno.
 - **Evaluacion:** escala configurable (0 a 100 por omision), sin redondeo,
@@ -272,6 +274,7 @@ npm run prueba:examenes           # 40 comprobaciones de examenes en linea (base
 npm run prueba:importar-examen    # 18 comprobaciones de cargar examenes ya escritos (base con demo y DATABASE_URL)
 npm run prueba:pagos              # 34 comprobaciones de captura de pagos confiable (base con demo y DATABASE_URL)
 npm run prueba:caja               # 25 comprobaciones de caja por cajero y corte de caja (base con demo y DATABASE_URL)
+npm run prueba:cobranza           # COBRANZA_OK comprobaciones de referencia, comprobantes y acceso de Caja (base con demo y DATABASE_URL)
 npm run prueba:movil              # 39 comprobaciones del sistema en celular (base con demo)
 npm run prueba:documentos         # 43 comprobaciones de logo, colores y documentos institucionales (base recien sembrada)
 npm run prueba:grupos             # 33 comprobaciones de grupos con calendario y horario (base recien sembrada)

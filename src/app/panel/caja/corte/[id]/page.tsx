@@ -16,13 +16,13 @@ export const dynamic = "force-dynamic";
 
 /// Corte de caja imprimible. Con la caja abierta es un corte parcial.
 export default async function PaginaCorte({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ cerrado?: string }> }) {
-  await requerirRol("ADMIN");
+  const sesion = await requerirRol("ADMIN", "CAJERO");
   const { cerrado } = await searchParams;
   const turno = await db.turnoCaja.findUnique({
     where: { id: Number((await params).id) || 0 },
     include: { pagos: { orderBy: { registradoEn: "asc" }, include: { alumno: true } } },
   });
-  if (!turno) notFound();
+  if (!turno || (sesion.rol === "CAJERO" && turno.usuarioId !== sesion.usuarioId)) notFound();
   const institucion = await obtenerInstitucion();
   const logo = await urlLogo(institucion);
   const moneda = institucion?.moneda ?? "MXN";

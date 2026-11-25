@@ -11,14 +11,16 @@ export const dynamic = "force-dynamic";
 
 /// Todos los cortes de todos los cajeros.
 export default async function PaginaCortes({ searchParams }: { searchParams: Promise<{ cajero?: string }> }) {
-  await requerirRol("ADMIN");
+  const sesion = await requerirRol("ADMIN", "CAJERO");
   const { cajero } = await searchParams;
+  // Un cajero solo ve sus propios cortes.
+  const soloPropios = sesion.rol === "CAJERO";
   const institucion = await obtenerInstitucion();
   const moneda = institucion?.moneda ?? "MXN";
   const zona = institucion?.zonaHoraria ?? "America/Mexico_City";
   const dinero = (n: number) => formatearMoneda(n, moneda);
-  const cajeros = await db.turnoCaja.findMany({ distinct: ["usuarioId"], select: { usuarioId: true, usuarioNombre: true } });
-  const filtro = Number(cajero) || 0;
+  const cajeros = soloPropios ? [] : await db.turnoCaja.findMany({ distinct: ["usuarioId"], select: { usuarioId: true, usuarioNombre: true } });
+  const filtro = soloPropios ? sesion.usuarioId : Number(cajero) || 0;
   const turnos = await db.turnoCaja.findMany({
     where: filtro ? { usuarioId: filtro } : {},
     orderBy: { id: "desc" },

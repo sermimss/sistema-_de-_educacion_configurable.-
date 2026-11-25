@@ -52,6 +52,9 @@ enum RolUsuario {
   ADMIN
   DOCENTE
   ALUMNO
+  /// Cobra en su caja, hace su corte, consulta estados de cuenta y verifica
+  /// comprobantes; no cancela pagos ni crea cargos.
+  CAJERO
 }
 
 enum EstadoAlumno {
@@ -688,6 +691,7 @@ model Alumno {
   inscripciones           Inscripcion[]
   clases                  AlumnoClase[]
   vistasGrabaciones       VistaGrabacion[]
+  comprobantesPago        ComprobantePago[]
   entregasTareas          EntregaTarea[]
   intentosExamen          IntentoExamen[]
   calificacionesActividad CalificacionActividad[]
@@ -1362,6 +1366,7 @@ model Pago {
 
   alumno       Alumno           @relation(fields: [alumnoId], references: [id], onDelete: Restrict)
   turno        TurnoCaja?       @relation(fields: [turnoId], references: [id], onDelete: Restrict)
+  comprobante  ComprobantePago?
   aplicaciones AplicacionPago[]
   recibo       Recibo?
 
@@ -1947,4 +1952,38 @@ model RespuestaExamen {
   pregunta PreguntaExamen @relation(fields: [preguntaId], references: [id], onDelete: Cascade)
 
   @@unique([intentoId, preguntaId])
+}
+
+enum EstadoComprobante {
+  POR_VERIFICAR
+  CONFIRMADO
+  RECHAZADO
+}
+
+/// Comprobante de transferencia o deposito que sube el alumno. Al
+/// confirmarlo se registra el pago (en la caja de quien lo confirma).
+model ComprobantePago {
+  id            Int               @id @default(autoincrement())
+  alumnoId      Int
+  monto         Decimal           @db.Decimal(12, 2)
+  fechaPago     DateTime          @db.Date
+  metodoPago    MetodoPago
+  referencia    String
+  banco         String?
+  nota          String?
+  archivoNombre String
+  archivoMime   String
+  archivoTamano Int
+  archivoDatos  Bytes
+  estado        EstadoComprobante @default(POR_VERIFICAR)
+  motivoRechazo String?
+  revisadoPor   Int?
+  revisadoEn    DateTime?
+  pagoId        Int?              @unique
+  creadoEn      DateTime          @default(now())
+
+  alumno Alumno @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  pago   Pago?  @relation(fields: [pagoId], references: [id], onDelete: SetNull)
+
+  @@index([estado])
 }

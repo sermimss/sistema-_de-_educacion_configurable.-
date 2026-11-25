@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requerirSesion } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -33,6 +34,8 @@ export default async function PaginaCalificaciones({
   if (sesion.rol === "ALUMNO") {
     return <Alerta tipo="aviso">Tu consulta de calificaciones llega en la Fase 4.</Alerta>;
   }
+  // Solo administracion y docentes (caja no captura).
+  if (sesion.rol !== "ADMIN" && sesion.rol !== "DOCENTE") redirect("/panel?error=sin-permiso");
 
   const params = await searchParams;
 

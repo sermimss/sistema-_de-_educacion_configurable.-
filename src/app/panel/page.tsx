@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { turnoAbierto } from "@/lib/caja";
 import { requerirSesion } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { obtenerInstitucion } from "@/lib/institucion";
@@ -102,6 +103,11 @@ export default async function PaginaPanel() {
       pendientesDocente = { entregas, examenes };
     }
   }
+  const comprobantesPorVerificar =
+    sesion.rol === "ADMIN" || sesion.rol === "CAJERO"
+      ? await db.comprobantePago.count({ where: { estado: "POR_VERIFICAR" } })
+      : 0;
+  const cajaAbierta = sesion.rol === "CAJERO" ? await turnoAbierto(sesion.usuarioId) : null;
   const cambiosPendientes =
     sesion.rol === "ADMIN" ? await db.solicitudHorario.count({ where: { estado: "PENDIENTE" } }) : 0;
   const escala = await db.escalaCalificacion.findFirst({ where: { predeterminada: true } });
@@ -120,6 +126,34 @@ export default async function PaginaPanel() {
           {institucion?.nombre}
         </p>
       </header>
+
+      {(sesion.rol === "ADMIN" || sesion.rol === "CAJERO") && comprobantesPorVerificar > 0 && (
+        <Alerta tipo="aviso">
+          <span data-aviso-comprobantes>
+            {comprobantesPorVerificar} comprobante(s) de pago por verificar.
+          </span>{" "}
+          <Link href="/panel/caja/comprobantes" className="font-medium underline">Revisar</Link>
+        </Alerta>
+      )}
+
+      {sesion.rol === "CAJERO" && (
+        <Tarjeta titulo="Caja" descripcion="Cobros, comprobantes y tu corte">
+          <p className="text-sm text-slate-600" data-estado-caja-panel>
+            {cajaAbierta ? "Tu caja esta abierta." : "Tu caja esta cerrada. Abrela para poder cobrar."}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2 text-sm">
+            <Link href="/panel/caja" className="rounded-lg bg-marca-600 px-3 py-1.5 font-medium text-white hover:bg-marca-700">
+              Ir a caja
+            </Link>
+            <Link href="/panel/caja/comprobantes" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50">
+              Comprobantes por verificar
+            </Link>
+            <Link href="/panel/caja/cortes" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50">
+              Mis cortes
+            </Link>
+          </div>
+        </Tarjeta>
+      )}
 
       {sesion.rol === "ADMIN" && (
         <>

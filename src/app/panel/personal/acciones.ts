@@ -63,6 +63,20 @@ function leerEmpleado(formData: FormData) {
   });
 }
 
+type Acceso = "DOCENTE" | "ADMIN" | "CAJERO";
+const NOMBRE_ACCESO: Record<Acceso, string> = { DOCENTE: "Docente", ADMIN: "Administracion", CAJERO: "Caja" };
+
+/// Acceso al sistema elegido en el formulario. Sin eleccion: Docente si imparte clases, si no Administracion.
+function leerAcceso(formData: FormData, esDocente: boolean): { acceso?: Acceso; error?: string } {
+  const valor = String(formData.get("acceso") ?? "").trim();
+  if (!valor) return { acceso: esDocente ? "DOCENTE" : "ADMIN" };
+  if (valor !== "DOCENTE" && valor !== "ADMIN" && valor !== "CAJERO") return { error: "Acceso al sistema no valido." };
+  if (valor === "DOCENTE" && !esDocente) {
+    return { error: "Para darle acceso de Docente marca \"Imparte clases\"." };
+  }
+  return { acceso: valor };
+}
+
 function datosComunes(formData: FormData, esDocente: boolean) {
   const tipoContrato = String(formData.get("tipoContrato") ?? "").trim();
   return {
@@ -111,6 +125,8 @@ export async function crearEmpleado(
   const d = validacion.data;
   const esDocente = Boolean(d.esDocente);
   const crearUsuario = Boolean(d.crearUsuario);
+  const { acceso, error: errorAcceso } = leerAcceso(formData, esDocente);
+  if (errorAcceso || !acceso) return { error: errorAcceso ?? "Acceso al sistema no valido." };
   const correo = String(formData.get("email") ?? "").trim().toLowerCase();
 
   if (crearUsuario && !correo) {
@@ -137,7 +153,7 @@ export async function crearEmpleado(
             email: correo,
             // Contrasena temporal = numero de empleado, con cambio obligatorio.
             passwordHash: await hashPassword(numeroEmpleado),
-            rol: esDocente ? "DOCENTE" : "ADMIN",
+            rol: acceso,
             debeCambiarPassword: true,
           },
         });
@@ -196,13 +212,50 @@ export async function actualizarEmpleado(
       };
     }
 
-    const despues = await db.empleado.update({
-      where: { id },
-      data: {
-        ...datosComunes(formData, esDocente),
-        fechaBaja: formData.get("estado") === "BAJA" ? (antes.fechaBaja ?? new Date()) : null,
-      },
+    // Cambio de acceso al sistema (Docente, Administracion o Caja) de su cuenta.
+    let cambioAcceso: { de: string; a: Acceso } | null = null;
+    if (antes.usuarioId && formData.get("acceso")) {
+      const { acceso, error: errorAcceso } = leerAcceso(formData, esDocente);
+      if (errorAcceso || !acceso) return { error: errorAcceso ?? "Acceso al sistema no valido." };
+      const usuario = await db.usuario.findUnique({ where: { id: antes.usuarioId }, select: { rol: true } });
+      if (usuario && usuario.rol !== acceso) {
+        if (antes.usuarioId === sesion.usuarioId) {
+          return { error: "No puedes cambiar tu propio acceso al sistema; pidelo a otro administrador." };
+        }
+        if (usuario.rol !== "DOCENTE" && usuario.rol !== "ADMIN" && usuario.rol !== "CAJERO") {
+          return { error: "Esa cuenta no es de personal." };
+        }
+        cambioAcceso = { de: usuario.rol, a: acceso };
+      }
+    }
+
+    const despues = await db.$transaction(async (tx) => {
+      const actualizado = await tx.empleado.update({
+        where: { id },
+        data: {
+          ...datosComunes(formData, esDocente),
+          fechaBaja: formData.get("estado") === "BAJA" ? (antes.fechaBaja ?? new Date()) : null,
+        },
+      });
+      if (cambioAcceso && antes.usuarioId) {
+        await tx.usuario.update({ where: { id: antes.usuarioId }, data: { rol: cambioAcceso.a } });
+        // Con el acceso nuevo debe volver a entrar.
+        await tx.sesion.updateMany({ where: { usuarioId: antes.usuarioId, revocada: false }, data: { revocada: true } });
+      }
+      return actualizado;
     });
+
+    if (cambioAcceso && antes.usuarioId) {
+      await registrarBitacora({
+        usuarioId: sesion.usuarioId,
+        accion: "ACTUALIZAR",
+        entidad: "Usuario",
+        entidadId: antes.usuarioId,
+        descripcion: `Acceso de ${antes.numeroEmpleado} cambiado a ${NOMBRE_ACCESO[cambioAcceso.a]}`,
+        datosAntes: { rol: cambioAcceso.de },
+        datosDespues: { rol: cambioAcceso.a },
+      });
+    }
 
     await registrarBitacora({
       usuarioId: sesion.usuarioId,
@@ -215,7 +268,12 @@ export async function actualizarEmpleado(
 
     revalidatePath(`/panel/personal/${id}`);
     revalidatePath("/panel/personal");
-    return { ok: true, mensaje: "Registro actualizado." };
+    return {
+      ok: true,
+      mensaje: cambioAcceso
+        ? `Registro actualizado. Su acceso ahora es ${NOMBRE_ACCESO[cambioAcceso.a]}; tendra que volver a iniciar sesion.`
+        : "Registro actualizado.",
+    };
   } catch (error) {
     console.error("[personal] actualizar:", error);
     return { error: error instanceof Error ? error.message : "No se pudo actualizar." };
