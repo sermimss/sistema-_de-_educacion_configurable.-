@@ -686,3 +686,20 @@ Verificado: cambios de horario 40 (nueva) y la regresion completa.
 - Campo nuevo para documentos: `alumno.titulo_otorga`.
 
 Verificado: carreras 31 (nueva) y la regresion completa.
+
+## Tareas y examenes en linea
+
+- *Tareas* (docente y alumno): el docente pide la tarea a una de sus clases;
+  el alumno entrega hasta 3 archivos de 10 MB y un texto; el docente
+  descarga, califica y comenta. Entregas tardias segun la tarea. Archivos
+  validados por contenido y guardados en la base.
+- *Examenes* (docente y alumno): borrador, preguntas de opcion multiple,
+  varias correctas, verdadero/falso y abiertas; apertura, cierre, tiempo
+  limite, desorden por alumno, cuando ver las respuestas y tardios; un
+  intento con autoguardado y envio automatico; calificacion automatica de las
+  cerradas y revision de las abiertas.
+- Calificaciones aparte de la del periodo. Avisos en el panel del alumno
+  (pendientes) y del docente (por calificar o revisar).
+- Fechas y horas siempre en la zona horaria del colegio.
+
+Verificado: tareas 37 y examenes 40 (nuevas) y la regresion completa.

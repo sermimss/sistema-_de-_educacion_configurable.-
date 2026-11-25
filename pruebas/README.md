@@ -121,6 +121,39 @@ la reactiva; y confirma el campo del titulo en los machotes.
 DATABASE_URL=... npm run prueba:carreras
 ```
 
+## tareas.mjs
+
+37 comprobaciones sobre una base **recien sembrada con los datos de
+demostracion**, con `DATABASE_URL` apuntando a esa base. El docente pide una
+tarea (no con fecha pasada); el alumno la ve pendiente, entrega 3 archivos y
+texto (rechaza entregas vacias, archivos disfrazados, programas, mas de 10 MB
+y mas de 3 archivos), descarga lo suyo (un companero y alguien sin sesion
+no) y vuelve a entregar reemplazando todo. El docente ve quien entrego,
+descarga, califica con comentario (sin pasar del maximo) y el alumno ya no
+puede cambiarla. Entregas tardias segun la tarea, editar, eliminar sin
+entregas y alcance por clase y por rol.
+
+```bash
+DATABASE_URL=... npm run prueba:tareas
+```
+
+## examenes.mjs
+
+40 comprobaciones sobre una base **recien sembrada con los datos de
+demostracion**, con `DATABASE_URL` apuntando a esa base. El docente crea un
+examen, no lo puede publicar vacio, agrega los cuatro tipos de pregunta (con
+sus validaciones, conservando lo escrito si hay error) y lo publica. El
+alumno lo contesta con reloj y autoguardado (sigue al recargar), la pagina no
+revela las correctas, se califican solas las cerradas (varias correctas: todo
+o nada) y ve sus respuestas al terminar; no puede repetirlo. El docente
+revisa y califica la abierta. Envio automatico al acabarse el tiempo y al
+abandonar el examen, desorden por alumno, cierre, tardios, mostrar
+respuestas al cerrar y alcance.
+
+```bash
+DATABASE_URL=... npm run prueba:examenes
+```
+
 ## menu-movil.mjs
 
 39 comprobaciones con el navegador en tamano de celular (390 x 844) sobre una

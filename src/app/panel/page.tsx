@@ -78,6 +78,30 @@ export default async function PaginaPanel() {
           select: { estado: true },
         })
       : [];
+  // Pendientes de tareas y examenes.
+  let pendientesAlumno = { tareas: 0, examenes: 0 };
+  let pendientesDocente = { entregas: 0, examenes: 0 };
+  if (sesion.rol === "ALUMNO") {
+    const alumno = await alumnoDeSesion(sesion.usuarioId);
+    if (alumno) {
+      const clases = (await db.alumnoClase.findMany({ where: { alumnoId: alumno.id, estado: { not: "BAJA" } }, select: { claseId: true } })).map((c) => c.claseId);
+      const ahoraPanel = new Date();
+      const [tareas, examenes] = await Promise.all([
+        db.tarea.count({ where: { claseId: { in: clases }, fechaLimite: { gte: ahoraPanel }, entregas: { none: { alumnoId: alumno.id } } } }),
+        db.examen.count({ where: { claseId: { in: clases }, publicado: true, abreEn: { lte: ahoraPanel }, cierraEn: { gte: ahoraPanel }, intentos: { none: { alumnoId: alumno.id } } } }),
+      ]);
+      pendientesAlumno = { tareas, examenes };
+    }
+  } else if (sesion.rol === "DOCENTE") {
+    const empleado = await db.empleado.findUnique({ where: { usuarioId: sesion.usuarioId }, select: { id: true } });
+    if (empleado) {
+      const [entregas, examenes] = await Promise.all([
+        db.entregaTarea.count({ where: { calificacion: null, tarea: { clase: { docenteId: empleado.id } } } }),
+        db.intentoExamen.count({ where: { porRevisar: true, examen: { clase: { docenteId: empleado.id } } } }),
+      ]);
+      pendientesDocente = { entregas, examenes };
+    }
+  }
   const cambiosPendientes =
     sesion.rol === "ADMIN" ? await db.solicitudHorario.count({ where: { estado: "PENDIENTE" } }) : 0;
   const escala = await db.escalaCalificacion.findFirst({ where: { predeterminada: true } });
@@ -210,6 +234,25 @@ export default async function PaginaPanel() {
         <Tarjeta titulo="Tus clases de hoy" descripcion="Con el boton para entrar a las que son en linea">
           <ClasesDeHoy bloques={bloquesHoy} ahora={ahora} />
         </Tarjeta>
+      )}
+
+      {(pendientesAlumno.tareas > 0 || pendientesAlumno.examenes > 0) && (
+        <Alerta tipo="aviso">
+          <span data-pendientes-alumno>
+            Tienes {pendientesAlumno.tareas} tarea(s) por entregar y {pendientesAlumno.examenes} examen(es) disponible(s).
+          </span>{" "}
+          <Link href="/panel/tareas" className="font-medium underline">Tareas</Link> ·{" "}
+          <Link href="/panel/examenes" className="font-medium underline">Examenes</Link>
+        </Alerta>
+      )}
+      {(pendientesDocente.entregas > 0 || pendientesDocente.examenes > 0) && (
+        <Alerta tipo="aviso">
+          <span data-pendientes-docente>
+            Tienes {pendientesDocente.entregas} entrega(s) de tareas por calificar y {pendientesDocente.examenes} examen(es) por revisar.
+          </span>{" "}
+          <Link href="/panel/tareas" className="font-medium underline">Tareas</Link> ·{" "}
+          <Link href="/panel/examenes" className="font-medium underline">Examenes</Link>
+        </Alerta>
       )}
 
       {respuestasHorario.length > 0 && (

@@ -27,7 +27,7 @@ fondo.
 
 - **Stack:** Next.js 15 (App Router) + TypeScript + Prisma + PostgreSQL + Tailwind.
 - **Despliegue:** en internet, una plataforma multicolegio (cada colegio con su propio espacio en la base y su propia direccion, ver `docs/plataforma.md`); en las computadoras del colegio, una instalacion por colegio.
-- **Portales:** docentes y alumnos entran por la misma direccion y el mismo acceso; cada rol ve solo lo suyo. Clases en linea con un enlace de Google Meet por clase; las grabaciones las ven los alumnos durante un mes. Ver `docs/portales.md`.
+- **Portales:** docentes y alumnos entran por la misma direccion y el mismo acceso; cada rol ve solo lo suyo. Clases en linea con un enlace de Google Meet por clase; las grabaciones las ven los alumnos durante un mes. Tareas con entrega de archivos y examenes en linea. Ver `docs/portales.md`.
 - **Pais:** Mexico. Los recibos nacen como comprobante interno con la estructura
   CFDI 4.0 ya modelada, listos para timbrar cuando se conecte un PAC.
 - **Pago en linea:** el modelo de datos guarda la configuracion de la pasarela,
@@ -265,6 +265,8 @@ npm run prueba:portales           # 40 comprobaciones de portales, Meet, avisos 
 npm run prueba:grabaciones        # 35 comprobaciones de grabaciones de clases (base con demo y DATABASE_URL)
 npm run prueba:cambios-horario    # 40 comprobaciones de cambios de horario con aprobacion (base con demo y DATABASE_URL)
 npm run prueba:carreras           # 31 comprobaciones de carreras, certificaciones y niveles (base con demo y DATABASE_URL)
+npm run prueba:tareas             # 37 comprobaciones de tareas con entrega de archivos (base con demo y DATABASE_URL)
+npm run prueba:examenes           # 40 comprobaciones de examenes en linea (base con demo y DATABASE_URL)
 npm run prueba:movil              # 39 comprobaciones del sistema en celular (base con demo)
 npm run prueba:documentos         # 43 comprobaciones de logo, colores y documentos institucionales (base recien sembrada)
 npm run prueba:grupos             # 33 comprobaciones de grupos con calendario y horario (base recien sembrada)

@@ -688,6 +688,8 @@ model Alumno {
   inscripciones           Inscripcion[]
   clases                  AlumnoClase[]
   vistasGrabaciones       VistaGrabacion[]
+  entregasTareas          EntregaTarea[]
+  intentosExamen          IntentoExamen[]
   calificacionesActividad CalificacionActividad[]
   calificacionesPeriodo   CalificacionPeriodo[]
   extraordinarios         EvaluacionExtraordinaria[]
@@ -856,6 +858,8 @@ model Clase {
   sesiones        SesionAsistencia[]
   alertas         AlertaAsistencia[]
   grabaciones     Grabacion[]
+  tareas          Tarea[]
+  examenes        Examen[]
 
   @@unique([cicloId, grupoId, planMateriaId])
   @@index([docenteId])
@@ -1741,4 +1745,165 @@ model SolicitudAcceso {
 
   @@index([estado])
   @@index([usuarioId])
+}
+
+// =====================================================================
+// TAREAS Y EXAMENES EN LINEA
+// Los pide el docente a los alumnos de una de sus clases. Su calificacion
+// es aparte: no entra sola a la calificacion del periodo.
+// =====================================================================
+
+/// Tarea o trabajo que el docente pide; el alumno entrega archivos y texto.
+model Tarea {
+  id            Int      @id @default(autoincrement())
+  claseId       Int
+  titulo        String
+  instrucciones String
+  puntosMaximos Decimal  @default(10) @db.Decimal(6, 2)
+  fechaLimite   DateTime
+  /// Si se aceptan entregas despues de la fecha limite (marcadas como tarde).
+  aceptaTardias Boolean  @default(false)
+  creadaPor     Int?
+  creadaEn      DateTime @default(now())
+
+  clase    Clase          @relation(fields: [claseId], references: [id], onDelete: Cascade)
+  entregas EntregaTarea[]
+
+  @@index([claseId])
+}
+
+model EntregaTarea {
+  id            Int       @id @default(autoincrement())
+  tareaId       Int
+  alumnoId      Int
+  texto         String?
+  entregadaEn   DateTime  @default(now())
+  tarde         Boolean   @default(false)
+  calificacion  Decimal?  @db.Decimal(6, 2)
+  comentario    String?
+  calificadaEn  DateTime?
+  calificadaPor Int?
+
+  tarea    Tarea            @relation(fields: [tareaId], references: [id], onDelete: Cascade)
+  alumno   Alumno           @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  archivos ArchivoEntrega[]
+
+  @@unique([tareaId, alumnoId])
+}
+
+/// Archivo entregado (hasta 3 por entrega, 10 MB cada uno), guardado en la
+/// base del colegio.
+model ArchivoEntrega {
+  id        Int      @id @default(autoincrement())
+  entregaId Int
+  nombre    String
+  mime      String
+  tamano    Int
+  datos     Bytes
+  subidoEn  DateTime @default(now())
+
+  entrega EntregaTarea @relation(fields: [entregaId], references: [id], onDelete: Cascade)
+}
+
+enum TipoPregunta {
+  /// Una sola respuesta correcta.
+  OPCION_UNICA
+  /// Varias correctas: hay que marcar exactamente todas.
+  OPCION_MULTIPLE
+  VERDADERO_FALSO
+  /// La escribe el alumno y la califica el docente.
+  ABIERTA
+}
+
+enum MostrarRespuestas {
+  NUNCA
+  AL_TERMINAR
+  AL_CERRAR
+}
+
+model Examen {
+  id                Int               @id @default(autoincrement())
+  claseId           Int
+  titulo            String
+  instrucciones     String?
+  abreEn            DateTime
+  cierraEn          DateTime
+  /// Minutos desde que el alumno empieza; vacio = sin limite de tiempo.
+  duracionMinutos   Int?
+  /// Si se puede contestar despues del cierre (queda marcado como tarde).
+  aceptaTardios     Boolean           @default(false)
+  desordenar        Boolean           @default(false)
+  mostrarRespuestas MostrarRespuestas @default(NUNCA)
+  /// Mientras es borrador los alumnos no lo ven.
+  publicado         Boolean           @default(false)
+  creadoPor         Int?
+  creadoEn          DateTime          @default(now())
+
+  clase     Clase            @relation(fields: [claseId], references: [id], onDelete: Cascade)
+  preguntas PreguntaExamen[]
+  intentos  IntentoExamen[]
+
+  @@index([claseId])
+}
+
+model PreguntaExamen {
+  id        Int          @id @default(autoincrement())
+  examenId  Int
+  orden     Int
+  tipo      TipoPregunta
+  enunciado String
+  puntos    Decimal      @db.Decimal(6, 2)
+
+  examen     Examen            @relation(fields: [examenId], references: [id], onDelete: Cascade)
+  opciones   OpcionPregunta[]
+  respuestas RespuestaExamen[]
+}
+
+model OpcionPregunta {
+  id         Int     @id @default(autoincrement())
+  preguntaId Int
+  orden      Int
+  texto      String
+  correcta   Boolean @default(false)
+
+  pregunta PreguntaExamen @relation(fields: [preguntaId], references: [id], onDelete: Cascade)
+}
+
+/// Un solo intento por alumno.
+model IntentoExamen {
+  id         Int       @id @default(autoincrement())
+  examenId   Int
+  alumnoId   Int
+  iniciadoEn DateTime  @default(now())
+  /// Hasta cuando puede contestar (tiempo limite o cierre del examen).
+  venceEn    DateTime?
+  enviadoEn  DateTime?
+  tarde      Boolean   @default(false)
+  /// Orden en que le tocaron las preguntas y opciones a este alumno.
+  orden      Json
+  puntaje    Decimal?  @db.Decimal(7, 2)
+  /// Hay preguntas abiertas que el docente aun no califica.
+  porRevisar Boolean   @default(false)
+
+  examen     Examen            @relation(fields: [examenId], references: [id], onDelete: Cascade)
+  alumno     Alumno            @relation(fields: [alumnoId], references: [id], onDelete: Cascade)
+  respuestas RespuestaExamen[]
+
+  @@unique([examenId, alumnoId])
+}
+
+model RespuestaExamen {
+  id         Int      @id @default(autoincrement())
+  intentoId  Int
+  preguntaId Int
+  opciones   Int[]
+  texto      String?
+  /// Las cerradas se califican solas al enviar; las abiertas, el docente.
+  puntos     Decimal? @db.Decimal(6, 2)
+  comentario String?
+
+  intento  IntentoExamen  @relation(fields: [intentoId], references: [id], onDelete: Cascade)
+  pregunta PreguntaExamen @relation(fields: [preguntaId], references: [id], onDelete: Cascade)
+
+  @@unique([intentoId, preguntaId])
 }

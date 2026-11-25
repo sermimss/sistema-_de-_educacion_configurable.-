@@ -24,7 +24,7 @@ contrasena?" en el acceso y la administracion les da una temporal desde
 
 ## Portal del docente
 
-Menu: Panel, Avisos, Asistencia, Calificaciones, Mis clases, Grabaciones, Mi horario.
+Menu: Panel, Avisos, Asistencia, Calificaciones, Mis clases, Grabaciones, Tareas, Examenes, Mi horario.
 
 | Puede | Detalle |
 |---|---|
@@ -33,6 +33,8 @@ Menu: Panel, Avisos, Asistencia, Calificaciones, Mis clases, Grabaciones, Mi hor
 | Pedir cambios de horario | Solo si el colegio lo activa. En *Mi horario* elige uno de sus bloques y pide moverlo **de ahi en adelante** o **solo en una fecha** (reposicion), con el motivo. No puede enviar un cambio que choque con otra clase suya, del grupo o del salon. Su horario no cambia hasta que la administracion lo aprueba; ve si se aprobo, se ajusto o se rechazo (con el motivo) y puede cancelar las pendientes. |
 | Poner la sala de Google Meet | *Mis clases*: pega el enlace de Meet en cada clase, o una sola sala para **todas** sus clases. Solo acepta enlaces de `meet.google.com` (o el codigo `abc-defg-hij`); se borra dejando el campo vacio. |
 | Compartir grabaciones | *Grabaciones* (o el boton en cada clase de *Mis clases*): pega el enlace de Drive de la grabacion de Meet, la fecha de la clase y un titulo opcional. Ve todas las suyas, tambien las vencidas, y que alumnos abrieron cada una y cuantas veces. |
+| Pedir tareas | *Tareas*: titulo, instrucciones, puntos, fecha y hora limite y si acepta entregas tardias. Ve quien entrego y quien no, descarga los archivos, califica con comentario. |
+| Hacer examenes en linea | *Examenes*: arma el examen (opcion multiple, varias correctas, verdadero/falso, abiertas), fija apertura, cierre y tiempo limite, desorden y cuando ve el alumno sus respuestas, y lo publica. Las cerradas se califican solas; las abiertas las califica al revisar. |
 | Pasar lista | *Asistencia*, solo de sus clases. |
 | Capturar calificaciones | *Calificaciones*: actividades, puntos y la calificacion oficial de cada periodo; puede cerrar el periodo cuando todos tienen calificacion. |
 | Publicar avisos | *Avisos*, solo a los alumnos de **sus clases**. Puede retirar los que el publico. |
@@ -46,13 +48,15 @@ pagina); reabrir un periodo cerrado.
 
 ## Portal del alumno
 
-Menu: Panel, Avisos, Grabaciones, Mis calificaciones, Mi asistencia, Mi horario,
-Estado de cuenta, Mis documentos.
+Menu: Panel, Avisos, Grabaciones, Tareas, Examenes, Mis calificaciones, Mi
+asistencia, Mi horario, Estado de cuenta, Mis documentos.
 
 | Puede | Detalle |
 |---|---|
 | Ver sus clases de hoy | En el panel, con el boton **Entrar a la clase en linea** cuando el docente puso su Meet; la clase en curso aparece resaltada. |
 | Ver su horario semanal | *Mi horario*, con el boton de Meet en cada clase que lo tenga. |
+| Entregar tareas | *Tareas*: sube hasta 3 archivos (PDF, Word, Excel, PowerPoint, texto o imagenes; 10 MB cada uno) y un texto. Puede volver a entregar antes de la fecha mientras no este calificada; ve su calificacion y el comentario. |
+| Presentar examenes | *Examenes*: un solo intento, con reloj si tiene tiempo limite; sus respuestas se guardan solas y al acabarse el tiempo se envia solo. Ve su calificacion y, si el docente lo permite, sus respuestas correctas. |
 | Ver las grabaciones de sus clases | *Grabaciones*: solo las que aun no cumplen su mes, con la fecha en que dejan de verse. |
 | Ver sus calificaciones y su asistencia | De su grupo vigente. |
 | Ver su estado de cuenta | Sus cargos y sus pagos. No paga en linea: paga en el colegio. |
@@ -78,6 +82,36 @@ En *Configuracion → Portales*:
 | Portal del alumno: avisos | Si | *Avisos* y los avisos recientes en su panel. |
 | El docente puede ver adeudos de sus alumnos | No | Marca "adeudo" en las listas de asistencia y calificaciones del docente, sin montos. |
 | El docente puede editar su horario | No | El docente puede **pedir** cambios de su horario; la administracion los aprueba en *Cambios de horario*. Apagada, el docente no puede enviar solicitudes, pero conserva su historial. |
+
+## Tareas y examenes
+
+Las calificaciones de tareas y examenes van **aparte**: no entran solas a la
+calificacion del periodo; el docente la sigue capturando en *Calificaciones*.
+
+**Tareas**
+- Antes de la fecha limite el alumno entrega y puede volver a entregar (se
+  reemplaza todo: texto y archivos) mientras no este calificada.
+- Despues de la fecha solo se acepta una primera entrega, y solo si la tarea
+  acepta entregas tardias; queda marcada como tarde.
+- Los archivos se revisan por su contenido (un archivo que finge ser PDF o un
+  programa se rechazan) y solo los descargan el alumno que los subio y el
+  docente de la clase.
+- Se guardan en la base del colegio. En la base gratis de Neon (1 GB por
+  proyecto) caben pocos cientos de entregas grandes: si se usa mucho, habra
+  que pasar a un plan con mas espacio o a un almacenamiento de archivos.
+
+**Examenes**
+- Se crean como borrador; el alumno no los ve hasta que se publican. Las
+  preguntas se pueden cambiar mientras nadie haya empezado.
+- Un solo intento. Se puede empezar entre la apertura y el cierre; despues,
+  solo si el examen lo permite (queda marcado como tarde).
+- Con tiempo limite el intento vence a los minutos fijados (y nunca despues
+  del cierre si no se aceptan tardios). Si el alumno cierra el navegador, al
+  vencer se envia solo con lo que tenia guardado.
+- Varias correctas: todo o nada (hay que marcar exactamente las correctas).
+- El alumno ve sus respuestas correctas nunca, al terminar o cuando cierre el
+  examen, segun elija el docente. La pagina para contestar no incluye cuales
+  son las correctas.
 
 ## Cambios de horario con aprobacion
 
