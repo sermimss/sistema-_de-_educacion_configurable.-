@@ -1355,12 +1355,44 @@ model Pago {
   /// En efectivo: lo que entrego la persona (el cambio es la diferencia con
   /// montoTotal). En los demas metodos el sobrante queda como saldo a favor.
   efectivoRecibido     Decimal?           @db.Decimal(12, 2)
+  /// Cuando se capturo (la fecha del pago puede ser anterior).
+  registradoEn         DateTime           @default(now())
+  /// Turno de caja (corte) en el que se cobro.
+  turnoId              Int?
 
   alumno       Alumno           @relation(fields: [alumnoId], references: [id], onDelete: Restrict)
+  turno        TurnoCaja?       @relation(fields: [turnoId], references: [id], onDelete: Restrict)
   aplicaciones AplicacionPago[]
   recibo       Recibo?
 
   @@index([alumnoId, fecha])
+  @@index([turnoId])
+}
+
+enum EstadoTurnoCaja {
+  ABIERTO
+  CERRADO
+}
+
+/// Turno de caja de una persona: se abre con un fondo de efectivo, todo lo
+/// que cobra queda aqui y al cerrarlo se cuenta el efectivo (corte de caja).
+/// Un pago de un turno cerrado ya no se puede cancelar.
+model TurnoCaja {
+  id               Int             @id @default(autoincrement())
+  usuarioId        Int
+  usuarioNombre    String
+  abiertoEn        DateTime        @default(now())
+  fondoInicial     Decimal         @db.Decimal(12, 2)
+  estado           EstadoTurnoCaja @default(ABIERTO)
+  cerradoEn        DateTime?
+  efectivoEsperado Decimal?        @db.Decimal(12, 2)
+  efectivoContado  Decimal?        @db.Decimal(12, 2)
+  diferencia       Decimal?        @db.Decimal(12, 2)
+  notasCierre      String?
+
+  pagos Pago[]
+
+  @@index([usuarioId, estado])
 }
 
 /// Permite pagos parciales y pagos que cubren varios cargos.

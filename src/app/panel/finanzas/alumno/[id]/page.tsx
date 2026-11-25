@@ -9,6 +9,7 @@ import { randomUUID } from "node:crypto";
 import { aNumero, resumenDeCuenta } from "@/lib/finanzas";
 import { estadoVisible, prepararCuenta, saldoAFavor } from "@/lib/cobranza";
 import { hoyEnZona } from "@/lib/fechasDia";
+import { turnoAbierto } from "@/lib/caja";
 import { formatearFecha, formatearFechaHora, formatearMoneda } from "@/lib/formato";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
 import {
@@ -31,7 +32,7 @@ const TONO_CARGO: Record<string, "exito" | "alerta" | "peligro" | "neutro"> = {
 };
 
 export default async function PaginaEstadoCuenta({ params }: { params: Promise<{ id: string }> }) {
-  await requerirRol("ADMIN");
+  const sesion = await requerirRol("ADMIN");
   const { id } = await params;
   const alumnoId = Number(id);
   if (!Number.isFinite(alumnoId)) notFound();
@@ -51,6 +52,7 @@ export default async function PaginaEstadoCuenta({ params }: { params: Promise<{
   // Recargos de hoy, estados por fecha y saldo a favor aplicado.
   await prepararCuenta(alumnoId);
   const aFavor = await saldoAFavor(alumnoId);
+  const cajaAbierta = await turnoAbierto(sesion.usuarioId);
 
   const [cargos, pagos, convenios, conceptos, resumen, permiteParciales, permiteConvenios] =
     await Promise.all([
@@ -62,7 +64,7 @@ export default async function PaginaEstadoCuenta({ params }: { params: Promise<{
       db.pago.findMany({
         where: { alumnoId },
         orderBy: { fecha: "desc" },
-        include: { aplicaciones: { include: { cargo: true } }, recibo: true },
+        include: { aplicaciones: { include: { cargo: true } }, recibo: true, turno: true },
       }),
       db.convenioPago.findMany({
         where: { alumnoId },
@@ -216,6 +218,12 @@ export default async function PaginaEstadoCuenta({ params }: { params: Promise<{
       </Tarjeta>
 
       <Tarjeta titulo="Registrar pago">
+        {!cajaAbierta ? (
+          <Alerta tipo="aviso">
+            Para cobrar abre tu caja: cada cobro entra a tu corte.{" "}
+            <Link href={`/panel/caja?alumno=${alumno.id}`} className="font-medium underline">Ir a Caja</Link>
+          </Alerta>
+        ) : (
         <FormularioPago
           alumnoId={alumno.id}
           cargos={pendientes}
@@ -225,6 +233,7 @@ export default async function PaginaEstadoCuenta({ params }: { params: Promise<{
           hoy={hoyEnZona(institucion?.zonaHoraria ?? "America/Mexico_City")}
           saldoFavor={aFavor}
         />
+        )}
       </Tarjeta>
 
       <Tarjeta titulo="Pagos registrados" descripcion={`${pagos.length} pago(s)`}>
@@ -270,7 +279,10 @@ export default async function PaginaEstadoCuenta({ params }: { params: Promise<{
                         Ver recibo {pago.recibo.serie}-{pago.recibo.folio}
                       </Link>
                     )}
-                    {pago.estado !== "CANCELADO" && <BotonCancelarPago pagoId={pago.id} />}
+                    {pago.estado !== "CANCELADO" && pago.turno?.estado !== "CERRADO" && <BotonCancelarPago pagoId={pago.id} />}
+                    {pago.estado !== "CANCELADO" && pago.turno?.estado === "CERRADO" && (
+                      <span className="text-xs text-slate-400" data-corte-cerrado>En el corte #{pago.turno.id} (cerrado)</span>
+                    )}
                   </div>
                 </div>
               </li>

@@ -6,6 +6,7 @@ import { requerirRol } from "@/lib/auth";
 import { aplicarSaldoAFavor, conCandado, cuentaAlDia, requiereReferencia } from "@/lib/cobranza";
 import { esFechaDia, fechaHoraAInstante, hoyEnZona } from "@/lib/fechasDia";
 import { obtenerInstitucion } from "@/lib/institucion";
+import { turnoAbierto } from "@/lib/caja";
 import { formatearMoneda } from "@/lib/formato";
 import { db } from "@/lib/db";
 import { registrarBitacora } from "@/lib/bitacora";
@@ -295,6 +296,9 @@ export async function accionActualizarRecargos(
 /// - Si el mismo formulario llega dos veces, el segundo no crea otro pago.
 export type EstadoPago = EstadoFinanzas & {
   duplicado?: { folio: string; alumno: string; fecha: string; monto: string };
+  /// Para abrir el recibo listo para imprimir desde la caja.
+  pagoId?: number;
+  sinCaja?: boolean;
 };
 
 export async function registrarPago(_previo: EstadoPago, formData: FormData): Promise<EstadoPago> {
@@ -366,10 +370,13 @@ export async function registrarPago(_previo: EstadoPago, formData: FormData): Pr
     if (cargoId && Number.isFinite(cantidad) && cantidad > 0) manual.set(cargoId, centavos(cantidad));
   }
 
-  type Resultado = { error: string } | { folio: string; pagoId: number; aplicado: number; cambio: number; aFavor: number; cargos: number };
+  type Resultado = { error: string; sinCaja?: boolean } | { folio: string; pagoId: number; aplicado: number; cambio: number; aFavor: number; cargos: number };
   let resultado: Resultado;
   try {
     resultado = await conCandado(async (tx): Promise<Resultado> => {
+      // Todo cobro entra al turno de caja abierto de quien cobra.
+      const turno = await turnoAbierto(sesion.usuarioId, tx);
+      if (!turno) return { error: "Abre tu caja (menu Caja) para registrar cobros: cada cobro entra a tu corte.", sinCaja: true };
       // La cuenta al dia en que se recibio el dinero: recargos a esa fecha y
       // saldo a favor ya aplicado.
       await cuentaAlDia(alumnoId, tx, fechaPago);
@@ -431,6 +438,8 @@ export async function registrarPago(_previo: EstadoPago, formData: FormData): Pr
           notas: String(formData.get("notas") ?? "").trim() || null,
           claveCaptura,
           efectivoRecibido: efectivo && sobrante > 0 ? monto : null,
+          turnoId: turno.id,
+          registradoEn: momento,
         },
       });
       for (const fila of reparto) {
@@ -468,7 +477,7 @@ export async function registrarPago(_previo: EstadoPago, formData: FormData): Pr
     }
     throw e;
   }
-  if ("error" in resultado) return { error: resultado.error };
+  if ("error" in resultado) return { error: resultado.error, sinCaja: resultado.sinCaja };
 
   await registrarBitacora({
     usuarioId: sesion.usuarioId,
@@ -480,10 +489,11 @@ export async function registrarPago(_previo: EstadoPago, formData: FormData): Pr
   });
 
   revalidatePath(`/panel/finanzas/alumno/${alumnoId}`);
+  revalidatePath("/panel/caja");
   const partes = [`Pago ${resultado.folio} registrado por ${dinero(resultado.aplicado + resultado.aFavor)}${resultado.cargos > 0 ? ` en ${resultado.cargos} cargo(s)` : ""}.`];
   if (resultado.cambio > 0) partes.push(`Entrega de cambio: ${dinero(resultado.cambio)}.`);
   if (resultado.aFavor > 0) partes.push(`Quedan ${dinero(resultado.aFavor)} como saldo a favor del alumno; se aplicaran solos a sus siguientes cargos.`);
-  return { ok: true, mensaje: partes.join(" ") };
+  return { ok: true, mensaje: partes.join(" "), pagoId: resultado.pagoId };
 }
 
 export async function cancelarPago(
@@ -499,10 +509,14 @@ export async function cancelarPago(
   const resultado = await conCandado(async (tx) => {
     const pago = await tx.pago.findUnique({
       where: { id: pagoId },
-      include: { aplicaciones: true, recibo: true },
+      include: { aplicaciones: true, recibo: true, turno: true },
     });
     if (!pago) return { error: "El pago no existe." } as const;
     if (pago.estado === "CANCELADO") return { error: "Ese pago ya estaba cancelado." } as const;
+    // El corte cerrado no cambia: sus pagos ya no se cancelan.
+    if (pago.turno?.estado === "CERRADO") {
+      return { error: `Ese pago es del corte #${pago.turno.id}, que ya se cerro: no se puede cancelar. Si hace falta, agrega un cargo de ajuste.` } as const;
+    }
     await tx.pago.update({
       where: { id: pagoId },
       data: { estado: "CANCELADO", canceladoEn: new Date(), canceladoPor: sesion.usuarioId, motivoCancelacion: motivo },

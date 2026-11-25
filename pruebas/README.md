@@ -185,6 +185,21 @@ saldo a favor revierte todo.
 DATABASE_URL=... npm run prueba:pagos
 ```
 
+## caja.mjs
+
+25 comprobaciones sobre una base **recien sembrada con los datos de
+demostracion**, con `DATABASE_URL` apuntando a esa base. Sin caja abierta no
+se cobra (pantalla y servidor); abre la caja con fondo, busca alumnos, cobra
+en efectivo y transferencia con el recibo listo para imprimir y regreso a la
+caja; cancela dentro del turno; corte parcial; cierre con faltante; un corte
+cerrado ya no permite cancelar sus pagos; cada cajero con su propio turno y
+la lista de cortes con filtro por cajero. Las suites de finanzas,
+integridad y pagos abren caja antes de cobrar.
+
+```bash
+DATABASE_URL=... npm run prueba:caja
+```
+
 ## menu-movil.mjs
 
 39 comprobaciones con el navegador en tamano de celular (390 x 844) sobre una

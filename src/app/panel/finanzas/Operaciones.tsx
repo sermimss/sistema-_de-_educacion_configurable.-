@@ -1,6 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Alerta, Boton, Campo, Selector } from "@/components/ui";
 import type { EstadoFinanzas } from "./acciones";
 import { Avisos, type Opcion } from "./Formularios";
@@ -188,6 +190,7 @@ export function FormularioPago({
   claveCaptura,
   hoy,
   saldoFavor,
+  imprimirYVolverA,
 }: {
   alumnoId: number;
   cargos: { id: number; descripcion: string; saldo: number; vence: string; vencido: boolean }[];
@@ -198,8 +201,17 @@ export function FormularioPago({
   claveCaptura: string;
   hoy: string;
   saldoFavor: number;
+  /// En la caja: al registrar se abre el recibo listo para imprimir y despues
+  /// se regresa a esta direccion.
+  imprimirYVolverA?: string;
 }) {
   const [estado, accion, pendiente] = useActionState<EstadoPago, FormData>(registrarPago, {});
+  const router = useRouter();
+  useEffect(() => {
+    if (imprimirYVolverA && estado.ok && estado.pagoId) {
+      router.push(`/panel/finanzas/recibo/${estado.pagoId}?imprimir=1&volver=${encodeURIComponent(imprimirYVolverA)}`);
+    }
+  }, [estado, imprimirYVolverA, router]);
   const [reparto, setReparto] = useState<Record<number, string>>({});
   const [monto, setMonto] = useState("");
   const [metodo, setMetodo] = useState("EFECTIVO");
@@ -227,6 +239,11 @@ export function FormularioPago({
       <input type="hidden" name="alumnoId" value={alumnoId} />
       <input type="hidden" name="claveCaptura" value={claveCaptura} />
       <Avisos estado={estado} />
+      {estado.sinCaja && (
+        <p className="text-sm">
+          <Link href="/panel/caja" className="font-medium text-marca-600 underline">Ir a abrir mi caja</Link>
+        </p>
+      )}
       {estado.duplicado && (
         <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" data-aviso-duplicado>
           <p>

@@ -11,10 +11,20 @@ import { aNumero } from "@/lib/finanzas";
 import { formatearFecha, formatearFechaHora, formatearMoneda } from "@/lib/formato";
 import { Alerta } from "@/components/ui";
 import { BotonImprimir } from "@/app/panel/boletas/Acciones";
+import { AutoImprimir } from "./AutoImprimir";
 
 export const dynamic = "force-dynamic";
 
-export default async function PaginaRecibo({ params }: { params: Promise<{ pagoId: string }> }) {
+export default async function PaginaRecibo({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ pagoId: string }>;
+  searchParams: Promise<{ imprimir?: string; volver?: string }>;
+}) {
+  const { imprimir, volver } = await searchParams;
+  // Solo se regresa a pantallas del panel.
+  const volverA = volver && /^\/panel\/[\w/?=&%-]*$/.test(volver) ? volver : null;
   const sesion = await requerirSesion();
   const { pagoId } = await params;
   const id = Number(pagoId);
@@ -65,7 +75,10 @@ export default async function PaginaRecibo({ params }: { params: Promise<{ pagoI
         <Link href={regreso} className="text-sm text-marca-600 hover:underline">
           ← Estado de cuenta
         </Link>
-        <BotonImprimir />
+        <div className="flex items-center gap-2">
+          {imprimir && volverA && sesion.rol === "ADMIN" && <AutoImprimir volver={volverA} />}
+          <BotonImprimir />
+        </div>
       </div>
 
       <article className="hoja-impresion mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white p-8 shadow-sm">

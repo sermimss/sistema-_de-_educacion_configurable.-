@@ -34,6 +34,11 @@ await p.getByLabel(/^Contrasena\*?$/).fill("Demo1234");
 await p.getByRole("button", { name: "Entrar" }).click();
 await p.waitForURL("**/panel", { timeout: 20000 });
 
+// Todo cobro entra al turno de caja de quien cobra: se abre la caja primero.
+await p.goto(`${BASE}/panel/caja`);
+await p.getByRole("button", { name: "Abrir caja" }).click();
+await p.locator("[data-resumen-turno]").waitFor({ timeout: 15000 });
+
 // ============ FALLA 1: desactivar conceptos ============
 console.log("\n--- Falla 1: desactivar conceptos desde la pantalla ---");
 const conceptosAntes = await db.conceptoCobro.findMany({ orderBy: { id: "asc" } });

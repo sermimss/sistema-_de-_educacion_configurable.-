@@ -749,3 +749,26 @@ Cancelar un pago tambien revierte lo que su saldo a favor habia cubierto.
 
 Verificado: pagos fiables 34 (nueva) y la regresion completa (finanzas e
 integridad ajustadas a los recargos automaticos).
+
+## Caja y corte de caja
+
+- **Caja por cajero** (menu *Caja*): cada persona abre su turno con un fondo
+  inicial de efectivo. Busca al alumno por matricula o nombre, ve lo que debe
+  (con recargos al dia y saldo a favor) y cobra ahi mismo. Al registrar, se
+  abre el recibo con el dialogo de impresion y despues regresa a la caja.
+- **Todo cobro entra a un turno**: sin caja abierta no se puede cobrar, ni
+  desde la caja ni desde el estado de cuenta (el servidor lo rechaza).
+- **Corte**: al cerrar se cuenta el efectivo; el sistema compara con lo
+  esperado (fondo + efectivo cobrado; el cambio ya se descuenta) y guarda la
+  diferencia y las notas. El corte imprimible trae totales por metodo, los
+  cancelados (que no cuentan), el efectivo esperado, contado y la diferencia,
+  el detalle de cada cobro y firmas de entrega y recepcion. Con la caja
+  abierta se puede ver un corte parcial.
+- **Un corte cerrado no cambia**: sus pagos ya no se pueden cancelar (si hace
+  falta, se agrega un cargo de ajuste). Dentro del turno abierto si.
+- *Cortes de caja*: los de todos los cajeros, con filtro por cajero.
+- Los pagos guardan ademas cuando se capturaron (`registradoEn`), aparte de
+  la fecha en que se recibio el dinero.
+
+Verificado: caja 25 (nueva); finanzas, integridad y pagos fiables abren caja
+antes de cobrar; regresion completa.

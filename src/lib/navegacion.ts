@@ -31,6 +31,7 @@ export const NAVEGACION: ItemNavegacion[] = [
   { etiqueta: "Examenes", ruta: "/panel/examenes", roles: ["DOCENTE", "ALUMNO"], fase: 3, grupo: "academico" },
   { etiqueta: "Boletas y promedios", ruta: "/panel/boletas", roles: ["ADMIN"], fase: 3, grupo: "academico" },
 
+  { etiqueta: "Caja", ruta: "/panel/caja", roles: ["ADMIN"], fase: 4, grupo: "finanzas" },
   { etiqueta: "Finanzas", ruta: "/panel/finanzas", roles: ["ADMIN"], fase: 4, grupo: "finanzas" },
   { etiqueta: "Mis calificaciones", ruta: "/panel/mis-calificaciones", roles: ["ALUMNO"], fase: 4, grupo: "academico" },
   { etiqueta: "Mi asistencia", ruta: "/panel/mi-asistencia", roles: ["ALUMNO"], fase: 4, grupo: "academico" },

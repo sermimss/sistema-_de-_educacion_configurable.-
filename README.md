@@ -33,8 +33,8 @@ fondo.
 - **Pago en linea:** el modelo de datos guarda la configuracion de la pasarela,
   pero la integracion con el proveedor todavia no esta hecha. Hoy el cobro se
   registra en caja (efectivo, transferencia, tarjeta, deposito o cheque), con
-  recargos al dia, saldo a favor, cambio en efectivo y proteccion contra
-  dobles registros (ver `docs/fases.md`).
+  recargos al dia, saldo a favor, cambio en efectivo, proteccion contra
+  dobles registros, caja por cajero y corte de caja (ver `docs/fases.md`).
 - **Niveles:** de preparatoria en adelante (bachillerato, licenciatura, posgrado,
   cursos), multiplantel y multiturno.
 - **Evaluacion:** escala configurable (0 a 100 por omision), sin redondeo,
@@ -271,6 +271,7 @@ npm run prueba:tareas             # 37 comprobaciones de tareas con entrega de a
 npm run prueba:examenes           # 40 comprobaciones de examenes en linea (base con demo y DATABASE_URL)
 npm run prueba:importar-examen    # 18 comprobaciones de cargar examenes ya escritos (base con demo y DATABASE_URL)
 npm run prueba:pagos              # 34 comprobaciones de captura de pagos confiable (base con demo y DATABASE_URL)
+npm run prueba:caja               # 25 comprobaciones de caja por cajero y corte de caja (base con demo y DATABASE_URL)
 npm run prueba:movil              # 39 comprobaciones del sistema en celular (base con demo)
 npm run prueba:documentos         # 43 comprobaciones de logo, colores y documentos institucionales (base recien sembrada)
 npm run prueba:grupos             # 33 comprobaciones de grupos con calendario y horario (base recien sembrada)

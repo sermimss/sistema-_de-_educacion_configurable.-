@@ -132,7 +132,13 @@ await db.configuracion.update({ where: { clave: "portales.alumno_ve_avisos" }, d
 
 // ---------------- Adeudos visibles al docente ----------------
 const sofia = await db.alumno.findUnique({ where: { matricula: "2026-0001" } });
-await db.alumno.update({ where: { id: sofia.id }, data: { tieneAdeudo: true } });
+// El adeudo se calcula por fecha: un cargo con saldo que ya vencio.
+await db.cargo.create({
+  data: {
+    folio: "PRUEBA-ADEUDO", alumnoId: sofia.id, descripcion: "Colegiatura vencida", montoOriginal: 500, montoTotal: 500,
+    saldo: 500, fechaVencimiento: new Date(Date.now() - 5 * 86400000), estado: "PENDIENTE",
+  },
+});
 await docente.goto(`${BASE}/panel/asistencia?clase=${matematicas.id}`);
 comprobar("Por omision el docente no ve adeudos", (await docente.locator("[data-marca-adeudo]").count()) === 0);
 await db.configuracion.update({ where: { clave: "portales.docente_ve_adeudos" }, data: { valor: "true" } });

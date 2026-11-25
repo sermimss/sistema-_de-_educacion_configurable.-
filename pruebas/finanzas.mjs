@@ -22,6 +22,11 @@ admin.on("pageerror", (e) => console.log("ERROR DE PAGINA:", e.message));
 
 await entrar(admin, "admin", "Demo1234");
 
+// Todo cobro entra al turno de caja de quien cobra: se abre la caja primero.
+await admin.goto(`${BASE}/panel/caja`);
+await admin.getByRole("button", { name: "Abrir caja" }).click();
+await admin.locator("[data-resumen-turno]").waitFor({ timeout: 15000 });
+
 // ---------------- Catalogo de cobros ----------------
 await admin.goto(`${BASE}/panel/finanzas/conceptos`);
 comprobar("Abre el catalogo de conceptos", (await limpio(admin)).includes("Conceptos de cobro"));

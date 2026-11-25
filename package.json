@@ -39,6 +39,7 @@
     "prueba:examenes": "node pruebas/examenes.mjs",
     "prueba:importar-examen": "node pruebas/importar-examen.mjs",
     "prueba:pagos": "node pruebas/pagos-fiables.mjs",
+    "prueba:caja": "node pruebas/caja.mjs",
     "prueba:red": "node pruebas/red-local.mjs"
   },
   "dependencies": {

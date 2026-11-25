@@ -51,6 +51,11 @@ async function entrar(usuario) {
   return p;
 }
 const admin = await entrar("admin");
+
+// Todo cobro entra al turno de caja de quien cobra: se abre la caja primero.
+await admin.goto(`${BASE}/panel/caja`);
+await admin.getByRole("button", { name: "Abrir caja" }).click();
+await admin.locator("[data-resumen-turno]").waitFor({ timeout: 15000 });
 const cuenta = (alumno) => admin.goto(`${BASE}/panel/finanzas/alumno/${alumno.id}`);
 const form = (p) => p.locator("[data-formulario-pago]");
 async function cobrar(p, { monto, metodo = "EFECTIVO", referencia = "", fecha = null, espera = /registrado por|Ya hay un pago|Escribe la referencia|futura|no tiene cargos|ya estaba registrado/ }) {
