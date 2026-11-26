@@ -54,7 +54,7 @@ await p.waitForURL("**/panel", { timeout: 20000 });
 
 // ---------------- Discreto: oculto en el menu ⋯ ----------------
 await p.goto(`${BASE}/panel/grupos/${grupoDemo.id}`);
-comprobar("En el grupo no se ve el boton de eliminar grupo hasta abrir el menu", !(await texto(p)).includes("Eliminar grupo") && (await p.getByRole("button", { name: "Mas opciones" }).count()) === 1);
+comprobar("En el grupo no se ve el boton de eliminar grupo hasta abrir el menu", !(await texto(p)).includes("Eliminar grupo") && (await p.locator("header").getByRole("button", { name: "Mas opciones" }).count()) === 1);
 await p.goto(`${BASE}/panel/academico`);
 comprobar("En la estructura tampoco", !(await texto(p)).includes("Eliminar") && (await p.locator('[data-nivel="BACH"]').getByRole("button", { name: "Mas opciones" }).count()) === 1);
 await p.locator('[data-nivel="BACH"]').getByRole("button", { name: "Mas opciones" }).click();

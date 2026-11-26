@@ -258,7 +258,7 @@ servidor corriendo en `http://localhost:3000`.
 ```bash
 npm run build && npm start        # en otra terminal
 npm run prueba:humo               # 27 comprobaciones del nucleo (base con demo)
-npm run prueba:control            # 28 comprobaciones de control escolar
+npm run prueba:control            # 29 comprobaciones de control escolar
 npm run prueba:academico          # 40 comprobaciones del modulo academico (base recien sembrada)
 npm run prueba:finanzas           # 40 comprobaciones de finanzas (base recien sembrada)
 npm run prueba:integridad         # 27 comprobaciones de finanzas contra la base de datos

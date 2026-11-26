@@ -8,11 +8,23 @@ export type OpcionMenu =
   | { etiqueta: string; ventana: (cerrar: () => void) => ReactNode }
   | { etiqueta: string; accion: (datos: FormData) => void | Promise<void>; campos: Record<string, string | number> };
 
+type Posicion = { top?: number; bottom?: number; right: number };
+
+/// Debajo del boton; si no cabe en la pantalla, arriba de el.
+function posicionar(r: DOMRect, opciones: number): Posicion {
+  const alto = opciones * 34 + 12;
+  const right = Math.max(8, window.innerWidth - r.right);
+  if (r.bottom + 4 + alto > window.innerHeight && r.top - 4 - alto > 0) {
+    return { bottom: window.innerHeight - r.top + 4, right };
+  }
+  return { top: r.bottom + 4, right };
+}
+
 /// Boton discreto de tres puntos con un menu. El menu se dibuja sobre la
 /// pagina (no lo recorta una tabla con desplazamiento), sigue al boton al
 /// desplazarse y se cierra con Escape o tocando fuera.
 export function MasOpciones({ opciones, etiqueta = "Mas opciones" }: { opciones: OpcionMenu[]; etiqueta?: string }) {
-  const [menu, setMenu] = useState<{ top: number; right: number } | null>(null);
+  const [menu, setMenu] = useState<Posicion | null>(null);
   const [activa, setActiva] = useState<number | null>(null);
   const boton = useRef<HTMLButtonElement>(null);
   const lista = useRef<HTMLDivElement>(null);
@@ -32,7 +44,7 @@ export function MasOpciones({ opciones, etiqueta = "Mas opciones" }: { opciones:
     // Al desplazarse o cambiar el tamano, el menu sigue al boton.
     const alMover = () => {
       const r = boton.current?.getBoundingClientRect();
-      setMenu((actual) => (actual && r ? { top: r.bottom + 4, right: Math.max(8, window.innerWidth - r.right) } : actual));
+      setMenu((actual) => (actual && r ? posicionar(r, opciones.length) : actual));
     };
     document.addEventListener("keydown", alTeclear);
     document.addEventListener("mousedown", alTocar);
@@ -44,12 +56,12 @@ export function MasOpciones({ opciones, etiqueta = "Mas opciones" }: { opciones:
       window.removeEventListener("scroll", alMover, true);
       window.removeEventListener("resize", alMover);
     };
-  }, [menu, activa]);
+  }, [menu, activa, opciones.length]);
 
   function alternar() {
     if (menu) return setMenu(null);
     const r = boton.current?.getBoundingClientRect();
-    if (r) setMenu({ top: r.bottom + 4, right: Math.max(8, window.innerWidth - r.right) });
+    if (r) setMenu(posicionar(r, opciones.length));
   }
 
   const claseOpcion = "block w-full px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50";
@@ -72,7 +84,7 @@ export function MasOpciones({ opciones, etiqueta = "Mas opciones" }: { opciones:
         <div
           ref={lista}
           role="menu"
-          style={{ position: "fixed", top: menu.top, right: menu.right }}
+          style={{ position: "fixed", top: menu.top, bottom: menu.bottom, right: menu.right }}
           className="z-40 min-w-[11rem] rounded-lg border border-slate-200 bg-white py-1 text-left shadow-lg"
         >
           {opciones.map((opcion, indice) =>
