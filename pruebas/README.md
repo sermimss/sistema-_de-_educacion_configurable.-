@@ -138,6 +138,22 @@ ofrecer.
 DATABASE_URL=... npm run prueba:eliminar-academico
 ```
 
+## eliminar-catalogo.mjs
+
+17 comprobaciones sobre una base **recien sembrada con los datos de
+demostracion**, con `DATABASE_URL` apuntando a esa base. Con el menu ⋯:
+una clase con una tarea no se elimina; sin escribir la materia no se
+elimina; una clase vacia se borra con su horario y desactiva su aviso; en el
+mapa no se quita una materia con clases y si una sin clases; en el catalogo
+una materia ya impartida no se elimina y se ofrece desactivarla, Activar y
+Desactivar estan en el menu, una materia sin clases se elimina y se quita
+de los mapas con su prerrequisito; un area se elimina y sus materias quedan
+sin area; todo en la bitacora.
+
+```bash
+DATABASE_URL=... npm run prueba:eliminar-catalogo
+```
+
 ## tareas.mjs
 
 37 comprobaciones sobre una base **recien sembrada con los datos de

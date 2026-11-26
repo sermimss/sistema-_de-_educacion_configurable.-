@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { MasOpciones } from "@/components/MasOpciones";
 import { Alerta, Boton, Campo, Selector } from "@/components/ui";
 import { DIAS_SEMANA } from "@/lib/formato";
 import { repartirParciales, type ParcialCapturado } from "@/lib/fechasGrupo";
@@ -690,20 +691,48 @@ export function SelectorDocente({
   );
 }
 
-export function BotonEliminarClase({ claseId, grupoId }: { claseId: number; grupoId: number }) {
+/// Menu discreto (⋯) de la clase con la opcion de eliminarla.
+export function MenuClase(clase: { claseId: number; grupoId: number; materia: string; clave: string }) {
+  return (
+    <MasOpciones
+      opciones={[{ etiqueta: "Eliminar clase", ventana: (cerrar) => <VentanaEliminarClase {...clase} cerrar={cerrar} /> }]}
+    />
+  );
+}
+
+function VentanaEliminarClase({
+  claseId,
+  grupoId,
+  materia,
+  clave,
+  cerrar,
+}: {
+  claseId: number;
+  grupoId: number;
+  materia: string;
+  clave: string;
+  cerrar: () => void;
+}) {
   const [estado, accion, pendiente] = useActionState<EstadoFormulario, FormData>(eliminarClase, {});
   return (
-    <form action={accion}>
+    <form action={accion} className="space-y-3 text-sm" data-eliminar-clase={claseId}>
+      <h2 className="text-base font-semibold text-slate-900">Eliminar la clase de {materia}</h2>
       <input type="hidden" name="claseId" value={claseId} />
       <input type="hidden" name="grupoId" value={grupoId} />
-      <button
-        type="submit"
-        disabled={pendiente}
-        className="rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-      >
-        {pendiente ? "..." : "Eliminar"}
-      </button>
-      {estado.error && <p className="mt-1 max-w-xs text-xs text-red-600">{estado.error}</p>}
+      <p className="text-xs text-slate-600">
+        Se retira la materia de este grupo con su horario. Solo se puede si no tiene calificaciones, actividades,
+        asistencia, tareas, examenes ni grabaciones.
+      </p>
+      {estado.error && <Alerta tipo="error">{estado.error}</Alerta>}
+      <div className="flex flex-wrap items-end gap-2">
+        <Campo etiqueta={`Escribe "${materia}" o "${clave}" para confirmar`} name="confirmacion" autoComplete="off" className="min-w-[14rem] flex-1" />
+        <Boton type="button" variante="secundario" onClick={cerrar}>
+          Cancelar
+        </Boton>
+        <Boton type="submit" variante="peligro" disabled={pendiente}>
+          {pendiente ? "Eliminando..." : "Eliminar clase"}
+        </Boton>
+      </div>
     </form>
   );
 }

@@ -156,8 +156,14 @@ const trasTercera = await inscribirSiguiente();
 comprobar("Respeta el cupo maximo del grupo", trasTercera.includes("esta lleno"));
 
 // No se puede eliminar una clase con alumnos? si puede: solo bloquea con calificaciones.
-await p.getByRole("button", { name: "Eliminar" }).first().click();
+const clasesAntes = await p.locator("button[aria-label='Mas opciones']").count();
+await p.getByRole("button", { name: "Mas opciones" }).last().click();
+await p.getByRole("menuitem", { name: "Eliminar clase" }).click();
+const etiquetaConfirmar = await p.getByRole("dialog").getByText(/para confirmar/).innerText();
+await p.getByRole("dialog").getByLabel(/para confirmar/).fill(etiquetaConfirmar.match(/"([^"]+)"/)[1]);
+await p.getByRole("dialog").getByRole("button", { name: "Eliminar clase" }).click();
 await p.waitForTimeout(1800);
+comprobar("Eliminar la clase esta en el menu ⋯ y pide escribir la materia", (await p.locator("button[aria-label='Mas opciones']").count()) < clasesAntes);
 comprobar("Elimina una clase sin calificaciones",
   !(await limpio(p)).includes("ya tiene calificaciones"));
 

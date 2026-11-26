@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { configBool } from "@/lib/configuracion";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
 import {
-  BotonQuitarMateria,
+  MenuMateriaDelPlan,
   FormularioAsignarMateria,
   FormularioPrerrequisito,
 } from "../../Formularios";
@@ -90,7 +90,7 @@ export default async function PaginaMapaCurricular({
             ) : (
               <ul className="divide-y divide-slate-100">
                 {materias.map((planMateria) => (
-                  <li key={planMateria.id} className="flex items-start justify-between gap-4 py-3">
+                  <li key={planMateria.id} className="flex items-start justify-between gap-4 py-3" data-plan-materia={planMateria.materia.clave}>
                     <div>
                       <p className="text-sm font-medium text-slate-800">
                         {planMateria.materia.nombre}
@@ -132,7 +132,7 @@ export default async function PaginaMapaCurricular({
                         </ul>
                       )}
                     </div>
-                    <BotonQuitarMateria planMateriaId={planMateria.id} planId={plan.id} />
+                    <MenuMateriaDelPlan planMateriaId={planMateria.id} planId={plan.id} materia={planMateria.materia.nombre} />
                   </li>
                 ))}
               </ul>

@@ -2,12 +2,17 @@
 
 import { useActionState } from "react";
 import { Alerta, Boton, Campo, Selector } from "@/components/ui";
+import { MasOpciones } from "@/components/MasOpciones";
 import {
   agregarPrerrequisito,
   asignarMateriaAPlan,
+  cambiarEstadoMateria,
   crearArea,
   crearMateria,
+  eliminarArea,
+  eliminarMateria,
   quitarMateriaDePlan,
+  type EstadoEliminarMateria,
   type EstadoFormulario,
 } from "./acciones";
 
@@ -159,29 +164,107 @@ export function FormularioPrerrequisito({
   );
 }
 
-export function BotonQuitarMateria({
-  planMateriaId,
-  planId,
-}: {
-  planMateriaId: number;
-  planId: number;
-}) {
-  const [estado, accion, pendiente] = useActionState<EstadoFormulario, FormData>(
-    quitarMateriaDePlan,
-    {}
-  );
+/// Menu discreto (⋯) de una materia del mapa curricular: quitarla del plan.
+export function MenuMateriaDelPlan({ planMateriaId, planId, materia }: { planMateriaId: number; planId: number; materia: string }) {
   return (
-    <form action={accion} className="text-right">
+    <MasOpciones
+      opciones={[
+        {
+          etiqueta: "Quitar del mapa",
+          ventana: (cerrar) => <VentanaQuitarMateria planMateriaId={planMateriaId} planId={planId} materia={materia} cerrar={cerrar} />,
+        },
+      ]}
+    />
+  );
+}
+
+function VentanaQuitarMateria({ planMateriaId, planId, materia, cerrar }: { planMateriaId: number; planId: number; materia: string; cerrar: () => void }) {
+  const [estado, accion, pendiente] = useActionState<EstadoFormulario, FormData>(quitarMateriaDePlan, {});
+  return (
+    <form action={accion} className="space-y-3 text-sm" data-quitar-materia={planMateriaId}>
+      <h2 className="text-base font-semibold text-slate-900">Quitar {materia} del mapa curricular</h2>
       <input type="hidden" name="planMateriaId" value={planMateriaId} />
       <input type="hidden" name="planId" value={planId} />
-      <button
-        type="submit"
-        disabled={pendiente}
-        className="rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:text-slate-400"
-      >
-        {pendiente ? "Quitando..." : "Quitar"}
-      </button>
-      {estado.error && <p className="mt-1 max-w-xs text-xs text-red-600">{estado.error}</p>}
+      <p className="text-xs text-slate-600">La materia sigue en el catalogo; solo deja de formar parte de este plan.</p>
+      {estado.error && <Alerta tipo="error">{estado.error}</Alerta>}
+      <div className="flex justify-end gap-2">
+        <Boton type="button" variante="secundario" onClick={cerrar}>Cancelar</Boton>
+        <Boton type="submit" variante="peligro" disabled={pendiente}>{pendiente ? "Quitando..." : "Quitar"}</Boton>
+      </div>
+    </form>
+  );
+}
+
+
+type MateriaCatalogo = { id: number; nombre: string; clave: string; activa: boolean };
+
+/// Menu discreto (⋯) de una materia del catalogo: activar o desactivar y eliminar.
+export function MenuMateria(materia: MateriaCatalogo) {
+  return (
+    <MasOpciones
+      opciones={[
+        { etiqueta: materia.activa ? "Desactivar" : "Activar", accion: cambiarEstadoMateria, campos: { materiaId: materia.id } },
+        { etiqueta: "Eliminar materia", ventana: (cerrar) => <VentanaEliminarMateria {...materia} cerrar={cerrar} /> },
+      ]}
+    />
+  );
+}
+
+function VentanaEliminarMateria({ id, nombre, clave, cerrar }: MateriaCatalogo & { cerrar: () => void }) {
+  const [estado, accion, pendiente] = useActionState<EstadoEliminarMateria, FormData>(eliminarMateria, {});
+  return (
+    <div className="space-y-3 text-sm" data-eliminar-materia={clave}>
+      <h2 className="text-base font-semibold text-slate-900">Eliminar la materia {nombre}</h2>
+      <p className="text-xs text-slate-600">
+        Se borra del catalogo y se quita de los mapas curriculares donde este. Solo se puede si nunca se abrio una
+        clase con ella; si ya se impartio, se puede desactivar.
+      </p>
+      {estado.error && <Alerta tipo="error">{estado.error}</Alerta>}
+      {estado.ofrecerDesactivar && (
+        <form action={cambiarEstadoMateria} onSubmit={() => setTimeout(cerrar, 0)} className="flex justify-end">
+          <input type="hidden" name="materiaId" value={id} />
+          <Boton type="submit" variante="secundario">Desactivar la materia</Boton>
+        </form>
+      )}
+      <form action={accion} className="flex flex-wrap items-end gap-2">
+        <input type="hidden" name="materiaId" value={id} />
+        <Campo etiqueta={`Escribe "${nombre}" o "${clave}" para confirmar`} name="confirmacion" autoComplete="off" className="min-w-[14rem] flex-1" />
+        <Boton type="button" variante="secundario" onClick={cerrar}>Cancelar</Boton>
+        <Boton type="submit" variante="peligro" disabled={pendiente}>{pendiente ? "Eliminando..." : "Eliminar materia"}</Boton>
+      </form>
+    </div>
+  );
+}
+
+type AreaCatalogo = { id: number; nombre: string; materias: number };
+
+/// Menu discreto (⋯) de un area: eliminarla (sus materias quedan sin area).
+export function MenuArea(area: AreaCatalogo) {
+  return (
+    <MasOpciones
+      etiqueta={`Mas opciones de ${area.nombre}`}
+      opciones={[{ etiqueta: "Eliminar area", ventana: (cerrar) => <VentanaEliminarArea {...area} cerrar={cerrar} /> }]}
+    />
+  );
+}
+
+function VentanaEliminarArea({ id, nombre, materias, cerrar }: AreaCatalogo & { cerrar: () => void }) {
+  const [estado, accion, pendiente] = useActionState<EstadoFormulario, FormData>(eliminarArea, {});
+  return (
+    <form action={accion} className="space-y-3 text-sm" data-eliminar-area={id}>
+      <h2 className="text-base font-semibold text-slate-900">Eliminar el area {nombre}</h2>
+      <input type="hidden" name="areaId" value={id} />
+      <p className="text-xs text-slate-600">
+        {materias > 0
+          ? `Sus ${materias} materia(s) no se borran: solo quedan sin area.`
+          : "No tiene materias."}
+      </p>
+      {estado.error && <Alerta tipo="error">{estado.error}</Alerta>}
+      <div className="flex flex-wrap items-end gap-2">
+        <Campo etiqueta={`Escribe "${nombre}" para confirmar`} name="confirmacion" autoComplete="off" className="min-w-[14rem] flex-1" />
+        <Boton type="button" variante="secundario" onClick={cerrar}>Cancelar</Boton>
+        <Boton type="submit" variante="peligro" disabled={pendiente}>{pendiente ? "Eliminando..." : "Eliminar area"}</Boton>
+      </div>
     </form>
   );
 }

@@ -1,21 +1,25 @@
 import Link from "next/link";
 import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
-import { FormularioArea, FormularioMateria } from "./Formularios";
-import { cambiarEstadoMateria } from "./acciones";
+import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
+import { FormularioArea, FormularioMateria, MenuArea, MenuMateria } from "./Formularios";
 
 export const dynamic = "force-dynamic";
 
-export default async function PaginaMaterias() {
+export default async function PaginaMaterias({
+  searchParams,
+}: {
+  searchParams: Promise<{ eliminada?: string; planes?: string; areaEliminada?: string; sinArea?: string }>;
+}) {
   await requerirRol("ADMIN");
+  const aviso = await searchParams;
 
   const [materias, areas, planes] = await Promise.all([
     db.materia.findMany({
       orderBy: { clave: "asc" },
       include: { area: true, _count: { select: { planes: true } } },
     }),
-    db.area.findMany({ orderBy: { nombre: "asc" } }),
+    db.area.findMany({ orderBy: { nombre: "asc" }, include: { _count: { select: { materias: true } } } }),
     db.planEstudios.findMany({
       where: { activo: true },
       orderBy: { nombre: "asc" },
@@ -25,6 +29,20 @@ export default async function PaginaMaterias() {
 
   return (
     <div className="space-y-6">
+      {aviso.eliminada && (
+        <Alerta tipo="exito">
+          <span data-materia-eliminada>
+            Materia {aviso.eliminada.slice(0, 120)} eliminada{aviso.planes ? `; se quito del mapa curricular de: ${aviso.planes.slice(0, 300)}` : ""}.
+          </span>
+        </Alerta>
+      )}
+      {aviso.areaEliminada && (
+        <Alerta tipo="exito">
+          <span data-area-eliminada>
+            Area {aviso.areaEliminada.slice(0, 120)} eliminada{Number(aviso.sinArea) > 0 ? `; ${aviso.sinArea} materia(s) quedaron sin area` : ""}.
+          </span>
+        </Alerta>
+      )}
       <header>
         <h1 className="text-xl font-semibold text-slate-900">Materias</h1>
         <p className="mt-1 text-sm text-slate-600">
@@ -91,16 +109,8 @@ export default async function PaginaMaterias() {
                         {materia.activa ? "activa" : "inactiva"}
                       </Insignia>
                     </td>
-                    <td className="py-2 text-right">
-                      <form action={cambiarEstadoMateria}>
-                        <input type="hidden" name="materiaId" value={materia.id} />
-                        <button
-                          type="submit"
-                          className="rounded-md px-2 py-1 text-xs font-medium text-marca-600 hover:bg-slate-100"
-                        >
-                          {materia.activa ? "Desactivar" : "Activar"}
-                        </button>
-                      </form>
+                    <td className="py-2 text-right" data-materia={materia.clave}>
+                      <MenuMateria id={materia.id} nombre={materia.nombre} clave={materia.clave} activa={materia.activa} />
                     </td>
                   </tr>
                 ))}
@@ -115,7 +125,10 @@ export default async function PaginaMaterias() {
           {areas.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {areas.map((area) => (
-                <Insignia key={area.id}>{area.nombre}</Insignia>
+                <span key={area.id} className="inline-flex items-center gap-0.5 rounded-full bg-slate-100 py-0.5 pl-2.5 pr-1 text-xs text-slate-700" data-area={area.nombre}>
+                  {area.nombre}
+                  <MenuArea id={area.id} nombre={area.nombre} materias={area._count.materias} />
+                </span>
               ))}
             </div>
           )}

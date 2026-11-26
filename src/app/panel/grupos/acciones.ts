@@ -424,27 +424,49 @@ export async function eliminarClase(
     where: { id: claseId },
     include: {
       planMateria: { include: { materia: true } },
-      _count: { select: { calificaciones: true, sesiones: true, actividades: true } },
+      _count: {
+        select: {
+          calificaciones: true,
+          extraordinarios: true,
+          sesiones: true,
+          actividades: true,
+          tareas: true,
+          examenes: true,
+          grabaciones: true,
+        },
+      },
     },
   });
   if (!clase) return { error: "La clase ya no existe." };
-
-  // Borrarla arrastraria calificaciones y asistencia: se impide.
-  const conDatos =
-    clase._count.calificaciones + clase._count.sesiones + clase._count.actividades;
-  if (conDatos > 0) {
-    return {
-      error: `No se puede eliminar ${clase.planMateria.materia.nombre}: ya tiene calificaciones, actividades o asistencia registradas.`,
-    };
+  const materia = clase.planMateria.materia;
+  if (!confirmacionValida(formData.get("confirmacion"), materia.nombre, materia.clave)) {
+    return { error: `Para eliminarla escribe el nombre de la materia (${materia.nombre}) o su clave (${materia.clave}).` };
   }
 
-  await db.clase.delete({ where: { id: claseId } });
+  // Borrarla arrastraria su historial: se impide y se explica.
+  const c = clase._count;
+  const motivos = [
+    c.calificaciones + c.extraordinarios ? "calificaciones" : "",
+    c.actividades ? "actividades" : "",
+    c.sesiones ? "asistencia" : "",
+    c.tareas ? "tareas" : "",
+    c.examenes ? "examenes" : "",
+    c.grabaciones ? "grabaciones" : "",
+  ].filter(Boolean);
+  if (motivos.length) {
+    return { error: `No se puede eliminar ${materia.nombre}: ya tiene ${motivos.join(", ")}.` };
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.aviso.updateMany({ where: { claseId, activo: true }, data: { activo: false } });
+    await tx.clase.delete({ where: { id: claseId } });
+  });
   await registrarBitacora({
     usuarioId: sesion.usuarioId,
     accion: "ELIMINAR",
     entidad: "Clase",
     entidadId: claseId,
-    descripcion: `${clase.planMateria.materia.nombre} retirada del grupo ${grupoId}`,
+    descripcion: `${materia.nombre} retirada del grupo ${grupoId}`,
   });
 
   revalidatePath(`/panel/grupos/${grupoId}`);

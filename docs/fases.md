@@ -706,10 +706,23 @@ Verificado: carreras 31 (nueva) y la regresion completa.
   alumnos inscritos sin nada capturado, pide darlos de baja o cambiarlos de
   grupo primero. Se borran sus clases y horarios, las inscripciones dadas de
   baja y su calendario propio (si no tiene cargos ligados).
+- **Clases** (⋯ de cada clase en el grupo > *Eliminar clase*): se confirma
+  escribiendo el nombre o la clave de la materia; no se elimina si tiene
+  calificaciones, actividades, asistencia, tareas, examenes o grabaciones
+  (antes las tareas, examenes y grabaciones se borraban con la clase).
+- **Materias** (catalogo, ⋯ de cada materia): *Desactivar/Activar* y
+  *Eliminar materia* (escribiendo su nombre o clave). Si esta en mapas
+  curriculares sin clases abiertas, se quita de ellos con sus prerrequisitos y
+  se avisa de cuales; si ya se abrio una clase con ella no se borra y se
+  ofrece desactivarla.
+- **Areas** (⋯ junto a cada area > *Eliminar area*, escribiendo su nombre):
+  sus materias no se borran, quedan sin area.
+- **Mapa curricular**: *Quitar del mapa* tambien paso al menu ⋯, con su
+  ventana de confirmacion (mismas reglas que antes).
 - Los avisos y conceptos de cobro dirigidos solo a lo que se elimina se
   desactivan (no se borran). Todo queda en la bitacora.
 
-Verificado: eliminar-academico 27 (nueva) y la regresion completa.
+Verificado: eliminar-academico 27 y eliminar-catalogo 17 (nuevas) y la regresion completa.
 
 ## Tareas y examenes en linea
 

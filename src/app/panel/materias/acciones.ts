@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { confirmacionValida } from "@/lib/eliminacionAcademica";
 import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { registrarBitacora } from "@/lib/bitacora";
@@ -258,4 +260,77 @@ export async function quitarPrerrequisito(formData: FormData) {
     entidadId: id,
   });
   revalidatePath(`/panel/materias/plan/${planId}`);
+}
+
+export type EstadoEliminarMateria = EstadoFormulario & { ofrecerDesactivar?: boolean };
+
+/// Elimina una materia del catalogo escribiendo su nombre o clave. Si esta en
+/// mapas curriculares sin clases abiertas, se quita de ellos (con sus
+/// prerrequisitos). Si ya se abrio alguna clase con ella no se borra: se
+/// explica y se ofrece desactivarla.
+export async function eliminarMateria(_p: EstadoEliminarMateria, formData: FormData): Promise<EstadoEliminarMateria> {
+  const sesion = await requerirRol("ADMIN");
+  const materia = await db.materia.findUnique({
+    where: { id: Number(formData.get("materiaId")) || 0 },
+    include: { planes: { include: { plan: { select: { nombre: true } }, grado: { select: { nombre: true } } } } },
+  });
+  if (!materia) return { error: "Esa materia ya no existe." };
+  if (!confirmacionValida(formData.get("confirmacion"), materia.nombre, materia.clave)) {
+    return { error: `Para eliminarla escribe su nombre (${materia.nombre}) o su clave (${materia.clave}).` };
+  }
+  const planes = [...new Set(materia.planes.map((pm) => pm.plan.nombre))];
+  try {
+    const clases = await db.$transaction(async (tx) => {
+      const abiertas = await tx.clase.count({ where: { planMateria: { materiaId: materia.id } } });
+      if (abiertas) return abiertas;
+      await tx.planMateria.deleteMany({ where: { materiaId: materia.id } });
+      await tx.materia.delete({ where: { id: materia.id } });
+      return 0;
+    });
+    if (clases) {
+      return {
+        error: `No se puede eliminar ${materia.nombre}: ya se abrieron ${clases} clase(s) con ella y forman parte del historial de los alumnos.${materia.activa ? " Puedes desactivarla para que ya no se use." : ""}`,
+        ofrecerDesactivar: materia.activa,
+      };
+    }
+  } catch (error) {
+    console.error("[materias] eliminar:", error);
+    return { error: "No se pudo eliminar la materia; nada se borro." };
+  }
+  await registrarBitacora({
+    usuarioId: sesion.usuarioId,
+    accion: "ELIMINAR",
+    entidad: "Materia",
+    entidadId: materia.id,
+    descripcion: `Materia ${materia.clave} · ${materia.nombre} eliminada${planes.length ? `; se quito de: ${planes.join(", ")}` : ""}`,
+    datosAntes: { clave: materia.clave, nombre: materia.nombre, mapas: materia.planes.map((pm) => `${pm.plan.nombre} · ${pm.grado.nombre}`) },
+  });
+  revalidatePath("/panel", "layout");
+  const params = new URLSearchParams({ eliminada: materia.nombre });
+  if (planes.length) params.set("planes", planes.join(", ").slice(0, 300));
+  redirect(`/panel/materias?${params}`);
+}
+
+/// Elimina un area escribiendo su nombre; sus materias quedan sin area.
+export async function eliminarArea(_p: EstadoFormulario, formData: FormData): Promise<EstadoFormulario> {
+  const sesion = await requerirRol("ADMIN");
+  const area = await db.area.findUnique({ where: { id: Number(formData.get("areaId")) || 0 } });
+  if (!area) return { error: "Esa area ya no existe." };
+  if (!confirmacionValida(formData.get("confirmacion"), area.nombre)) {
+    return { error: `Para eliminarla escribe su nombre: ${area.nombre}` };
+  }
+  const sinArea = await db.$transaction(async (tx) => {
+    const r = await tx.materia.updateMany({ where: { areaId: area.id }, data: { areaId: null } });
+    await tx.area.delete({ where: { id: area.id } });
+    return r.count;
+  });
+  await registrarBitacora({
+    usuarioId: sesion.usuarioId,
+    accion: "ELIMINAR",
+    entidad: "Area",
+    entidadId: area.id,
+    descripcion: `Area ${area.nombre} eliminada; ${sinArea} materia(s) quedaron sin area`,
+  });
+  revalidatePath("/panel/materias");
+  redirect(`/panel/materias?${new URLSearchParams({ areaEliminada: area.nombre, sinArea: String(sinArea) })}`);
 }

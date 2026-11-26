@@ -9,7 +9,7 @@ import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
 import { EliminarGrupo } from "../EliminarGrupo";
 import {
   BotonDarDeBaja,
-  BotonEliminarClase,
+  MenuClase,
   FormularioEditarGrupo,
   FormularioInscribir,
   FormularioNuevaClase,
@@ -214,7 +214,7 @@ export default async function PaginaGrupo({ params }: { params: Promise<{ id: st
           ) : (
             <ul className="divide-y divide-slate-100">
               {grupo.clases.map((clase) => (
-                <li key={clase.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <li key={clase.id} className="flex flex-wrap items-center justify-between gap-3 py-3" data-clase={clase.planMateria.materia.clave}>
                   <div className="min-w-[12rem]">
                     <p className="text-sm font-medium text-slate-800">
                       {clase.planMateria.materia.nombre}
@@ -234,7 +234,7 @@ export default async function PaginaGrupo({ params }: { params: Promise<{ id: st
                       docenteActual={clase.docenteId}
                       docentes={opcionesDocentes}
                     />
-                    <BotonEliminarClase claseId={clase.id} grupoId={grupo.id} />
+                    <MenuClase claseId={clase.id} grupoId={grupo.id} materia={clase.planMateria.materia.nombre} clave={clase.planMateria.materia.clave} />
                   </div>
                 </li>
               ))}
