@@ -689,7 +689,10 @@ Verificado: carreras 31 (nueva) y la regresion completa.
 
 ### Eliminar niveles y grupos
 
-- **Eliminar un nivel** (Estructura academica, *Eliminar este nivel*): se
+- La opcion de eliminar esta escondida en el boton discreto **⋯ (Mas
+  opciones)** junto a cada nivel y en el encabezado de cada grupo; la
+  confirmacion se hace en una ventana con *Cancelar*.
+- **Eliminar un nivel** (Estructura academica, ⋯ > *Eliminar nivel*): se
   confirma escribiendo su nombre o su clave. Se borra con sus carreras y
   certificaciones (periodos y materias del plan) solo si esta vacio: sin
   grupos y sin alumnos. Si tiene grupos, los enlista para eliminarlos primero;
@@ -697,7 +700,7 @@ Verificado: carreras 31 (nueva) y la regresion completa.
   agregan carreras y sus carreras dejan de recibir nuevo ingreso; quienes ya
   estudian terminan y se conservan boletas, pagos y certificados. Un nivel
   dado de baja se puede *volver a ofrecer*.
-- **Eliminar un grupo** (al final de la pantalla del grupo): se confirma
+- **Eliminar un grupo** (pantalla del grupo, ⋯ > *Eliminar grupo*): se confirma
   escribiendo su nombre. Solo si no tiene alumnos inscritos ni concluidos,
   calificaciones, asistencias, tareas, examenes ni grabaciones; si tiene
   alumnos inscritos sin nada capturado, pide darlos de baja o cambiarlos de
@@ -706,7 +709,7 @@ Verificado: carreras 31 (nueva) y la regresion completa.
 - Los avisos y conceptos de cobro dirigidos solo a lo que se elimina se
   desactivan (no se borran). Todo queda en la bitacora.
 
-Verificado: eliminar-academico 24 (nueva) y la regresion completa.
+Verificado: eliminar-academico 27 (nueva) y la regresion completa.
 
 ## Tareas y examenes en linea
 

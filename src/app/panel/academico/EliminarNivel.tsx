@@ -3,16 +3,28 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { Alerta, Boton, Campo } from "@/components/ui";
+import { MasOpciones } from "@/components/MasOpciones";
 import { accionEliminarNivel, accionOfertaNivel, type EstadoEliminarNivel } from "./programas";
+
+type Nivel = { id: number; nombre: string; clave: string };
+
+/// Menu discreto (⋯) del nivel con la opcion de eliminarlo.
+export function EliminarNivel(nivel: Nivel) {
+  return (
+    <MasOpciones
+      opciones={[{ etiqueta: "Eliminar nivel", ventana: (cerrar) => <VentanaEliminarNivel {...nivel} cerrar={cerrar} /> }]}
+    />
+  );
+}
 
 /// Eliminar un nivel: se confirma escribiendo su nombre o clave. Si tiene
 /// grupos o alumnos explica por que no se puede y ofrece darlo de baja.
-export function EliminarNivel({ id, nombre, clave }: { id: number; nombre: string; clave: string }) {
+function VentanaEliminarNivel({ id, nombre, clave, cerrar }: Nivel & { cerrar: () => void }) {
   const [estado, accion, pendiente] = useActionState<EstadoEliminarNivel, FormData>(accionEliminarNivel, {});
   return (
-    <details className="group rounded-lg border border-red-200 bg-red-50/30 text-sm" data-eliminar-nivel={clave} open={Boolean(estado.error)}>
-      <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-red-700">Eliminar este nivel</summary>
-      <div className="space-y-3 border-t border-red-200 px-3 py-3">
+    <div className="text-sm" data-eliminar-nivel={clave}>
+      <h2 className="text-base font-semibold text-slate-900">Eliminar el nivel {nombre}</h2>
+      <div className="mt-3 space-y-3">
         <form action={accion} className="space-y-3">
           <input type="hidden" name="nivelId" value={id} />
           <p className="text-xs text-slate-600">
@@ -49,6 +61,9 @@ export function EliminarNivel({ id, nombre, clave }: { id: number; nombre: strin
               autoComplete="off"
               className="min-w-[14rem] flex-1"
             />
+            <Boton type="button" variante="secundario" onClick={cerrar}>
+              Cancelar
+            </Boton>
             <Boton type="submit" variante="peligro" disabled={pendiente}>
               {pendiente ? "Eliminando..." : "Eliminar nivel"}
             </Boton>
@@ -66,6 +81,6 @@ export function EliminarNivel({ id, nombre, clave }: { id: number; nombre: strin
           </form>
         )}
       </div>
-    </details>
+    </div>
   );
 }

@@ -269,7 +269,7 @@ npm run prueba:portales           # 40 comprobaciones de portales, Meet, avisos 
 npm run prueba:grabaciones        # 35 comprobaciones de grabaciones de clases (base con demo y DATABASE_URL)
 npm run prueba:cambios-horario    # 40 comprobaciones de cambios de horario con aprobacion (base con demo y DATABASE_URL)
 npm run prueba:carreras           # 31 comprobaciones de carreras, certificaciones y niveles (base con demo y DATABASE_URL)
-npm run prueba:eliminar-academico # 24 comprobaciones de eliminar niveles y grupos (base con demo y DATABASE_URL)
+npm run prueba:eliminar-academico # 27 comprobaciones de eliminar niveles y grupos (base con demo y DATABASE_URL)
 npm run prueba:tareas             # 37 comprobaciones de tareas con entrega de archivos (base con demo y DATABASE_URL)
 npm run prueba:examenes           # 40 comprobaciones de examenes en linea (base con demo y DATABASE_URL)
 npm run prueba:importar-examen    # 18 comprobaciones de cargar examenes ya escritos (base con demo y DATABASE_URL)

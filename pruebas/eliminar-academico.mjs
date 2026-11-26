@@ -52,9 +52,21 @@ await p.getByLabel(/^Contrasena\*?$/).fill("Demo1234");
 await p.getByRole("button", { name: "Entrar" }).click();
 await p.waitForURL("**/panel", { timeout: 20000 });
 
+// ---------------- Discreto: oculto en el menu ⋯ ----------------
+await p.goto(`${BASE}/panel/grupos/${grupoDemo.id}`);
+comprobar("En el grupo no se ve el boton de eliminar grupo hasta abrir el menu", !(await texto(p)).includes("Eliminar grupo") && (await p.getByRole("button", { name: "Mas opciones" }).count()) === 1);
+await p.goto(`${BASE}/panel/academico`);
+comprobar("En la estructura tampoco", !(await texto(p)).includes("Eliminar") && (await p.locator('[data-nivel="BACH"]').getByRole("button", { name: "Mas opciones" }).count()) === 1);
+await p.locator('[data-nivel="BACH"]').getByRole("button", { name: "Mas opciones" }).click();
+await p.getByRole("menuitem", { name: "Eliminar nivel" }).click();
+await p.getByRole("dialog").getByRole("button", { name: "Cancelar" }).click();
+comprobar("La ventana de confirmacion se cierra con Cancelar sin borrar nada", (await p.getByRole("dialog").count()) === 0 && Boolean(await db.nivelEducativo.findUnique({ where: { id: bach.id } })));
+
 // ---------------- Eliminar grupos ----------------
 async function eliminarGrupo(grupo, confirmacion) {
   await p.goto(`${BASE}/panel/grupos/${grupo.id}`);
+  await p.locator("header").getByRole("button", { name: "Mas opciones" }).click();
+  await p.getByRole("menuitem", { name: "Eliminar grupo" }).click();
   const f = p.locator("[data-eliminar-grupo]");
   await f.getByLabel(/para confirmar/).fill(confirmacion);
   await f.getByRole("button", { name: "Eliminar grupo" }).click();
@@ -101,8 +113,9 @@ const conceptoEc = await db.conceptoCobro.create({ data: { clave: "EXC-INS", nom
 
 async function eliminarNivel(clave, confirmacion) {
   await p.goto(`${BASE}/panel/academico`);
-  const d = p.locator(`[data-eliminar-nivel="${clave}"]`).first();
-  if (!(await d.getAttribute("open").then((v) => v !== null))) await d.locator("summary").click();
+  await p.locator(`[data-nivel="${clave}"]`).getByRole("button", { name: "Mas opciones" }).click();
+  await p.getByRole("menuitem", { name: "Eliminar nivel" }).click();
+  const d = p.locator(`[data-eliminar-nivel="${clave}"]`);
   await d.getByLabel(/para confirmar/).fill(confirmacion);
   await d.getByRole("button", { name: "Eliminar nivel" }).click();
   await p.waitForTimeout(2500);
@@ -124,7 +137,7 @@ comprobar("Escribiendo el nombre elimina el nivel vacio con su certificacion", e
 comprobar("En la base ya no estan el nivel, la certificacion ni sus periodos",
   !(await db.nivelEducativo.findUnique({ where: { id: ec.id } })) && !(await db.planEstudios.findUnique({ where: { id: certificacion.id } })) && (await db.grado.count({ where: { planId: certificacion.id } })) === 0);
 comprobar("El concepto de cobro solo para esa certificacion se desactiva", (await db.conceptoCobro.findUnique({ where: { id: conceptoEc.id } })).activo === false && eliminado.includes("1 concepto(s) de cobro"));
-comprobar("Ya no aparece en la estructura", (await p.locator('[data-eliminar-nivel="EC"]').count()) === 0);
+comprobar("Ya no aparece en la estructura", (await p.locator('[data-nivel="EC"]').count()) === 0);
 
 // ---------------- Nivel con historial: dar de baja ----------------
 await eliminarNivel("BACH", "BACH");
@@ -144,7 +157,7 @@ comprobar("No se le pueden agregar carreras nuevas", !(await texto(p)).includes(
 await p.goto(`${BASE}/panel/academico`);
 await p.locator('[data-nivel-baja="BACH"]').getByRole("button", { name: "Volver a ofrecer" }).click();
 await p.waitForURL(/nivel=reactivado/, { timeout: 15000 });
-comprobar("Se puede volver a ofrecer", (await db.nivelEducativo.findUnique({ where: { id: bach.id } })).activo === true && (await p.locator('[data-eliminar-nivel="BACH"]').count()) === 1);
+comprobar("Se puede volver a ofrecer", (await db.nivelEducativo.findUnique({ where: { id: bach.id } })).activo === true && (await p.locator('[data-nivel="BACH"]').count()) === 1);
 
 await navegador.close();
 await db.$disconnect();

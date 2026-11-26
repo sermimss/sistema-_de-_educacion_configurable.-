@@ -80,7 +80,7 @@ export default async function PaginaAcademico({
         ) : (
           <div className="space-y-5">
             {activos.map((nivel) => (
-              <div key={nivel.id}>
+              <div key={nivel.id} data-nivel={nivel.clave}>
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <h3 className="text-sm font-semibold text-slate-900">{nivel.nombre}</h3>
                   <Insignia>{nivel.clave}</Insignia>
@@ -88,6 +88,7 @@ export default async function PaginaAcademico({
                   <Link href={`/panel/academico/nuevo?nivel=${nivel.id}`} className="ml-auto text-xs font-medium text-marca-600 hover:underline">
                     + Agregar a este nivel
                   </Link>
+                  <EliminarNivel id={nivel.id} nombre={nivel.nombre} clave={nivel.clave} />
                 </div>
                 <div className="space-y-2">
                   {nivel.planes.length === 0 && <p className="text-xs text-slate-500">Aun sin carreras ni certificaciones.</p>}
@@ -125,9 +126,6 @@ export default async function PaginaAcademico({
                     </div>
                   ))}
                 </div>
-                <div className="mt-2">
-                  <EliminarNivel id={nivel.id} nombre={nivel.nombre} clave={nivel.clave} />
-                </div>
               </div>
             ))}
           </div>
@@ -138,7 +136,7 @@ export default async function PaginaAcademico({
         <Tarjeta titulo="Niveles dados de baja" descripcion="Ya no se ofrecen; se conservan por el historial de sus alumnos">
           <ul className="space-y-4">
             {deBaja.map((nivel) => (
-              <li key={nivel.id} className="space-y-2" data-nivel-baja={nivel.clave}>
+              <li key={nivel.id} data-nivel-baja={nivel.clave}>
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   <span className="font-semibold text-slate-700">{nivel.nombre}</span>
                   <Insignia tono="alerta">dado de baja</Insignia>
@@ -154,8 +152,8 @@ export default async function PaginaAcademico({
                     <input type="hidden" name="accion" value="reactivar" />
                     <Boton type="submit" variante="secundario">Volver a ofrecer</Boton>
                   </form>
+                  <EliminarNivel id={nivel.id} nombre={nivel.nombre} clave={nivel.clave} />
                 </div>
-                <EliminarNivel id={nivel.id} nombre={nivel.nombre} clave={nivel.clave} />
               </li>
             ))}
           </ul>

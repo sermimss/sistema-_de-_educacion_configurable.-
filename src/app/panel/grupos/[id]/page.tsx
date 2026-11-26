@@ -125,6 +125,7 @@ export default async function PaginaGrupo({ params }: { params: Promise<{ id: st
             {inscritos.length}
             {grupo.cupoMaximo ? ` / ${grupo.cupoMaximo}` : ""} alumnos
           </Insignia>
+          <EliminarGrupo id={grupo.id} nombre={grupo.nombre} />
         </div>
       </header>
 
@@ -329,10 +330,6 @@ export default async function PaginaGrupo({ params }: { params: Promise<{ id: st
             />
           </div>
         </div>
-      </Tarjeta>
-
-      <Tarjeta titulo="Eliminar grupo" descripcion="Para grupos que ya no se abriran">
-        <EliminarGrupo id={grupo.id} nombre={grupo.nombre} />
       </Tarjeta>
     </div>
   );
