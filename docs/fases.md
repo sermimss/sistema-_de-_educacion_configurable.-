@@ -687,6 +687,27 @@ Verificado: cambios de horario 40 (nueva) y la regresion completa.
 
 Verificado: carreras 31 (nueva) y la regresion completa.
 
+### Eliminar niveles y grupos
+
+- **Eliminar un nivel** (Estructura academica, *Eliminar este nivel*): se
+  confirma escribiendo su nombre o su clave. Se borra con sus carreras y
+  certificaciones (periodos y materias del plan) solo si esta vacio: sin
+  grupos y sin alumnos. Si tiene grupos, los enlista para eliminarlos primero;
+  si tiene alumnos, lo explica y ofrece **darlo de baja**: se oculta, no se le
+  agregan carreras y sus carreras dejan de recibir nuevo ingreso; quienes ya
+  estudian terminan y se conservan boletas, pagos y certificados. Un nivel
+  dado de baja se puede *volver a ofrecer*.
+- **Eliminar un grupo** (al final de la pantalla del grupo): se confirma
+  escribiendo su nombre. Solo si no tiene alumnos inscritos ni concluidos,
+  calificaciones, asistencias, tareas, examenes ni grabaciones; si tiene
+  alumnos inscritos sin nada capturado, pide darlos de baja o cambiarlos de
+  grupo primero. Se borran sus clases y horarios, las inscripciones dadas de
+  baja y su calendario propio (si no tiene cargos ligados).
+- Los avisos y conceptos de cobro dirigidos solo a lo que se elimina se
+  desactivan (no se borran). Todo queda en la bitacora.
+
+Verificado: eliminar-academico 25 (nueva) y la regresion completa.
+
 ## Tareas y examenes en linea
 
 - *Tareas* (docente y alumno): el docente pide la tarea a una de sus clases;

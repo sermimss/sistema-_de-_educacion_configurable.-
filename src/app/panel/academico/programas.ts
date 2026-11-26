@@ -7,11 +7,18 @@ import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { registrarBitacora } from "@/lib/bitacora";
 import { MODALIDADES, nombrePeriodo, validarCambio } from "@/lib/modalidad";
+import { borrarNivel, confirmacionValida, impedimentosNivel } from "@/lib/eliminacionAcademica";
 
 /// Alta y mantenimiento de carreras, certificaciones (programas cortos) y
 /// niveles desde Estructura academica.
 
 export type EstadoPrograma = { error?: string; ok?: boolean; mensaje?: string };
+export type EstadoEliminarNivel = EstadoPrograma & {
+  motivos?: string[];
+  grupos?: { id: number; nombre: string; ciclo: string }[];
+  /// No se puede borrar: se ofrece darlo de baja.
+  ofrecerBaja?: boolean;
+};
 
 const CLAVE = /^[A-Z0-9._-]{2,30}$/;
 const ERROR_CLAVE = "La clave debe tener de 2 a 30 letras, numeros, punto o guion, sin espacios.";
@@ -170,4 +177,83 @@ export async function accionCrearNivel(_p: EstadoPrograma, formData: FormData): 
   });
   revalidatePath("/panel/academico");
   return { ok: true, mensaje: `Nivel ${nombre} creado. Ya puedes agregarle carreras o certificaciones.` };
+}
+
+/// Elimina un nivel que ya no se ofrecera, con sus carreras y certificaciones,
+/// solo si esta vacio (sin grupos ni alumnos). Hay que escribir su nombre o
+/// clave. Si tiene historial se explica y se ofrece darlo de baja.
+export async function accionEliminarNivel(_p: EstadoEliminarNivel, formData: FormData): Promise<EstadoEliminarNivel> {
+  const sesion = await requerirRol("ADMIN");
+  const nivel = await db.nivelEducativo.findUnique({ where: { id: Number(formData.get("nivelId")) || 0 }, include: { planes: { select: { clave: true } } } });
+  if (!nivel) return { error: "Ese nivel ya no existe." };
+  if (!confirmacionValida(formData.get("confirmacion"), nivel.nombre, nivel.clave)) {
+    return { error: `Para eliminarlo escribe el nombre del nivel (${nivel.nombre}) o su clave (${nivel.clave}).` };
+  }
+  let borrado: Awaited<ReturnType<typeof borrarNivel>>;
+  try {
+    const salida = await db.$transaction(async (tx) => {
+      const impedimentos = await impedimentosNivel(nivel.id, tx);
+      if (impedimentos.motivos.length) return { impedimentos };
+      return { borrado: await borrarNivel(tx, nivel.id) };
+    });
+    if (salida.impedimentos) {
+      return {
+        error: "Este nivel no se puede eliminar:",
+        motivos: salida.impedimentos.motivos,
+        grupos: salida.impedimentos.grupos,
+        ofrecerBaja: nivel.activo,
+      };
+    }
+    borrado = salida.borrado!;
+  } catch (error) {
+    console.error("[academico] eliminar nivel:", error);
+    return { error: "No se pudo eliminar el nivel; nada se borro." };
+  }
+  await registrarBitacora({
+    usuarioId: sesion.usuarioId,
+    accion: "ELIMINAR",
+    entidad: "NivelEducativo",
+    entidadId: nivel.id,
+    descripcion: `Nivel ${nivel.clave} · ${nivel.nombre} eliminado con ${borrado.planes} carrera(s) o certificacion(es)`,
+    datosAntes: { nombre: nivel.nombre, clave: nivel.clave, planes: nivel.planes.map((p) => p.clave) },
+  });
+  revalidatePath("/panel", "layout");
+  const params = new URLSearchParams({
+    eliminado: nivel.nombre,
+    planes: String(borrado.planes),
+    avisos: String(borrado.avisos),
+    conceptos: String(borrado.conceptos),
+  });
+  redirect(`/panel/academico?${params}`);
+}
+
+/// Dar de baja un nivel con historial: se oculta, no se le agregan carreras y
+/// sus carreras dejan de recibir nuevo ingreso. Quienes ya estudian terminan;
+/// boletas, pagos y certificados se conservan. Reactivar lo vuelve a mostrar.
+export async function accionOfertaNivel(formData: FormData) {
+  const sesion = await requerirRol("ADMIN");
+  const nivel = await db.nivelEducativo.findUnique({ where: { id: Number(formData.get("nivelId")) || 0 } });
+  if (!nivel) return;
+  const reactivar = formData.get("accion") === "reactivar";
+  const ahora = new Date();
+  const cerradas = await db.$transaction(async (tx) => {
+    await tx.nivelEducativo.update({ where: { id: nivel.id }, data: { activo: reactivar } });
+    if (reactivar) return 0;
+    const r = await tx.planEstudios.updateMany({
+      where: { nivelId: nivel.id, OR: [{ vigenteHasta: null }, { vigenteHasta: { gt: ahora } }] },
+      data: { vigenteHasta: ahora },
+    });
+    return r.count;
+  });
+  await registrarBitacora({
+    usuarioId: sesion.usuarioId,
+    accion: "ACTUALIZAR",
+    entidad: "NivelEducativo",
+    entidadId: nivel.id,
+    descripcion: reactivar
+      ? `Nivel ${nivel.clave} reactivado`
+      : `Nivel ${nivel.clave} dado de baja; ${cerradas} carrera(s) o certificacion(es) sin nuevo ingreso`,
+  });
+  revalidatePath("/panel", "layout");
+  redirect(`/panel/academico?nivel=${reactivar ? "reactivado" : "baja"}`);
 }

@@ -9,8 +9,9 @@ import { FormularioNuevoGrupo } from "./Formularios";
 
 export const dynamic = "force-dynamic";
 
-export default async function PaginaGrupos() {
+export default async function PaginaGrupos({ searchParams }: { searchParams: Promise<{ eliminado?: string }> }) {
   await requerirRol("ADMIN");
+  const { eliminado } = await searchParams;
   const catalogos = await catalogosEscolares();
   const sugerencia = await configTexto("academico.nombre_grupo_sugerido", "{GRADO}{LETRA}");
 
@@ -46,6 +47,11 @@ export default async function PaginaGrupos() {
 
   return (
     <div className="space-y-6">
+      {eliminado && (
+        <Alerta tipo="exito">
+          <span data-grupo-eliminado>Grupo {eliminado.slice(0, 80)} eliminado.</span>
+        </Alerta>
+      )}
       <header>
         <h1 className="text-xl font-semibold text-slate-900">Grupos y clases</h1>
         <p className="mt-1 text-sm text-slate-600">{grupos.length} grupo(s) registrados</p>

@@ -121,6 +121,22 @@ la reactiva; y confirma el campo del titulo en los machotes.
 DATABASE_URL=... npm run prueba:carreras
 ```
 
+## eliminar-academico.mjs
+
+25 comprobaciones sobre una base **recien sembrada con los datos de
+demostracion**, con `DATABASE_URL` apuntando a esa base. Un grupo con alumnos
+o con una tarea no se elimina y dice por que; sin escribir el nombre no se
+elimina; un grupo vacio se borra con sus clases, horarios, inscripciones de
+baja y su calendario, y desactiva su aviso. Un nivel con un grupo pide
+eliminarlo primero (con enlace); un nivel vacio se borra con su
+certificacion y desactiva su concepto de cobro; un nivel con alumnos no se
+borra, se da de baja (cierra el nuevo ingreso sin borrar nada) y se vuelve a
+ofrecer.
+
+```bash
+DATABASE_URL=... npm run prueba:eliminar-academico
+```
+
 ## tareas.mjs
 
 37 comprobaciones sobre una base **recien sembrada con los datos de

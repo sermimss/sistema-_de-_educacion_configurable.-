@@ -4,13 +4,20 @@ import { aceptaNuevoIngreso, etiquetaModalidad } from "@/lib/modalidad";
 import { db } from "@/lib/db";
 import { formatearMoneda } from "@/lib/formato";
 import { obtenerInstitucion } from "@/lib/institucion";
-import { EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
+import { Alerta, Boton, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
 import { FormularioNivel } from "./FormulariosPrograma";
+import { EliminarNivel } from "./EliminarNivel";
+import { accionOfertaNivel } from "./programas";
 
 export const dynamic = "force-dynamic";
 
-export default async function PaginaAcademico() {
+export default async function PaginaAcademico({
+  searchParams,
+}: {
+  searchParams: Promise<{ eliminado?: string; planes?: string; avisos?: string; conceptos?: string; nivel?: string }>;
+}) {
   await requerirRol("ADMIN");
+  const aviso = await searchParams;
   const institucion = await obtenerInstitucion();
   const moneda = institucion?.moneda ?? "MXN";
 
@@ -32,8 +39,23 @@ export default async function PaginaAcademico() {
     db.reglaRecargo.findMany(),
   ]);
 
+  const activos = niveles.filter((n) => n.activo);
+  const deBaja = niveles.filter((n) => !n.activo);
+  const extrasEliminado = [
+    Number(aviso.planes) > 0 ? ` junto con ${aviso.planes} carrera(s) o certificacion(es) sin alumnos` : "",
+    Number(aviso.avisos) > 0 ? `. Se desactivaron ${aviso.avisos} aviso(s) dirigidos a el` : "",
+    Number(aviso.conceptos) > 0 ? `. Se desactivaron ${aviso.conceptos} concepto(s) de cobro solo para el` : "",
+  ].join("");
+
   return (
     <div className="space-y-6">
+      {aviso.eliminado && (
+        <Alerta tipo="exito">
+          <span data-nivel-eliminado>Nivel {aviso.eliminado.slice(0, 80)} eliminado{extrasEliminado}.</span>
+        </Alerta>
+      )}
+      {aviso.nivel === "baja" && <Alerta tipo="exito">Nivel dado de baja: ya no se ofrece y se conserva su historial.</Alerta>}
+      {aviso.nivel === "reactivado" && <Alerta tipo="exito">El nivel se vuelve a mostrar. Reactiva sus carreras desde Administrar si las volveras a ofrecer.</Alerta>}
       <header>
         <h1 className="text-xl font-semibold text-slate-900">Estructura academica</h1>
         <p className="mt-1 text-sm text-slate-600">
@@ -53,11 +75,11 @@ export default async function PaginaAcademico() {
           </Link>
         }
       >
-        {niveles.length === 0 ? (
+        {activos.length === 0 ? (
           <EstadoVacio titulo="Sin niveles registrados" />
         ) : (
           <div className="space-y-5">
-            {niveles.map((nivel) => (
+            {activos.map((nivel) => (
               <div key={nivel.id}>
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <h3 className="text-sm font-semibold text-slate-900">{nivel.nombre}</h3>
@@ -103,11 +125,42 @@ export default async function PaginaAcademico() {
                     </div>
                   ))}
                 </div>
+                <div className="mt-2">
+                  <EliminarNivel id={nivel.id} nombre={nivel.nombre} clave={nivel.clave} />
+                </div>
               </div>
             ))}
           </div>
         )}
       </Tarjeta>
+
+      {deBaja.length > 0 && (
+        <Tarjeta titulo="Niveles dados de baja" descripcion="Ya no se ofrecen; se conservan por el historial de sus alumnos">
+          <ul className="space-y-4">
+            {deBaja.map((nivel) => (
+              <li key={nivel.id} className="space-y-2" data-nivel-baja={nivel.clave}>
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="font-semibold text-slate-700">{nivel.nombre}</span>
+                  <Insignia tono="alerta">dado de baja</Insignia>
+                  <span className="text-xs text-slate-500">
+                    {nivel.planes.map((plan) => (
+                      <Link key={plan.id} href={`/panel/academico/plan/${plan.id}`} className="mr-2 hover:underline">
+                        {plan.nombre}
+                      </Link>
+                    ))}
+                  </span>
+                  <form action={accionOfertaNivel} className="ml-auto">
+                    <input type="hidden" name="nivelId" value={nivel.id} />
+                    <input type="hidden" name="accion" value="reactivar" />
+                    <Boton type="submit" variante="secundario">Volver a ofrecer</Boton>
+                  </form>
+                </div>
+                <EliminarNivel id={nivel.id} nombre={nivel.nombre} clave={nivel.clave} />
+              </li>
+            ))}
+          </ul>
+        </Tarjeta>
+      )}
 
       <Tarjeta titulo="Agregar un nivel" descripcion="Por ejemplo: Posgrado o Educacion continua, si no se creo en la instalacion">
         <FormularioNivel />

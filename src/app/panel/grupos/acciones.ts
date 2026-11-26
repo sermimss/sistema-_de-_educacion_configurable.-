@@ -17,6 +17,7 @@ import { leerFecha, validarCalendario } from "@/lib/fechasGrupo";
 import { ciclosQueSeCruzan, crearCalendarioDeGrupo, fijarClaveDelCiclo } from "@/lib/calendarioGrupo";
 import { detectarChoques } from "@/lib/horarios";
 import { DIAS_SEMANA } from "@/lib/formato";
+import { borrarGrupo, confirmacionValida, impedimentosGrupo } from "@/lib/eliminacionAcademica";
 
 export type EstadoFormulario = {
   error?: string;
@@ -615,4 +616,42 @@ export async function darDeBajaInscripcion(
 
   revalidatePath(`/panel/grupos/${grupoId}`);
   return { ok: true, mensaje: "Alumno dado de baja del grupo." };
+}
+
+/// Elimina un grupo sin historial. Hay que escribir su nombre para confirmar.
+/// Si tiene alumnos inscritos, calificaciones, asistencias, tareas, examenes
+/// o grabaciones no se borra y se explica por que.
+export async function eliminarGrupo(_previo: EstadoFormulario, formData: FormData): Promise<EstadoFormulario> {
+  const sesion = await requerirRol("ADMIN");
+  const grupo = await db.grupo.findUnique({ where: { id: Number(formData.get("grupoId")) || 0 }, include: { ciclo: { select: { nombre: true } } } });
+  if (!grupo) return { error: "Ese grupo ya no existe." };
+  if (!confirmacionValida(formData.get("confirmacion"), grupo.nombre)) {
+    return { error: `Para eliminarlo escribe el nombre del grupo: ${grupo.nombre}` };
+  }
+  let resultado: Awaited<ReturnType<typeof borrarGrupo>>;
+  try {
+    const salida = await db.$transaction(async (tx) => {
+      const motivos = await impedimentosGrupo(grupo.id, tx);
+      if (motivos.length) return { motivos };
+      return { borrado: await borrarGrupo(tx, grupo.id) };
+    });
+    if ("motivos" in salida && salida.motivos) {
+      return { error: "Este grupo no se puede eliminar porque ya tiene historial:", detalles: salida.motivos };
+    }
+    resultado = (salida as { borrado: Awaited<ReturnType<typeof borrarGrupo>> }).borrado;
+  } catch (error) {
+    console.error("[grupos] eliminar:", error);
+    return { error: "No se pudo eliminar el grupo; nada se borro." };
+  }
+  await registrarBitacora({
+    usuarioId: sesion.usuarioId,
+    accion: "ELIMINAR",
+    entidad: "Grupo",
+    entidadId: grupo.id,
+    descripcion: `Grupo ${grupo.nombre} (${grupo.ciclo.nombre}) eliminado con ${resultado.clases} clase(s) sin capturas`,
+    datosAntes: { nombre: grupo.nombre, cicloId: grupo.cicloId, planId: grupo.planId, gradoId: grupo.gradoId },
+  });
+  revalidatePath("/panel/grupos");
+  revalidatePath("/panel/horarios");
+  redirect(`/panel/grupos?eliminado=${encodeURIComponent(grupo.nombre)}`);
 }
