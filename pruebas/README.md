@@ -123,7 +123,7 @@ DATABASE_URL=... npm run prueba:carreras
 
 ## eliminar-academico.mjs
 
-25 comprobaciones sobre una base **recien sembrada con los datos de
+24 comprobaciones sobre una base **recien sembrada con los datos de
 demostracion**, con `DATABASE_URL` apuntando a esa base. Un grupo con alumnos
 o con una tarea no se elimina y dice por que; sin escribir el nombre no se
 elimina; un grupo vacio se borra con sus clases, horarios, inscripciones de

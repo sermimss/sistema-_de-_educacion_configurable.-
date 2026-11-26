@@ -706,7 +706,7 @@ Verificado: carreras 31 (nueva) y la regresion completa.
 - Los avisos y conceptos de cobro dirigidos solo a lo que se elimina se
   desactivan (no se borran). Todo queda en la bitacora.
 
-Verificado: eliminar-academico 25 (nueva) y la regresion completa.
+Verificado: eliminar-academico 24 (nueva) y la regresion completa.
 
 ## Tareas y examenes en linea
 
