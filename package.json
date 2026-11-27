@@ -38,6 +38,7 @@
     "prueba:eliminar-academico": "node pruebas/eliminar-academico.mjs",
     "prueba:eliminar-catalogo": "node pruebas/eliminar-catalogo.mjs",
     "prueba:tareas": "node pruebas/tareas.mjs",
+    "prueba:adjuntos": "node pruebas/adjuntos.mjs",
     "prueba:examenes": "node pruebas/examenes.mjs",
     "prueba:importar-examen": "node pruebas/importar-examen.mjs",
     "prueba:pagos": "node pruebas/pagos-fiables.mjs",

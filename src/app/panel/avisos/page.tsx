@@ -1,11 +1,12 @@
 import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { alumnoDeSesion } from "@/lib/alumnoSesion";
-import { avisosDelAlumno } from "@/lib/avisos";
+import { avisosDelAlumno, SELECCION_ADJUNTO } from "@/lib/avisos";
 import { configBool } from "@/lib/configuracion";
 import { clasesDelDocente } from "@/lib/docencia";
 import { formatearDia, formatearFechaHora } from "@/lib/formato";
 import { Alerta, EstadoVacio, Insignia, Tarjeta } from "@/components/ui";
+import { Adjuntos, type Adjunto } from "@/components/Adjuntos";
 import { accionRetirarAviso } from "./acciones";
 import { FormularioAviso } from "./Formulario";
 
@@ -16,7 +17,7 @@ function TarjetaAviso({
   destino,
   puedeRetirar,
 }: {
-  aviso: { id: number; titulo: string; contenido: string; autorNombre: string | null; fechaPublicacion: Date; vigenciaHasta: Date | null };
+  aviso: { id: number; titulo: string; contenido: string; autorNombre: string | null; fechaPublicacion: Date; vigenciaHasta: Date | null; archivos: Adjunto[] };
   destino?: string;
   puedeRetirar?: boolean;
 }) {
@@ -27,6 +28,7 @@ function TarjetaAviso({
         {destino && <Insignia>{destino}</Insignia>}
       </div>
       <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{aviso.contenido}</p>
+      <Adjuntos archivos={aviso.archivos} ruta="/panel/avisos/archivo" />
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
         <span>
           {aviso.autorNombre ?? "Administracion"} · {formatearFechaHora(aviso.fechaPublicacion)}
@@ -85,6 +87,7 @@ export default async function PaginaAvisos() {
     where: { activo: true, dirigidoA: { has: "ALUMNO" }, ...(esAdmin ? {} : { publicadoPor: sesion.usuarioId }) },
     orderBy: { fechaPublicacion: "desc" },
     take: 50,
+    include: { archivos: { select: SELECCION_ADJUNTO, orderBy: { id: "asc" } } },
   });
   const gruposPorId = new Map(
     (await db.grupo.findMany({ where: { id: { in: avisos.map((a) => a.referenciaId ?? 0) } } })).map((g) => [g.id, g.nombre])

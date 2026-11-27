@@ -272,6 +272,7 @@ npm run prueba:carreras           # 31 comprobaciones de carreras, certificacion
 npm run prueba:eliminar-academico # 27 comprobaciones de eliminar niveles y grupos (base con demo y DATABASE_URL)
 npm run prueba:eliminar-catalogo  # 17 comprobaciones de eliminar clases, materias y areas (base con demo y DATABASE_URL)
 npm run prueba:tareas             # 37 comprobaciones de tareas con entrega de archivos (base con demo y DATABASE_URL)
+npm run prueba:adjuntos           # 18 comprobaciones de imagenes y archivos en avisos y tareas (base con demo y DATABASE_URL)
 npm run prueba:examenes           # 40 comprobaciones de examenes en linea (base con demo y DATABASE_URL)
 npm run prueba:importar-examen    # 18 comprobaciones de cargar examenes ya escritos (base con demo y DATABASE_URL)
 npm run prueba:pagos              # 34 comprobaciones de captura de pagos confiable (base con demo y DATABASE_URL)

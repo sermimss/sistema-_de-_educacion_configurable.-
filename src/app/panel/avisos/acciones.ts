@@ -5,6 +5,7 @@ import { requerirRol } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { registrarBitacora } from "@/lib/bitacora";
 import { claseAccesible } from "@/lib/docencia";
+import { archivosDelFormulario, validarArchivos } from "@/lib/archivosEntrega";
 
 export type EstadoAviso = { error?: string; ok?: boolean; mensaje?: string };
 
@@ -17,6 +18,9 @@ export async function accionPublicarAviso(_p: EstadoAviso, formData: FormData): 
   if (titulo.length < 3) return { error: "Escribe el titulo del aviso." };
   if (contenido.length < 3) return { error: "Escribe el aviso." };
   if (titulo.length > 150 || contenido.length > 3000) return { error: "El aviso es demasiado largo." };
+
+  const adjuntos = await validarArchivos(archivosDelFormulario(formData));
+  if (!adjuntos.ok) return { error: adjuntos.error };
 
   const textoVigencia = String(formData.get("vigenciaHasta") ?? "").trim();
   const vigenciaHasta = /^\d{4}-\d{2}-\d{2}$/.test(textoVigencia) ? new Date(`${textoVigencia}T00:00:00.000Z`) : null;
@@ -58,6 +62,7 @@ export async function accionPublicarAviso(_p: EstadoAviso, formData: FormData): 
       publicadoPor: sesion.usuarioId,
       autorNombre: sesion.nombre,
       vigenciaHasta,
+      archivos: { create: adjuntos.archivos.map((a) => ({ nombre: a.nombre, mime: a.mime, tamano: a.tamano, datos: a.datos })) },
     },
   });
   await registrarBitacora({
@@ -65,7 +70,7 @@ export async function accionPublicarAviso(_p: EstadoAviso, formData: FormData): 
     accion: "CREAR",
     entidad: "Aviso",
     entidadId: aviso.id,
-    descripcion: `Aviso "${titulo}" para ${destino}`,
+    descripcion: `Aviso "${titulo}" para ${destino}${adjuntos.archivos.length ? ` con ${adjuntos.archivos.length} archivo(s)` : ""}`,
   });
   revalidatePath("/panel", "layout");
   return { ok: true, mensaje: `Aviso publicado para ${destino}.` };

@@ -8,7 +8,7 @@ import { registrarBitacora } from "@/lib/bitacora";
 import { claseAccesible } from "@/lib/docencia";
 import { alumnoDeSesion } from "@/lib/alumnoSesion";
 import { fechaHoraAInstante } from "@/lib/fechasDia";
-import { validarArchivos } from "@/lib/archivosEntrega";
+import { MAX_ARCHIVOS, archivosDelFormulario, validarArchivos } from "@/lib/archivosEntrega";
 import { alumnoCursa, puedeEntregar, zonaDelColegio } from "@/lib/tareas";
 
 export type EstadoTarea = { error?: string; ok?: boolean; mensaje?: string };
@@ -40,8 +40,23 @@ export async function accionCrearTarea(_p: EstadoTarea, formData: FormData): Pro
   const leido = await leerDatosTarea(formData);
   if ("error" in leido) return { error: leido.error };
   if (leido.datos.fechaLimite <= new Date()) return { error: "La fecha limite debe ser posterior a este momento." };
-  const tarea = await db.tarea.create({ data: { ...leido.datos, claseId, creadaPor: sesion.usuarioId } });
-  await registrarBitacora({ usuarioId: sesion.usuarioId, accion: "CREAR", entidad: "Tarea", entidadId: tarea.id, descripcion: `Tarea "${tarea.titulo}"` });
+  const material = await validarArchivos(archivosDelFormulario(formData));
+  if (!material.ok) return { error: material.error };
+  const tarea = await db.tarea.create({
+    data: {
+      ...leido.datos,
+      claseId,
+      creadaPor: sesion.usuarioId,
+      material: { create: material.archivos.map((a) => ({ nombre: a.nombre, mime: a.mime, tamano: a.tamano, datos: a.datos })) },
+    },
+  });
+  await registrarBitacora({
+    usuarioId: sesion.usuarioId,
+    accion: "CREAR",
+    entidad: "Tarea",
+    entidadId: tarea.id,
+    descripcion: `Tarea "${tarea.titulo}"${material.archivos.length ? ` con ${material.archivos.length} archivo(s) de material` : ""}`,
+  });
   revalidatePath("/panel/tareas");
   redirect(`/panel/tareas/${tarea.id}?creada=1`);
 }
@@ -57,8 +72,34 @@ export async function accionEditarTarea(_p: EstadoTarea, formData: FormData): Pr
     select: { id: true },
   });
   if (mayor) return { error: "Ya hay calificaciones mayores a esos puntos." };
-  await db.tarea.update({ where: { id: tarea.id }, data: leido.datos });
-  await registrarBitacora({ usuarioId: sesion.usuarioId, accion: "ACTUALIZAR", entidad: "Tarea", entidadId: tarea.id, descripcion: `Tarea "${leido.datos.titulo}" editada` });
+
+  // Material: se pueden quitar archivos y agregar nuevos (hasta 5 en total).
+  const quitar = formData.getAll("quitarMaterial").map(Number).filter(Boolean);
+  const actuales = await db.archivoTarea.count({ where: { tareaId: tarea.id, id: { notIn: quitar } } });
+  const nuevos = await validarArchivos(archivosDelFormulario(formData), Math.max(0, MAX_ARCHIVOS - actuales));
+  if (!nuevos.ok) {
+    return { error: actuales >= MAX_ARCHIVOS ? `La tarea ya tiene ${MAX_ARCHIVOS} archivos; quita alguno para agregar otros.` : nuevos.error };
+  }
+  await db.$transaction(async (tx) => {
+    await tx.tarea.update({ where: { id: tarea.id }, data: leido.datos });
+    if (quitar.length) await tx.archivoTarea.deleteMany({ where: { tareaId: tarea.id, id: { in: quitar } } });
+    if (nuevos.archivos.length) {
+      await tx.archivoTarea.createMany({
+        data: nuevos.archivos.map((a) => ({ tareaId: tarea.id, nombre: a.nombre, mime: a.mime, tamano: a.tamano, datos: a.datos })),
+      });
+    }
+  });
+  const cambios = [
+    nuevos.archivos.length ? `${nuevos.archivos.length} archivo(s) agregado(s)` : "",
+    quitar.length ? `${quitar.length} quitado(s)` : "",
+  ].filter(Boolean);
+  await registrarBitacora({
+    usuarioId: sesion.usuarioId,
+    accion: "ACTUALIZAR",
+    entidad: "Tarea",
+    entidadId: tarea.id,
+    descripcion: `Tarea "${leido.datos.titulo}" editada${cambios.length ? `; material: ${cambios.join(", ")}` : ""}`,
+  });
   revalidatePath(`/panel/tareas/${tarea.id}`);
   return { ok: true, mensaje: "Tarea actualizada." };
 }
@@ -85,7 +126,7 @@ export async function accionEntregarTarea(_p: EstadoTarea, formData: FormData): 
 
   const texto = String(formData.get("texto") ?? "").trim();
   if (texto.length > 5000) return { error: "El texto es demasiado largo (hasta 5000 caracteres)." };
-  const archivos = await validarArchivos(formData.getAll("archivos").filter((a): a is File => a instanceof File));
+  const archivos = await validarArchivos(archivosDelFormulario(formData));
   if (!archivos.ok) return { error: archivos.error };
   if (!texto && archivos.archivos.length === 0) return { error: "Sube al menos un archivo o escribe tu respuesta." };
 

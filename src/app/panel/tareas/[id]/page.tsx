@@ -9,6 +9,8 @@ import { fechaHoraLegible, instanteAFechaHora } from "@/lib/fechasDia";
 import { tamanoLegible } from "@/lib/archivosEntrega";
 import { alumnoCursa, alumnosDeLaClase, estadoEntrega, ETIQUETA_ESTADO, puedeEntregar, zonaDelColegio } from "@/lib/tareas";
 import { Alerta, Insignia, Tarjeta } from "@/components/ui";
+import { Adjuntos } from "@/components/Adjuntos";
+import { SELECCION_ADJUNTO } from "@/lib/avisos";
 import { FormularioCalificar, FormularioEntrega, FormularioTarea } from "../Formularios";
 import { accionEliminarTarea } from "../acciones";
 
@@ -34,7 +36,10 @@ export default async function PaginaTarea({ params, searchParams }: { params: Pr
   const { creada } = await searchParams;
   const tarea = await db.tarea.findUnique({
     where: { id: Number((await params).id) || 0 },
-    include: { clase: { include: { grupo: true, docente: true, planMateria: { include: { materia: true } } } } },
+    include: {
+      clase: { include: { grupo: true, docente: true, planMateria: { include: { materia: true } } } },
+      material: { select: SELECCION_ADJUNTO, orderBy: { id: "asc" } },
+    },
   });
   if (!tarea) notFound();
   const zona = await zonaDelColegio();
@@ -56,6 +61,7 @@ export default async function PaginaTarea({ params, searchParams }: { params: Pr
   const instrucciones = (
     <Tarjeta titulo="Instrucciones">
       <p className="whitespace-pre-line text-sm text-slate-700">{tarea.instrucciones}</p>
+      <Adjuntos archivos={tarea.material} ruta="/panel/tareas/material" />
     </Tarjeta>
   );
 
@@ -169,6 +175,7 @@ export default async function PaginaTarea({ params, searchParams }: { params: Pr
             puntosMaximos: maximo,
             fechaLimite: instanteAFechaHora(tarea.fechaLimite, zona),
             aceptaTardias: tarea.aceptaTardias,
+            material: tarea.material,
           }}
         />
         {entregas.length === 0 && (

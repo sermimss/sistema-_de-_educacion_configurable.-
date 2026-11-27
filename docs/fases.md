@@ -839,3 +839,21 @@ antes de cobrar; regresion completa.
 - **Generar cargos de un solo alumno** se hace con su matricula.
 
 Verificado: cobranza 49 (nueva) y la regresion completa.
+
+## Archivos en avisos y tareas
+
+- **Avisos** (administracion y docentes) y **tareas** (material de apoyo del
+  docente y entregas del alumno) aceptan hasta **5 archivos de 10 MB**:
+  imagenes (PNG, JPG, GIF, WEBP), PDF, Word, Excel, PowerPoint y texto. Se
+  revisan por su contenido (una imagen falsa o un programa se rechazan).
+- Se eligen con el boton, se arrastran o se **pega una captura con Ctrl+V**
+  en cualquier parte del formulario (se nombra captura-fecha-hora.png). Si el
+  envio tiene un error se conserva lo escrito y los archivos.
+- Las **imagenes se ven ahi mismo** (clic para verlas en grande); los PDF se
+  abren en el navegador y los documentos se descargan.
+- Al editar una tarea el docente puede quitar material y agregar otro.
+- Quien ve los archivos: los de un aviso, la administracion, quien lo publico
+  y los alumnos a quienes va dirigido; el material de una tarea, el docente
+  de la clase y los alumnos que la cursan.
+
+Verificado: adjuntos 18 (nueva), tareas 37 y la regresion completa.

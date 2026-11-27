@@ -3,6 +3,14 @@ import { cicloVigenteDeAlumno } from "./calendarioGrupo";
 
 /// Los avisos vigentes que le tocan a un alumno: los de todo el colegio, los
 /// de su grupo y los de las clases que cursa (aunque sean de otro grupo).
+/// Lo que se lee de un adjunto para mostrarlo (sin el contenido).
+export const SELECCION_ADJUNTO = { id: true, nombre: true, mime: true, tamano: true } as const;
+
+/// Si el alumno puede ver ese aviso (y sus archivos).
+export async function alumnoVeAviso(alumnoId: number, avisoId: number): Promise<boolean> {
+  return (await avisosDelAlumno(alumnoId, 500)).some((a) => a.id === avisoId);
+}
+
 export async function avisosDelAlumno(alumnoId: number, limite = 30) {
   const hoy = new Date();
   hoy.setUTCHours(0, 0, 0, 0);
@@ -34,6 +42,7 @@ export async function avisosDelAlumno(alumnoId: number, limite = 30) {
     },
     orderBy: { fechaPublicacion: "desc" },
     take: limite * 2,
+    include: { archivos: { select: SELECCION_ADJUNTO, orderBy: { id: "asc" } } },
   });
   // Un aviso de una clase solo lo ven quienes la cursan.
   return avisos.filter((a) => !a.claseId || misClases.has(a.claseId)).slice(0, limite);

@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { startTransition, useActionState, useEffect, useRef, type FormEvent } from "react";
 import { Alerta, Boton, Campo, Selector } from "@/components/ui";
-import { EXTENSIONES_ACEPTADAS, MAX_ARCHIVOS } from "@/lib/archivosEntrega";
+import { SelectorArchivos } from "@/components/SelectorArchivos";
+import { MAX_ARCHIVOS, tamanoLegible } from "@/lib/archivosEntrega";
 import { accionCalificarEntrega, accionCrearTarea, accionEditarTarea, accionEntregarTarea, type EstadoTarea } from "./acciones";
 
 function Mensajes({ estado }: { estado: EstadoTarea }) {
@@ -14,7 +15,30 @@ function Mensajes({ estado }: { estado: EstadoTarea }) {
   );
 }
 
-type DatosTarea = { id: number; titulo: string; instrucciones: string; puntosMaximos: number; fechaLimite: string; aceptaTardias: boolean };
+type DatosTarea = {
+  id: number;
+  titulo: string;
+  instrucciones: string;
+  puntosMaximos: number;
+  fechaLimite: string;
+  aceptaTardias: boolean;
+  material: { id: number; nombre: string; tamano: number }[];
+};
+
+/// Envia sin que React limpie el formulario: con un error se conserva lo
+/// capturado, incluidos los archivos. Se limpia a mano cuando sale bien.
+function useEnvioConservando(accion: (datos: FormData) => void, ok: boolean | undefined, estado: unknown) {
+  const formulario = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (ok) formulario.current?.reset();
+  }, [estado, ok]);
+  const alEnviar = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const datos = new FormData(e.currentTarget);
+    startTransition(() => accion(datos));
+  };
+  return { formulario, alEnviar };
+}
 
 /// Pedir una tarea nueva (con clase) o editar una existente.
 export function FormularioTarea({
@@ -29,8 +53,9 @@ export function FormularioTarea({
   minimo?: string;
 }) {
   const [estado, accion, pendiente] = useActionState<EstadoTarea, FormData>(tarea ? accionEditarTarea : accionCrearTarea, {});
+  const { formulario, alEnviar } = useEnvioConservando(accion, estado.ok, estado);
   return (
-    <form action={accion} className="space-y-3" data-formulario-tarea>
+    <form ref={formulario} onSubmit={alEnviar} className="space-y-3" data-formulario-tarea>
       {tarea && <input type="hidden" name="tareaId" value={tarea.id} />}
       <Mensajes estado={estado} />
       <div className="grid gap-3 sm:grid-cols-3">
@@ -56,6 +81,22 @@ export function FormularioTarea({
           placeholder="Que deben hacer y como entregarlo"
         />
       </div>
+      {tarea && tarea.material.length > 0 && (
+        <fieldset className="space-y-1" data-material-actual>
+          <legend className="etiqueta-campo">Material adjunto</legend>
+          {tarea.material.map((a) => (
+            <label key={a.id} className="flex items-center gap-2 text-sm text-slate-700">
+              <input type="checkbox" name="quitarMaterial" value={a.id} className="h-4 w-4 rounded border-slate-300" />
+              Quitar {a.nombre} <span className="text-xs text-slate-400">({tamanoLegible(a.tamano)})</span>
+            </label>
+          ))}
+        </fieldset>
+      )}
+      <SelectorArchivos
+        etiqueta={tarea ? "Agregar material de apoyo" : "Material de apoyo"}
+        maximo={MAX_ARCHIVOS}
+        ayuda={`Imagenes (capturas incluidas), PDF, Word, Excel, PowerPoint o texto; 10 MB cada uno; hasta ${MAX_ARCHIVOS} por tarea. Tus alumnos los ven con las instrucciones.`}
+      />
       <div className="grid gap-3 sm:grid-cols-3">
         <Campo etiqueta="Fecha y hora limite" name="fechaLimite" type="datetime-local" required min={minimo} defaultValue={tarea?.fechaLimite} />
         <Campo etiqueta="Vale (puntos)" name="puntosMaximos" type="number" min={0.01} max={1000} step="0.01" required defaultValue={tarea?.puntosMaximos ?? 10} />
@@ -71,34 +112,19 @@ export function FormularioTarea({
   );
 }
 
-/// Entrega del alumno: hasta 3 archivos y un texto. Volver a entregar
-/// reemplaza todo.
+/// Entrega del alumno: hasta 5 archivos (se pueden pegar capturas) y un
+/// texto. Volver a entregar reemplaza todo.
 export function FormularioEntrega({ tareaId, yaEntrego }: { tareaId: number; yaEntrego: boolean }) {
   const [estado, accion, pendiente] = useActionState<EstadoTarea, FormData>(accionEntregarTarea, {});
-  const archivos = useRef<HTMLInputElement>(null);
+  const { formulario, alEnviar } = useEnvioConservando(accion, estado.ok, estado);
   return (
-    <form
-      action={accion}
-      className="space-y-3"
-      data-formulario-entrega
-      onSubmit={(e) => {
-        const n = archivos.current?.files?.length ?? 0;
-        if (n > MAX_ARCHIVOS) {
-          e.preventDefault();
-          alert(`Puedes subir hasta ${MAX_ARCHIVOS} archivos.`);
-        }
-      }}
-    >
+    <form ref={formulario} onSubmit={alEnviar} className="space-y-3" data-formulario-entrega>
       <input type="hidden" name="tareaId" value={tareaId} />
       <Mensajes estado={estado} />
       {yaEntrego && (
         <Alerta tipo="info">Si vuelves a entregar se reemplaza todo lo anterior: vuelve a subir todos tus archivos.</Alerta>
       )}
-      <div>
-        <label className="etiqueta-campo" htmlFor={`archivos-${tareaId}`}>Archivos (hasta {MAX_ARCHIVOS}, 10 MB cada uno)</label>
-        <input id={`archivos-${tareaId}`} ref={archivos} type="file" name="archivos" multiple accept={EXTENSIONES_ACEPTADAS} className="campo" />
-        <p className="mt-1 text-xs text-slate-500">PDF, Word, Excel, PowerPoint, texto o imagenes.</p>
-      </div>
+      <SelectorArchivos etiqueta="Archivos" />
       <div>
         <label className="etiqueta-campo" htmlFor={`texto-${tareaId}`}>Respuesta o comentario (opcional)</label>
         <textarea id={`texto-${tareaId}`} name="texto" maxLength={5000} rows={4} className="campo" />

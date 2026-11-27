@@ -160,7 +160,7 @@ DATABASE_URL=... npm run prueba:eliminar-catalogo
 demostracion**, con `DATABASE_URL` apuntando a esa base. El docente pide una
 tarea (no con fecha pasada); el alumno la ve pendiente, entrega 3 archivos y
 texto (rechaza entregas vacias, archivos disfrazados, programas, mas de 10 MB
-y mas de 3 archivos), descarga lo suyo (un companero y alguien sin sesion
+y mas de 5 archivos), descarga lo suyo (un companero y alguien sin sesion
 no) y vuelve a entregar reemplazando todo. El docente ve quien entrego,
 descarga, califica con comentario (sin pasar del maximo) y el alumno ya no
 puede cambiarla. Entregas tardias segun la tarea, editar, eliminar sin
@@ -168,6 +168,22 @@ entregas y alcance por clase y por rol.
 
 ```bash
 DATABASE_URL=... npm run prueba:tareas
+```
+
+## adjuntos.mjs
+
+18 comprobaciones sobre una base **recien sembrada con los datos de
+demostracion**, con `DATABASE_URL` apuntando a esa base. La administracion
+publica un aviso con una foto, un PDF y una captura pegada con Ctrl+V (con un
+error conserva lo escrito y los archivos; rechaza una imagen falsa); el
+alumno ve las imagenes en el aviso y abre el PDF; el panel indica los
+adjuntos; nadie abre archivos de avisos que no le tocan. El docente adjunta
+material a una tarea (PDF y captura pegada), el alumno lo ve y lo abre, la
+administracion no; al editar se quita y se agrega material; el alumno
+entrega pegando una captura.
+
+```bash
+DATABASE_URL=... npm run prueba:adjuntos
 ```
 
 ## examenes.mjs

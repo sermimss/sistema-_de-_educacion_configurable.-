@@ -1,8 +1,9 @@
-/// Archivos que entregan los alumnos: se aceptan documentos de Office, PDF,
-/// texto e imagenes, revisando el contenido y no solo la extension, para que
-/// nadie suba un programa disfrazado de documento.
+/// Archivos que se suben (entregas de tareas, material de tareas y adjuntos
+/// de avisos): se aceptan documentos de Office, PDF, texto e imagenes
+/// (capturas de pantalla incluidas), revisando el contenido y no solo la
+/// extension, para que nadie suba un programa disfrazado de documento.
 
-export const MAX_ARCHIVOS = 3;
+export const MAX_ARCHIVOS = 5;
 export const MAX_BYTES = 10 * 1024 * 1024;
 export const EXTENSIONES_ACEPTADAS = ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.gif,.webp";
 
@@ -37,9 +38,12 @@ export function nombreLimpio(nombre: string): string {
   return base.replace(/[^\p{L}\p{N} ._()-]/gu, "_").replace(/\s+/g, " ").trim().slice(0, 120) || "archivo";
 }
 
-export async function validarArchivos(archivos: File[]): Promise<{ ok: true; archivos: ArchivoValidado[] } | { ok: false; error: string }> {
+export async function validarArchivos(
+  archivos: File[],
+  maximo = MAX_ARCHIVOS
+): Promise<{ ok: true; archivos: ArchivoValidado[] } | { ok: false; error: string }> {
   const reales = archivos.filter((a) => a && a.size > 0);
-  if (reales.length > MAX_ARCHIVOS) return { ok: false, error: `Puedes subir hasta ${MAX_ARCHIVOS} archivos.` };
+  if (reales.length > maximo) return { ok: false, error: `Puedes subir hasta ${maximo} archivos.` };
   const validados: ArchivoValidado[] = [];
   for (const archivo of reales) {
     const nombre = nombreLimpio(archivo.name);
@@ -53,6 +57,13 @@ export async function validarArchivos(archivos: File[]): Promise<{ ok: true; arc
   }
   return { ok: true, archivos: validados };
 }
+
+/// Los archivos de un formulario (campo "archivos").
+export function archivosDelFormulario(formData: FormData, campo = "archivos"): File[] {
+  return formData.getAll(campo).filter((a): a is File => a instanceof File && a.size > 0);
+}
+
+export const esImagen = (mime: string) => mime.startsWith("image/");
 
 export function tamanoLegible(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

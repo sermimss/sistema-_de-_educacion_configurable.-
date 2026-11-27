@@ -333,6 +333,11 @@ export default async function PaginaPanel() {
               <li key={a.id} className="py-2">
                 <p className="text-sm font-medium text-slate-800">{a.titulo}</p>
                 <p className="line-clamp-2 text-xs text-slate-600">{a.contenido}</p>
+                {a.archivos.length > 0 && (
+                  <Link href="/panel/avisos" className="text-xs text-marca-600 hover:underline">
+                    📎 {a.archivos.length} archivo(s) adjunto(s)
+                  </Link>
+                )}
               </li>
             ))}
           </ul>

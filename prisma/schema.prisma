@@ -1595,6 +1595,23 @@ model Aviso {
   fechaPublicacion DateTime         @default(now())
   vigenciaHasta    DateTime?
   activo           Boolean          @default(true)
+
+  archivos ArchivoAviso[]
+}
+
+/// Imagen, PDF o documento adjunto a un aviso (revisado por su contenido).
+model ArchivoAviso {
+  id       Int      @id @default(autoincrement())
+  avisoId  Int
+  nombre   String
+  mime     String
+  tamano   Int
+  datos    Bytes
+  subidoEn DateTime @default(now())
+
+  aviso Aviso @relation(fields: [avisoId], references: [id], onDelete: Cascade)
+
+  @@index([avisoId])
 }
 
 /// Bitacora de auditoria. Obligatoria en calificaciones, finanzas y nomina.
@@ -1814,6 +1831,7 @@ model Tarea {
 
   clase    Clase          @relation(fields: [claseId], references: [id], onDelete: Cascade)
   entregas EntregaTarea[]
+  material ArchivoTarea[]
 
   @@index([claseId])
 }
@@ -1839,6 +1857,21 @@ model EntregaTarea {
 
 /// Archivo entregado (hasta 3 por entrega, 10 MB cada uno), guardado en la
 /// base del colegio.
+/// Material de apoyo que el docente adjunta a la tarea.
+model ArchivoTarea {
+  id       Int      @id @default(autoincrement())
+  tareaId  Int
+  nombre   String
+  mime     String
+  tamano   Int
+  datos    Bytes
+  subidoEn DateTime @default(now())
+
+  tarea Tarea @relation(fields: [tareaId], references: [id], onDelete: Cascade)
+
+  @@index([tareaId])
+}
+
 model ArchivoEntrega {
   id        Int      @id @default(autoincrement())
   entregaId Int
